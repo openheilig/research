@@ -1,7 +1,7 @@
 # `.pak` containers
 
 **Status: solved.** Both shapes read, `--list` and `--extract` work,
-`--self-check` passes. Reader: `tools/pak.py`.
+`--self-check` passes. Reader: `tools/formats/pak.py`.
 
 The 256-byte header was derived independently here, then found to agree
 verbatim with Resacred's `rs_file.h:91-109` and the Delphi `PakExtractor`
@@ -64,7 +64,7 @@ with a NUL-padded filename. Known flags: `0x04` TGA, `0x40` Granny `.GRN`,
 ## Not this format
 
 `Triggers.PAK` is **not** a `.pak` at all — it is `TRG v1`, a different
-container that happens to share the extension. Reader: `tools/parse_trg.py`.
+container that happens to share the extension. Reader: `tools/formats/parse_trg.py`.
 That raised the obvious follow-up, audited separately: which other files can
 the community toolchain misread the same way.
 

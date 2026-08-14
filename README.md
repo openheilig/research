@@ -63,8 +63,12 @@ Anything not stated is not claimed. Open questions are marked as open.
 
 ## Related
 
-Implementations of these formats live in the [engine](../engine) repo. The
-tools that produced the findings live in [tools](../tools).
+This is one of three repositories:
+
+- [engine](../engine) — the reimplementation: an open Sacred Gold engine on
+  Godot 4.7 that reads your own retail install.
+- [tools](../tools) — the analysis and extraction tools, and the Python half
+  of every parity gate.
 
 ## Licence
 

@@ -1,8 +1,8 @@
 # `.pax` hero saves
 
 **Status: decoded.** Section framing and the character stream both read;
-`tools/pax_diff.py` censuses a section type across the eight-hero corpus, and
-`engine/pax_check.gd` gates every section inflating to exactly its declared
+`tools/parity/pax_diff.py` censuses a section type across the eight-hero corpus, and
+`engine/checks/pax_check.gd` gates every section inflating to exactly its declared
 size.
 
 ## Header
@@ -51,7 +51,7 @@ Section types observed: `0xC3`, `0xC4`, `0xC7`, `0xC8`, `0xCA`, `0xCB`.
 ## Open
 
 Whether the `0xC8` record type ids share the `items.pak` id space is an open
-question, not a settled one — `engine/pax_c8.gd` tests it against a control
+question, not a settled one — `engine/probes/pax_c8.gd` tests it against a control
 arm of random ids in the same numeric range, because without the control a
 hit rate means nothing.
 
@@ -62,6 +62,6 @@ retail install and not shipped in any of these repositories. The probes read
 it from `$SACRED_CHARS`.
 
 ---
-Provenance: findings log rows tagged `pax-hero`; `tools/pax_diff.py`;
-`engine/pax_check.gd`.
+Provenance: findings log rows tagged `pax-hero`; `tools/parity/pax_diff.py`;
+`engine/checks/pax_check.gd`.
 

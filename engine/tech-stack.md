@@ -25,7 +25,7 @@ vorbis/ogg 8 · Xlib 7 · zlib 2.
 ## Class information is intact
 
 > **The "no RTTI in the Linux binary" claim is false.** The *symbol table* is
-> stripped; the Itanium-ABI RTTI is fully intact. `tools/vtables.py` recovers
+> stripped; the Itanium-ABI RTTI is fully intact. `tools/binary/vtables.py` recovers
 > **318 classes, 317 with vtable and base**. The earlier claim came from an
 > extractor that looked for MSVC-style RTTI and found none, which is a fact
 > about the extractor.
@@ -58,6 +58,6 @@ Linux binary, script interpreter: opcode jump table `0x086f4298`, dispatcher
 key `0x45AD`. Loader at VA `0x0080DBF0`.
 
 ---
-Provenance: measured from `install/sacred` with `tools/vtables.py` and
+Provenance: measured from `install/sacred` with `tools/binary/vtables.py` and
 `ehframe_funcs.py`; import families counted from the ELF directly.
 

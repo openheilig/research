@@ -71,6 +71,6 @@ The Linux port does **not** carry it — `sacred.xls`, `defaults.h`,
 `BALANCING:` and `CTRL+K` are all absent. The facility is Windows-only.
 
 ---
-Provenance: `tools/balance_keymap.py`; findings log rows 191-195; the key table
+Provenance: `tools/binary/balance_keymap.py`; findings log rows 191-195; the key table
 in `balance-keymap.tsv`.
 

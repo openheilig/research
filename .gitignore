@@ -1,9 +1,9 @@
-# DEFAULT DENY. See README.md.
+# DEFAULT DENY. This repo is publishable; the workspace it runs against is not.
 #
 # This repo holds hand-written findings about Sacred Gold's file formats and
 # engine behaviour. It holds no bytes from the game. Parse dumps, decompiler
-# output, symbol tables, memory traces and screenshots stay in the workspace
-# (../../Sacred Gold/analysis/), not here.
+# output, symbol tables, memory traces and screenshots stay in the private
+# workspace (../donotpublish/), not here.
 #
 # Allowlist, not blocklist: a blocklist fails open. To track a new file type,
 # add a "!" line and think about where its content came from first.

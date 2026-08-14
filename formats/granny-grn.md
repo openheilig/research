@@ -5,8 +5,8 @@ skeletons and per-bone transform tracks all resolve, and skeletal animation
 retargets across characters in the engine.
 
 The entries live inside `models.pak` (4993 of them). Two independent walkers
-exist and agree — `tools/grn_tagwalk.py` in Python and the reader in
-`engine/sacred.gd` — which is what makes the decode trustworthy. They were
+exist and agree — `tools/formats/grn_tagwalk.py` in Python and the reader in
+`engine/formats/models.gd` — which is what makes the decode trustworthy. They were
 deliberately written from a specification and from direct byte reads, never
 by translating one another; a transliterated second implementation would make
 the parity diff structurally incapable of failing.
@@ -107,10 +107,10 @@ they are distinct node types.
 
 `tools/granny_oracle/` calls the **retail Granny 2.x runtime** directly to
 check our decode against the vendor's own. That is the oracle; agreement
-between our two readers is the gate (`tools/grn_parity.sh`).
+between our two readers is the gate (`tools/parity/grn_parity.sh`).
 
 ---
-Provenance: `tools/grn_tagwalk.py`, `grn_motion.py`, `grn_bonenames.py` module
+Provenance: `tools/formats/grn_tagwalk.py`, `grn_motion.py`, `grn_bonenames.py` module
 docstrings, which carry the measurement detail; findings log rows tagged
 `granny-grn`.
 

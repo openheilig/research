@@ -32,7 +32,7 @@ Directory fields located in the `keyx` record:
 
 Cell-space walkability is a lookup over Sacred's own region grids, not a
 derived collision mesh. The engine implements it in `world/walkable.gd`; the
-reference decode is in `tools/verify_ref.py`, and the two are diffed.
+reference decode is in `tools/parity/verify_ref.py`, and the two are diffed.
 
 Sectors used as the parity sample are deliberately *not* the same list as the
 general sector sample — the general list yields zero regions in every entry
@@ -52,6 +52,6 @@ settled half is entangled with render-architecture decisions about the port,
 which are choices rather than facts about the format.
 
 ---
-Provenance: `tools/verify_ref.py` and `engine/world/walkable.gd`, which are the
+Provenance: `tools/parity/verify_ref.py` and `engine/world/walkable.gd`, which are the
 two independent decoders; findings log rows tagged `sectors.wldx` and `world`.
 

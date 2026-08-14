@@ -1,7 +1,7 @@
 # Script bytecode — `StartCode.bin` / `FunkCode.bin`
 
 **Status: parsed from the interpreter, not fitted to the data.** Reader:
-`tools/startcode.py`. Opcode tables: [script-opcodes.md](script-opcodes.md)
+`tools/formats/startcode.py`. Opcode tables: [script-opcodes.md](script-opcodes.md)
 (static) and [script-opcodes-behaviour.md](script-opcodes-behaviour.md)
 (behavioural).
 
@@ -36,7 +36,7 @@ it (1.0 means the opcode has exactly one shape), plus the English text each
 The tag byte dispatches through a **162-entry** jump table at `0x086f3fbc`
 into **52 handlers**. Each handler's cursor advance was recovered by
 following control flow from its entry to the shared epilogue
-(`tools/tagwidths.py`); width = advance − 1, the one byte being the tag.
+(`tools/binary/tagwidths.py`); width = advance − 1, the one byte being the tag.
 
 Three rules complete it, and each cost several failed attempts:
 
@@ -72,6 +72,6 @@ Three rules complete it, and each cost several failed attempts:
 the Armalion debug build — a second, independent view of the same interpreter.
 
 ---
-Provenance: `tools/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module
+Provenance: `tools/formats/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module
 docstrings; findings log rows 718-723.
 
