@@ -1,0 +1,1164 @@
+{
+ "0": {
+  "handler": "inline@0x826ea50",
+  "size": 10,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "1": {
+  "handler": "0x82846b4",
+  "size": 19937,
+  "extra": [],
+  "strings": [
+   "CreateNPC failed: vx=%d, Type=%d\n",
+   "NON_UNIQUE",
+   "\nCreateNPC: NPC %s mehrfach -> %s ResNum(0x%X) Referent(%d)\n",
+   "CreateNPC failed -> Now Teleport: vx=%d, vy=%d, vz=%d\n",
+   "FX_BLOODLINES.TGA",
+   "nix",
+   "CreateNPC: DQ QuestNPC not found - Target NPC %s(%d) could not join DQ\n",
+   "CreateNPC: DQ QuestNPC not found - Target NPC %d could not join DQ\n",
+   "hero",
+   "Ref[%d] Group (%d) %s",
+   "CreateNPC failed: newref=%d\n"
+  ],
+  "classes": [
+   "cItemBase",
+   "cEvent_creature",
+   "cObject3D",
+   "cEventFX"
+  ]
+ },
+ "2": {
+  "handler": "0x8293852",
+  "size": 7491,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cObject3D",
+   "cObjectFX",
+   "cEventFX"
+  ]
+ },
+ "3": {
+  "handler": "0x8295596",
+  "size": 4994,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "4": {
+  "handler": "0x8282fd2",
+  "size": 2321,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "5": {
+  "handler": "0x8282dfe",
+  "size": 468,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "7": {
+  "handler": "0x82838e4",
+  "size": 3535,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cItemBase"
+  ]
+ },
+ "8": {
+  "handler": "0x8289496",
+  "size": 41916,
+  "extra": [],
+  "strings": [
+   "Trg",
+   "LRes:",
+   "\nCreateOBJ: %s mehrfach -> %s ResNum(0x%X) Referent(%d)\n",
+   "CreateOBJ warning -> Now deleting existing OBJ first: Referent(%d)\n",
+   "Take:",
+   "NON_UNIQUE"
+  ],
+  "classes": [
+   "cEventFX",
+   "cObject3D",
+   "cEvent_engine",
+   "cItemBase"
+  ]
+ },
+ "10": {
+  "handler": "0x8296f2e",
+  "size": 162,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "11": {
+  "handler": "0x8296fd0",
+  "size": 162,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "12": {
+  "handler": "0x8296dea",
+  "size": 162,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "13": {
+  "handler": "0x8296e8c",
+  "size": 162,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "14": {
+  "handler": "0x8297072",
+  "size": 192,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "15": {
+  "handler": "0x8299b8a",
+  "size": 220,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "17": {
+  "handler": "0x8297132",
+  "size": 2729,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "18": {
+  "handler": "0x8297c96",
+  "size": 702,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "19": {
+  "handler": "0x8297f54",
+  "size": 451,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "20": {
+  "handler": "0x8299c66",
+  "size": 261,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "21": {
+  "handler": "0x829a79a",
+  "size": 230,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "22": {
+  "handler": "0x8282bde",
+  "size": 543,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "23": {
+  "handler": "0x82720ec",
+  "size": 4320,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "24": {
+  "handler": "0x8296918",
+  "size": 1233,
+  "extra": [],
+  "strings": [
+   "Group (%d) Size (%d)",
+   "Creature (%d) alive. So group is OK (left %d -- %d).",
+   "Creature (%d) not in Group. So its dead.",
+   "Creature (%d) not valid. So its dead.",
+   "Group (%d) not found. So group is dead.",
+   "Group (%d) is dead"
+  ],
+  "classes": []
+ },
+ "25": {
+  "handler": "0x829cd2e",
+  "size": 196,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "26": {
+  "handler": "0x829f2ce",
+  "size": 120,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "31": {
+  "handler": "0x829a880",
+  "size": 3733,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "32": {
+  "handler": "0x829cdf2",
+  "size": 236,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "33": {
+  "handler": "0x829cede",
+  "size": 1995,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "35": {
+  "handler": "0x827afb6",
+  "size": 23099,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cItemBase"
+  ]
+ },
+ "36": {
+  "handler": "0x82987de",
+  "size": 361,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "37": {
+  "handler": "0x8299d6c",
+  "size": 2605,
+  "extra": [],
+  "strings": [
+   "SOUND_"
+  ],
+  "classes": []
+ },
+ "38": {
+  "handler": "0x8299d6c",
+  "size": 2605,
+  "extra": [],
+  "strings": [
+   "SOUND_"
+  ],
+  "classes": []
+ },
+ "39": {
+  "handler": "0x829ea04",
+  "size": 2006,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "40": {
+  "handler": "0x867be12",
+  "size": 67,
+  "extra": [
+   "0x867be12"
+  ],
+  "strings": [],
+  "classes": []
+ },
+ "41": {
+  "handler": "inline@0x82718f6",
+  "size": 880,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "43": {
+  "handler": "inline@0x827189c",
+  "size": 10,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "44": {
+  "handler": "0x819c70e",
+  "size": 2528,
+  "extra": [
+   "0x82555f8",
+   "0x819c6d6"
+  ],
+  "strings": [
+   "Schrott",
+   "ott",
+   "NPCUWR_11%d",
+   "NPCUWR_12%d",
+   "NPCUWR_21%d",
+   "NPCUWR_22%d",
+   "NPCUWR_31%d",
+   "NPCUWR_%d2%d",
+   "NPCUWR_41%d",
+   "NPCUWR_51%d",
+   "NPCUWR_52%d",
+   "NPCUWR_53%d",
+   "NPCUWR_54%d",
+   "NPCUWR_55%d",
+   "NPCUWR_56%d",
+   "NPCUWR_57%d",
+   "NPCUWR_58%d",
+   "NPCUWR_6%d%d",
+   "NPCUWR_7%d%d",
+   "NPCUWR_9%d%d",
+   "NPCUWR_8%d%d",
+   "NPCUWR_a%d%d",
+   "NPCUWR_b%d%d",
+   "NPCUWR_%d%d%d"
+  ],
+  "classes": []
+ },
+ "45": {
+  "handler": "0x829f1da",
+  "size": 244,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "46": {
+  "handler": "0x829f390",
+  "size": 2554,
+  "extra": [],
+  "strings": [
+   "hero",
+   "Teleport failed: resnum=%d\n",
+   "Teleport failed: vx=%d, vy=%d, vz=%d\n"
+  ],
+  "classes": []
+ },
+ "47": {
+  "handler": "0x8605dd4",
+  "size": 1024,
+  "extra": [
+   "0x80537f8",
+   "0x8052c68",
+   "0x8679fc8"
+  ],
+  "strings": [
+   "log.txt",
+   "lgp_wincompat_common.c",
+   "_splitpath",
+   "STUB: %s at %s:%d\n",
+   "Unsupported VirtualAlloc option",
+   "Unsupported VirtualFree option"
+  ],
+  "classes": []
+ },
+ "48": {
+  "handler": "0x82a50fa",
+  "size": 2213,
+  "extra": [],
+  "strings": [
+   "Trg"
+  ],
+  "classes": []
+ },
+ "49": {
+  "handler": "0x82a59a0",
+  "size": 2739,
+  "extra": [],
+  "strings": [
+   "Trg"
+  ],
+  "classes": [
+   "cObject3D"
+  ]
+ },
+ "50": {
+  "handler": "0x82a6454",
+  "size": 2149,
+  "extra": [],
+  "strings": [
+   "Trg"
+  ],
+  "classes": []
+ },
+ "51": {
+  "handler": "0x827afb6",
+  "size": 23099,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cItemBase"
+  ]
+ },
+ "52": {
+  "handler": "0x8298566",
+  "size": 631,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "53": {
+  "handler": "0x82a4786",
+  "size": 2419,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "54": {
+  "handler": "0x8299b8a",
+  "size": 220,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "55": {
+  "handler": "0x82a74c4",
+  "size": 719,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "56": {
+  "handler": "0x82a7794",
+  "size": 2047,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "57": {
+  "handler": "0x82a7f94",
+  "size": 1757,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "58": {
+  "handler": "0x82a8672",
+  "size": 4902,
+  "extra": [],
+  "strings": [
+   "HERO",
+   "hero",
+   "LOC_RG",
+   "if IsNotVarBit:%s=%d,",
+   "false\n",
+   "true\n",
+   "if IsDead:%s",
+   "if IsFighting:%s",
+   "if IsLocked:%s",
+   "if IsNotLocked:%s",
+   "if IsInRgn:%s"
+  ],
+  "classes": [
+   "cObject3D"
+  ]
+ },
+ "59": {
+  "handler": "inline@0x826fa84",
+  "size": 507,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "60": {
+  "handler": "0x82a9998",
+  "size": 330,
+  "extra": [],
+  "strings": [
+   "RES:%d"
+  ],
+  "classes": []
+ },
+ "61": {
+  "handler": "0x82a9ae2",
+  "size": 51,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "62": {
+  "handler": "0x82a9b16",
+  "size": 1024,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_creature"
+  ]
+ },
+ "63": {
+  "handler": "0x82aa71c",
+  "size": 4154,
+  "extra": [],
+  "strings": [
+   "rad:",
+   "UI_WND_TASKBAR",
+   "QuestkompassPos failed: Quest=%d not found\n",
+   "QuestkompassPos failed: vx=%d, vy=%d\n"
+  ],
+  "classes": [
+   "cEventUI2"
+  ]
+ },
+ "64": {
+  "handler": "0x82ab756",
+  "size": 3767,
+  "extra": [],
+  "strings": [
+   "rad:",
+   "UI_WND_TASKBAR",
+   "QuestkompassOBJ failed: Quest=%d, resnum=%d not found\n",
+   "QuestkompassOBJ failed: Quest=%d not found\n"
+  ],
+  "classes": [
+   "cEventUI2"
+  ]
+ },
+ "65": {
+  "handler": "0x82ac60e",
+  "size": 3967,
+  "extra": [],
+  "strings": [
+   "atmo_rg"
+  ],
+  "classes": []
+ },
+ "66": {
+  "handler": "inline@0x826f67f",
+  "size": 1029,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "67": {
+  "handler": "0x82ac60e",
+  "size": 3967,
+  "extra": [],
+  "strings": [
+   "atmo_rg"
+  ],
+  "classes": []
+ },
+ "68": {
+  "handler": "0x82ad58e",
+  "size": 4815,
+  "extra": [],
+  "strings": [
+   "res",
+   "HeroQBit",
+   "HERO"
+  ],
+  "classes": []
+ },
+ "69": {
+  "handler": "0x82ae85e",
+  "size": 3039,
+  "extra": [],
+  "strings": [
+   "res",
+   "HeroQBit",
+   "HERO"
+  ],
+  "classes": []
+ },
+ "70": {
+  "handler": "0x82b243c",
+  "size": 594,
+  "extra": [],
+  "strings": [
+   "hero",
+   "HERO"
+  ],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "71": {
+  "handler": "0x82b268e",
+  "size": 919,
+  "extra": [],
+  "strings": [
+   "HERO"
+  ],
+  "classes": []
+ },
+ "72": {
+  "handler": "0x82b2a26",
+  "size": 1212,
+  "extra": [],
+  "strings": [
+   "HERO"
+  ],
+  "classes": [
+   "cEvent_creature"
+  ]
+ },
+ "73": {
+  "handler": "0x82b2ee2",
+  "size": 9148,
+  "extra": [],
+  "strings": [
+   "nix"
+  ],
+  "classes": [
+   "cEventFX"
+  ]
+ },
+ "74": {
+  "handler": "0x82b529e",
+  "size": 1916,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_creature",
+   "cEventFX"
+  ]
+ },
+ "75": {
+  "handler": "0x82af43e",
+  "size": 3978,
+  "extra": [],
+  "strings": [
+   "atmo_rg"
+  ],
+  "classes": []
+ },
+ "76": {
+  "handler": "0x82b03c8",
+  "size": 3993,
+  "extra": [],
+  "strings": [
+   "atmo_rg"
+  ],
+  "classes": []
+ },
+ "77": {
+  "handler": "0x8298948",
+  "size": 4673,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "78": {
+  "handler": "0x82b5a1a",
+  "size": 7693,
+  "extra": [],
+  "strings": [
+   "Truhe %s falscht benannt\n"
+  ],
+  "classes": [
+   "cEvent_object",
+   "cObject3D",
+   "cItemBase"
+  ]
+ },
+ "79": {
+  "handler": "0x82b7828",
+  "size": 2760,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "86": {
+  "handler": "0x82b82f0",
+  "size": 3949,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "87": {
+  "handler": "0x82bfba2",
+  "size": 2160,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "88": {
+  "handler": "0x83b00a6",
+  "size": 76,
+  "extra": [
+   "0x83b04de",
+   "0x8052a78"
+  ],
+  "strings": [],
+  "classes": []
+ },
+ "89": {
+  "handler": "0x82bba5a",
+  "size": 682,
+  "extra": [],
+  "strings": [
+   "HERO"
+  ],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "90": {
+  "handler": "0x82b925e",
+  "size": 1638,
+  "extra": [],
+  "strings": [
+   "HERO"
+  ],
+  "classes": []
+ },
+ "91": {
+  "handler": "0x82b98c4",
+  "size": 2814,
+  "extra": [],
+  "strings": [
+   "schmiede",
+   "UI_WND_INVENTORY",
+   "UI_WND_BLACKSMITH",
+   "HERO"
+  ],
+  "classes": [
+   "cEventUI2",
+   "cEvent_creature"
+  ]
+ },
+ "92": {
+  "handler": "0x82ba3c2",
+  "size": 5784,
+  "extra": [],
+  "strings": [
+   "HERO",
+   "Figur wird direkt Teleportiert weil ohne Listner\n"
+  ],
+  "classes": [
+   "cEvent_creature"
+  ]
+ },
+ "93": {
+  "handler": "0x82bbd04",
+  "size": 5591,
+  "extra": [],
+  "strings": [
+   "HERO"
+  ],
+  "classes": [
+   "cEvent_creature",
+   "cObject3D"
+  ]
+ },
+ "94": {
+  "handler": "0x82bf110",
+  "size": 2705,
+  "extra": [],
+  "strings": [
+   "versteck %d, %d, %d \n"
+  ],
+  "classes": []
+ },
+ "95": {
+  "handler": "0x82c0bc2",
+  "size": 264,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "96": {
+  "handler": "0x82c0cca",
+  "size": 2851,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "97": {
+  "handler": "0x82c17ee",
+  "size": 374,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "98": {
+  "handler": "0x82c1964",
+  "size": 2512,
+  "extra": [],
+  "strings": [
+   "Setup Sector:%d,%d\n",
+   "rain",
+   "regen",
+   "thunder",
+   "gewitter",
+   "snow",
+   "schnee",
+   "fog",
+   "nebel",
+   "butterfly",
+   "schmetterling",
+   "floorFog",
+   "bodennebel",
+   "dungeonNight"
+  ],
+  "classes": []
+ },
+ "99": {
+  "handler": "0x82c2334",
+  "size": 3134,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": [
+   "cEventFX"
+  ]
+ },
+ "100": {
+  "handler": "0x82c2f72",
+  "size": 187,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "103": {
+  "handler": "0x8298118",
+  "size": 1102,
+  "extra": [],
+  "strings": [
+   "hero"
+  ],
+  "classes": []
+ },
+ "104": {
+  "handler": "0x82c302e",
+  "size": 1248,
+  "extra": [],
+  "strings": [
+   "SOUND_FX_",
+   "HERO"
+  ],
+  "classes": []
+ },
+ "105": {
+  "handler": "0x82b1362",
+  "size": 4192,
+  "extra": [],
+  "strings": [
+   "atmo_rg"
+  ],
+  "classes": []
+ },
+ "106": {
+  "handler": "0x825564c",
+  "size": 353,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "107": {
+  "handler": "0x82c356a",
+  "size": 76,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "108": {
+  "handler": "0x8273a32",
+  "size": 2066,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "109": {
+  "handler": "0x8274244",
+  "size": 10972,
+  "extra": [],
+  "strings": [
+   "Clear Pool: %s\n",
+   "PoolEmpty",
+   "GetPoolPos from %s to %s: %d, %d\n",
+   "GetPoolPos Status: Empty=%d\n",
+   "GetPoolPos failed. Pool (%s) is empty\n"
+  ],
+  "classes": []
+ },
+ "110": {
+  "handler": "0x82731cc",
+  "size": 2149,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "111": {
+  "handler": "inline@0x82718a6",
+  "size": 10,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "112": {
+  "handler": "0x8277d02",
+  "size": 2044,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "113": {
+  "handler": "0x82784fe",
+  "size": 10822,
+  "extra": [],
+  "strings": [
+   "PoolEmpty",
+   "GetPoolPos from %s to Rgn(%s,%s) with Target(%s)\n",
+   "GetPoolPos failed. Pool (%s) is empty\n"
+  ],
+  "classes": []
+ },
+ "114": {
+  "handler": "0x82c6770",
+  "size": 143,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "115": {
+  "handler": "0x82c6800",
+  "size": 371,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "116": {
+  "handler": "0x82c6974",
+  "size": 2272,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "117": {
+  "handler": "0x8297bdc",
+  "size": 186,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "118": {
+  "handler": "0x829b716",
+  "size": 3085,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "119": {
+  "handler": "0x829c324",
+  "size": 2570,
+  "extra": [],
+  "strings": [
+   "DQ_Quest",
+   "POOL_RG%d_",
+   "RegionsID falsch und Pool leer %d -> %d\n"
+  ],
+  "classes": []
+ },
+ "120": {
+  "handler": "0x82c7ec4",
+  "size": 25,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "121": {
+  "handler": "0x82c7ede",
+  "size": 464,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "122": {
+  "handler": "0x829d6aa",
+  "size": 128,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "123": {
+  "handler": "0x829d72a",
+  "size": 236,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "124": {
+  "handler": "0x82c80ae",
+  "size": 189,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "125": {
+  "handler": "0x82c816c",
+  "size": 7988,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_engine"
+  ]
+ },
+ "126": {
+  "handler": "0x82ca0a0",
+  "size": 67,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "127": {
+  "handler": "0x82ca0e4",
+  "size": 866,
+  "extra": [],
+  "strings": [
+   "SOUND_FX_"
+  ],
+  "classes": []
+ },
+ "128": {
+  "handler": "0x82ca446",
+  "size": 774,
+  "extra": [],
+  "strings": [
+   "SOUND_FX_"
+  ],
+  "classes": []
+ },
+ "129": {
+  "handler": "0x82ca74c",
+  "size": 102,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "130": {
+  "handler": "0x82ca7b2",
+  "size": 1408,
+  "extra": [],
+  "strings": [
+   "cInterpretSQW::Teleporter(hex=%x)\n",
+   "DEFAULT_BUSYDLG"
+  ],
+  "classes": [
+   "cEventUI2"
+  ]
+ },
+ "131": {
+  "handler": "0x82cad32",
+  "size": 130,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "132": {
+  "handler": "0x82cadb4",
+  "size": 2437,
+  "extra": [],
+  "strings": [],
+  "classes": [
+   "cEvent_engine",
+   "cCommand",
+   "cCommand_armaStop"
+  ]
+ },
+ "133": {
+  "handler": "0x8276d20",
+  "size": 4066,
+  "extra": [],
+  "strings": [
+   "GetPoolPos(%d) from %s%d[%d](%s) to %s: %d,%d\n",
+   "GetPoolPos failed. Pool (%s) is empty\n",
+   "PoolEmpty"
+  ],
+  "classes": []
+ },
+ "134": {
+  "handler": "0x83b00a6",
+  "size": 76,
+  "extra": [
+   "0x83b04de",
+   "0x8052a78"
+  ],
+  "strings": [],
+  "classes": []
+ },
+ "135": {
+  "handler": "0x82cca5e",
+  "size": 5943,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "136": {
+  "handler": "0x82ce196",
+  "size": 5946,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "137": {
+  "handler": "0x82cf8d0",
+  "size": 5928,
+  "extra": [],
+  "strings": [],
+  "classes": []
+ },
+ "138": {
+  "handler": "0x82d10f0",
+  "size": 734,
+  "extra": [],
+  "strings": [
+   "UI_WND_TASKBAR"
+  ],
+  "classes": [
+   "cEventUI2"
+  ]
+ },
+ "139": {
+  "handler": "0x82d13ce",
+  "size": 939,
+  "extra": [],
+  "strings": [
+   "UI_WND_TASKBAR"
+  ],
+  "classes": [
+   "cEventUI2"
+  ]
+ },
+ "140": {
+  "handler": "0x82d177a",
+  "size": 4865,
+  "extra": [],
+  "strings": [
+   "versteck %d, %d, %d \n"
+  ],
+  "classes": []
+ }
+}

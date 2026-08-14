@@ -1,0 +1,31 @@
+# DEFAULT DENY. See README.md.
+#
+# This repo holds hand-written findings about Sacred Gold's file formats and
+# engine behaviour. It holds no bytes from the game. Parse dumps, decompiler
+# output, symbol tables, memory traces and screenshots stay in the workspace
+# (../../Sacred Gold/analysis/), not here.
+#
+# Allowlist, not blocklist: a blocklist fails open. To track a new file type,
+# add a "!" line and think about where its content came from first.
+
+# 1. Deny everything, but still descend into directories.
+*
+!*/
+
+# 2. Allow hand-written prose and derived tables we authored.
+!.gitignore
+!LICENSE
+!*.md
+!*.tsv
+!*.json
+
+# 3. Belt and braces: retail-derived formats that must never land here.
+*.c
+*.txt
+*.bin
+*.pak
+*.exe
+*.dll
+*.so
+*.png
+*.jpg
