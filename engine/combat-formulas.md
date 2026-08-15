@@ -153,6 +153,71 @@ first argument and four resistance floats at `+0x66 ... +0x72`, and is called
 from six sites clustered around `FUN_081f5014`, in the same neighbourhood as
 `FUN_081f686a`, which reads 117 balance keys and is the creature stat builder.
 
+## The level curve, and the two numbers that tune it
+
+`FUN_081f64ac` is four lines long and is the single curve behind every
+level-scaled stat in the game. `FUN_081f686a` -- reached both from the
+derived-stat pass and from `cUI_StatisticsChar::vf06`, so it is what the
+character sheet displays -- calls it 41 times, once per stat family, and does
+nothing else of substance.
+
+As decompiled, then reduced:
+
+```c
+longdouble stat_curve(float off, float L, float s, float w)
+{
+  if (L < 1.0) return 0;
+  longdouble r = (w - off) * (1 - 1/((1/s)*(L - 1) + 1));
+  return r + r + off;
+}
+```
+
+```
+stat(L) = off + 2*(w - off)*(L - 1) / ( (L - 1) + s )
+```
+
+The two forms agree to 1.6e-12 relative over 20000 random inputs, which is
+float noise. It is a saturating hyperbola, and the three tunables are its
+geometry:
+
+| | |
+|---|---|
+| `stat(1)` | `off` -- the value at level 1 |
+| `stat(1 + s)` | `w` exactly -- `s` is the level span to the midpoint |
+| `stat(inf)` | `2w - off` -- the asymptote, never reached |
+
+**Every one of the 41 complete `off`/`_s`/`_w` families in retail ships
+`_s = 50.0`, with no exception**, while `_w` ranges from 10 to 375. So `_s` is
+not really a per-stat tunable at all: the whole game shares one curve shape,
+pinned at level 51, and a stat is tuned by moving only its two endpoints. That
+also settles the German: `_s` is *Stufe*, the level, and `_w` is *Wert*, the
+value there.
+
+Worked example, with retail's numbers:
+
+| family | `off` | `_s` | `_w` | L=1 | L=51 | L=50 | asymptote |
+|---|---|---|---|---|---|---|---|
+| `HP…VW` | 4 | 50 | 130 | 4.00 | 130.00 | 128.73 | 256 |
+| `AK…AW` | 9 | 50 | 150 | 9.00 | 150.00 | 148.58 | 291 |
+| `BK…AW` | 12 | 50 | 200 | 12.00 | 200.00 | 198.10 | 388 |
+| `R…Ph` | 12 | 50 | 250 | 12.00 | 250.00 | 247.60 | 488 |
+
+### What the `SP` families are
+
+The suffix families divide by what they modify. `AW` is *Angriffswert* and is
+read straight. `SP` is applied by `FUN_081f64e8` as a **percentage against a
+duration**:
+
+```c
+pct = stat_curve(bal_XoffSP, level, bal_X_s_SP, bal_X_w_SP);
+record[+0x10] = (1.0 / (pct*0.01 + 1.0)) * base[+0x10];   /* floor 1.0 */
+```
+
+and formatted for display as `"%s %s %+d%%"`. Dividing a duration by
+`1 + pct/100` shortens it, so the `SP` families are a **speed** modifier, with
+a hard floor of `1.0` and a running minimum tracked at `+0x12`. That reading is
+off the code, not off the name.
+
 ## Open
 
 - **The resolution step is still undecoded.** This section is how a creature's
@@ -162,7 +227,12 @@ from six sites clustered around `FUN_081f5014`, in the same neighbourhood as
   is not read.
 - **The struct offsets are offsets, not names.** Which attribute lives at
   `+0x56`, and which weapon slot at `+0x4a` against `+0x4e`, is not
-  established. `FUN_081f686a` and its 117 keys is where to establish it.
+  established. `FUN_081f686a` turned out to be the level curve rather than the
+  field map, so this is still open; the character-sheet strings that
+  `cUI_StatisticsChar::vf06` prints beside each value are the next lead.
+- **The two- and three-letter family prefixes are unexpanded.** `AK`, `BK`,
+  `FEK`, `FK`, `KK`, `HR`, `BA`, `BL`, `EM`, `FM`, `HM`, `HOM`, `KO`, `LM` name
+  skills and attributes and are not yet matched to their German words.
 - **The kernel is single-source.** Unlike to-hit it has been read only in
   retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
   obvious second arm and have not been checked.
