@@ -20,24 +20,31 @@ also logs each container's version, so `TEX` v3, `MDL` v3, `ISO` v3, `SND` v1,
 `ITM` went v2→v5 and the world containers v4→v5. See
 [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
 
-**The version byte does track the record layout**, checked against the
-prerelease's own `World/` directory rather than against its class table:
+**`OBJ` v1 is frozen, and the debug build names its record.** Checked against
+the prerelease's own `World/` directory:
 
-| file | Armalion 2001-09 | retail | stride |
-|---|---|---|---|
-| `Floor.PAK` | `OBJ` v1, 2,591,136 | `OBJ` v1, 6,713,136 | **28 in both** |
-| `Static.PAK` | `OBJ` v1, 393,765 | `OBJ` v1, 1,038,014 | **76 in both** |
-| `Triggers.PAK` | `TRG` v1, 1,218 | `TRG` v1, 2,268 | **16 in both** |
-| `Sectors.key` | `WLK` **v4**, 1,201 | `WLK` **v5**, 6,050 | 512 → **768** |
+| file | Armalion 2001-09 | retail | payload | flags |
+|---|---|---|---|---|
+| `Floor.PAK` | `OBJ` v1, 2,591,136 | `OBJ` v1, 6,713,136 | **16 B in both** | `0x87` |
+| `Static.PAK` | `OBJ` v1, 393,765 | `OBJ` v1, 1,038,014 | **64 B in both** | `0x86` |
+| `Triggers.PAK` | `TRG` v1, 1,218 | `TRG` v1, 2,268 | 16 B in both | — |
+| `Sectors.key` | `WLK` **v4**, 1,201 | `WLK` **v5**, 6,050 | 512 → **768** | — |
 
-Same version, same stride, three times; bumped version, changed stride, once.
-The world grew from 1,201 sectors to 6,050 without the record layout moving.
+Same version, same payload and same flags byte, three times; the one container
+whose version moved is the one whose record moved. The world grew from 1,201
+sectors to 6,050 and from 2.6M to 6.7M floor records without the layout
+changing, so **the prerelease world data is a second corpus for the retail
+readers** — `pak.py` reads it unmodified.
 
-> **Do not compare an on-disk stride to an in-memory `sizeof`.** The Armalion
-> debug build prints `sObjectStatic` as 64 bytes while its *own* `Static.PAK`
-> record is 76. Those are different objects — the loader builds one from the
-> other — and reading the 64 as a contradiction of the 76 produced a wrong
-> caution here that this table replaces.
+`Static.PAK`'s 64-byte payload is `sObjectStatic`, which the debug build
+prints as 64 bytes. That is the engine's own name for the record.
+
+> **Count the index separately from the payload.** Dividing file size by entry
+> count gives 76 for `static.pak` — 12 bytes of blob index plus the 64-byte
+> record — and 76 matches no class. Read twice here: first as evidence that a
+> frozen version can still change its record, then as evidence that an on-disk
+> stride is not comparable to a `sizeof` at all. Both were the same arithmetic
+> slip, and the payload does equal the `sizeof`.
 
 `Scripts/SCRIPT.PAK` from the Armalion prerelease is this same format under a
 different magic — `ACS` v2, blob layout, read by `pak.py` unmodified. See
