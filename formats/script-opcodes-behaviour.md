@@ -13,6 +13,8 @@ CAVEAT ON `res:`: the same prefix addresses BOTH global.res text slots and objec
 
 TAGS 0x48/0x49/0x4a/0x5d/0x5e/0x6d/0x6e/0x7a WERE FIXED: their handlers (0x0826cb0e, 0x0826de28) store a u32 in the numeric slots and THEN strcpy a string, so they carry BOTH. They had been typed STR, which ate the u32 as the string and parsed the rest of the record from the wrong offset. Records consuming their body exactly went from 95.6% to 99.774% (opcode 40 excluded -- its 80-byte struct is not a tag stream).
 
+AND THE u32 CAN BE A SENTINEL (row 838): when it is NEGATIVE, handler `0x0826cb0e` takes a SECOND NUL-terminated string, resolves it as a `+`-joined variable expression against the symbol vector at `+0x7550`, and writes the result back over the sentinel in the same numeric slot -- so the operand is the variable named in that string, not a number. Both engine tests are mirrored in the parser: sign bit set, and the byte after the first string non-zero. 22 operands corpus-wide, all `0xffffffff`, opcodes 58 and 66 (`AnzahlVerstecke` = `MaxVerstecke_r+Var(RNr)`). Whether `0x7a`'s handler `0x0826de28` shares the path is UNKNOWN -- it has no negative operand in the corpus, so only the handler can say.
+
 | op | n | reading (inferred from the corpus) | tag sig | share | operand namespaces | numbers | prev | next | res median len | longest res text |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | 62591 |  | `01 02 2b 04 20` | 0.1 | <plain>x54574, res:x22178, pos:x9657 | smallx80868, bigx63852, idx34763 | 1, 31, 8 | 1, 122, 8 | 25 | quest / NPC dialogue (110 ch) |
