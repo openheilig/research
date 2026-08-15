@@ -74,6 +74,16 @@ Offsets are absolute and the entries are contiguous. Named payloads begin
 with a NUL-padded filename. Known flags: `0x04` TGA, `0x40` Granny `.GRN`,
 `0x20` raw RIFF/WAVE.
 
+> **`size` is the PAYLOAD, not the entry.** In `texture.pak` an entry is a
+> 32-byte name, then `u16 width; u16 height; u32 format; u32 payload_size`,
+> zeros to `+80`, then the zlib stream — and the index's `size` field is that
+> zlib stream's length alone. `ELVE_SORCERESS_HANDS.TGA` declares **15**, and
+> is a real 16×16 texture the game draws. Anything that treats `size` as the
+> entry length, or gates on it to decide whether a name is there, loses the
+> small entries: 28 of `texture.pak`'s 25535 are under 32 bytes, all of them
+> solid-colour placeholders (`DUMMY*`, `FX_OPAQUE`, and eight `*_HANDS`
+> referenced 13 times from `models.pak`).
+
 **Fixed-record** (three files only). Records tile the file directly with
 `stride = (filesize - 256) / count`; there is no index.
 

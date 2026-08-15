@@ -202,6 +202,31 @@ and 2 name the same image — exactly what the permutation `2,6,1,3,4,5` says.
 Identity is refuted on three of the six here (230 would take head not boots, 350
 boots not body, 385 body not head).
 
+### All eight heroes at once — 44 of 45 batches, no mismatch
+
+The character-select screen draws every playable hero simultaneously, so one
+capture tests the whole rule. Predictions were written out of our reader
+*first* (53 batches over nine models), then matched against the frame:
+
+| model | batches | result |
+|---|---|---|
+| `SERAPHIM` | 6 | all 1.000 |
+| `GLADIATOR` | 6 | all 1.000 |
+| `MAGICIAN` | 6 | all 1.000 |
+| `DARKELVE` | 8 | all 1.000 |
+| `ELVE_SORCERESS` | 7 | 6 at 1.000, one special (below) |
+| `VLADY_D` | 8 | all 1.000 |
+| `dwarf` | 3 | all 1.000 (one material, three groups) |
+| `Daemonia` | 1 | 1.000 |
+| `VLADY_N` | 8 | **not drawn** — negative control |
+
+Each model's batches were located by matching its *whole ordered* triangle-count
+sequence, so a coincidence on one count cannot produce a hit. `VLADY_N` is the
+vampiress's night form: our reader predicts an 8-batch sequence for it and that
+sequence appears **zero** times in the trace, which is what a prediction about a
+model that is not on screen should do. Every other run appears 330 times — once
+per frame.
+
 Retail re-uploads the skin immediately **before each batch** as `GL_BGRA` +
 `GL_UNSIGNED_SHORT_4_4_4_4_REV` — so the pixels are in the trace, and the match
 above is against the actual image, not merely its dimensions. (That upload
@@ -241,6 +266,22 @@ between the shoulder blades), and the leg/kilt panel top-right. The port's
 staged viewer at yaw 270 shows the sternum plate and a face; at yaw 90 the
 X-lacing and the back of the skull with the braid behind it. Front and back
 agree with the atlas, so the mesh is not mirrored.
+
+### The one exception, and it is a bug on our side
+
+`ELVE_SORCERESS`'s 372-triangle hands batch is the only one of the 45 our reader
+could not match, because it resolves the name to **nothing**: `find_model_texture`
+returns -1 for `elve_sorceress_hands.bmp`. Retail binds a real 16×16 texture
+there — a flat skin block, ARGB4444 `0xFDA8` — and never logs a miss.
+
+`ELVE_SORCERESS_HANDS.TGA` *is* in `texture.pak`, entry 7189, with a declared
+size of **15** — the zlib payload length, not the entry length (see
+[pak-containers.md](pak-containers.md)). The port's stem index skips any entry
+whose declared size is under 32 bytes before it ever reads the name, so 28
+entries are invisible to it, 8 of them referenced 13 times from `models.pak`
+(`*_HANDS` placeholders for the wood elf, novice, witch, amazon, Boron priest
+and priestess, elf ghost). Those batches render untextured in the port and
+skin-coloured in retail. One gate short of a one-line fix; recorded here first.
 
 Ten `.tga` path strings live in the entry and only **three** are referenced —
 `Temporary_Gladiator_Mapping/Gladiator_body`, `…/Gladiator_boots` and
