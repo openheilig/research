@@ -233,6 +233,23 @@ off the code, not off the name.
 - **The two- and three-letter family prefixes are unexpanded.** `AK`, `BK`,
   `FEK`, `FK`, `KK`, `HR`, `BA`, `BL`, `EM`, `FM`, `HM`, `HOM`, `KO`, `LM` name
   skills and attributes and are not yet matched to their German words.
+  `BalanceGeschick` shows the table does use full German where it has room, so
+  these are abbreviations of the same vocabulary.
+
+  Half the bridge is built. `FUN_081f64e8` is passed a resource id beside each
+  family -- `HM` 0x24b8, `FM` 0x24c6, `WM` 0x24c7, `EM` 0x24c8, `LM` 0x24c9,
+  `MM` 0x24ca, `KO` 0x24cb, `BA` 0x24d1, `BL` 0x24d3, `ZK` 0x24d4, `HOM`
+  0x24d7 -- and the character sheet's labels do sit together in `global.res` at
+  **slots 1395-1410**: *Hero Name, Damage, Resistance, Weapon, Spell, Combat
+  Arts, Strength, Endurance, Dexterity, Physical Regeneration, Mental
+  Regeneration, Charisma, Skills, Duration, Speed, New Skill* -- and the last
+  of those has a balance key, `NewSkill`, named after it.
+
+  What does not connect is the id. Those `0x24xx` values are neither a
+  `global.res` slot index nor its id field; `FUN_084c3806` resolves them
+  through `FUN_084c2e06` against an in-memory resource **tree**, then
+  `dynamic_cast`s the node to a string resource. Finding what builds that tree
+  is what closes this.
 - **The kernel is single-source.** Unlike to-hit it has been read only in
   retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
   obvious second arm and have not been checked.
