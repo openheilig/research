@@ -17,7 +17,6 @@ strike it here.
 | `mixed.pak`'s heterogeneous payloads are unread; Bink `.bik` and Miles `.mss` are third-party formats we do not decode. | [formats/pak-containers.md](formats/pak-containers.md) |
 | Whether the `0xC8` record type ids share the `items.pak` id space. A probe with a control arm exists; it has not returned a verdict. | [formats/pax-saves.md](formats/pax-saves.md) |
 | 102 script opcodes have no verified meaning beyond what their string payloads suggest, and 66 zero-width tags are presumably operators whose identity sits in handlers already located. | [formats/script-bytecode.md](formats/script-bytecode.md) |
-| Handler `0x0826de28` (tag `0x7a`) is unread: it may or may not carry the negative-sentinel second string its sibling does, and no record in the corpus can decide it. | [formats/script-bytecode.md](formats/script-bytecode.md) |
 
 Nothing is open on `.pak` framing, the world cell record, or the `balance.bin`
 layout and key names.
@@ -26,9 +25,10 @@ layout and key names.
 
 | Question | Where it lives |
 |---|---|
-| Damage, resistances, criticals and every other combat resolution step are undecoded. One formula is recovered. | [engine/combat-formulas.md](engine/combat-formulas.md) |
+| The combat RESOLUTION step is undecoded: how damage meets resistance, criticals, and what the weapon-slot flag selects. To-hit and the derived-stat kernel that builds the damage and resistance numbers are recovered. | [engine/combat-formulas.md](engine/combat-formulas.md) |
 | No recovered name has been confirmed by behaviour: cross-source agreement covers 34 of 131, the behavioural arm covers none. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
 | 11,303 of 13,716 callables in the retail binary have no identity, and the vtable route that produced the other 2,413 is saturated. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
+| Which creature-struct offset is which named attribute: `+0x56` feeds every damage channel, `+0x4a` and `+0x4e` are two weapon slots. `FUN_081f686a` and its 117 balance keys is where to settle it. | [engine/combat-formulas.md](engine/combat-formulas.md) |
 | The Granny converter cannot be driven past a null dereference on any real Sacred `.GRN`. Reopening means a different converter build, not a different way of calling this one. | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) |
 
 ## Deliberately not open

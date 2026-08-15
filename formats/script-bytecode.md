@@ -75,14 +75,31 @@ Three rules complete it, and each cost several failed attempts:
 `builds/armalion-script-api.tsv` holds the script API surface extracted from
 the Armalion debug build — a second, independent view of the same interpreter.
 
+## The `res:` tag
+
+`0x7a` is NUMSTR like its seven siblings -- `u32` then NUL-string, advance
+`len+6`, arithmetic identical -- but its handler `0x0826de28` is a *separate*
+case and its tail is a different thing. Where the siblings test the stored
+`u32` for a negative sentinel and take a second string, `0x7a` does not branch
+on the `u32` at all. It `strncasecmp`s the string it just wrote against
+`"res:"` (`0x086f3d65`, 4 chars) and, on a match, copies the remainder and
+`strtol`s it base 10. **`0x7a` is where a `res:N` operand becomes a resource
+id**, and the resolution happens in the tag handler, not in the opcode.
+
+The corpus cannot see this: **0 of 2053** `0x7a` operands carry a negative
+`u32`, against the siblings' 22. Both readings consume identical bytes on every
+shipped record, so the distinction is read off the interpreter. Applying it
+changes no parse today and is still the rule the engine implements.
+
+Read twice, in two builds: `sacred_orig` at `0x0826de28` and
+`sacred-1.0.02-final` at `0x0826cf35`, whose `.rodata` sits `0x6ca0` lower. The
+two disassemble instruction-for-instruction alike.
+
 ## Open
 
 The FORMAT is closed; the SEMANTICS are not. 102 opcodes have no verified
 meaning beyond what their string payloads suggest, and the 66 zero-width tags
-are presumably operators whose identity sits in handlers already located. One
-handler is unread by name: `0x0826de28`, serving tag `0x7a`, may or may not
-carry the negative-sentinel second string that its sibling does -- no record
-in the corpus can decide it.
+are presumably operators whose identity sits in handlers already located.
 
 ---
 Provenance: `tools/formats/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module

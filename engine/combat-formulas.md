@@ -1,12 +1,14 @@
 # Combat formulas
 
 **Status:** Partial
-**Purpose:** One combat formula recovered end to end, as the worked example of what the
-method yields. The rest of the combat system is not decoded.
+**Purpose:** The combat arithmetic recovered so far: to-hit end to end, and the
+derived-stat kernel that feeds damage and resistance. The resolution step that
+consumes them is not decoded.
 
-One formula is recovered end to end and independently confirmed in two
-binaries. It is offered as the worked example of what the method yields, not
-as a complete combat model — the rest of the system is not decoded.
+Two things are recovered. **To-hit** is complete and confirmed in two binaries.
+The **derived-stat pass** -- how a creature's damage and resistance numbers are
+built from its attributes and the balance table -- is read off retail Linux and
+is confirmed only there.
 
 ## To-hit
 
@@ -79,14 +81,98 @@ real negative. Scans must be chunked until *every* chunk reports
 `truncated: false` — otherwise the negative is worthless. See
 [../method/discipline.md](../method/discipline.md).
 
+## Where the tunables actually land
+
+That elimination said retail reads its tunables from a named table. This is
+where they land. `FUN_0812d25c` in `sacred_orig` is the Linux
+`balancing_parseKeys`, and each key is parsed by one flat, repeating shape:
+
+```
+PUSH  "BalanceDmg"            ; the key
+CALL  FUN_0812804c            ; locate it in the loaded text
+CALL  strrchr(tok, '=')       ; step past the '='
+CALL  __strtod_internal
+FSTP  float ptr [0x08b8d2a0]  ; <- the destination global
+```
+
+so a key's name and its runtime address fall out together. 348 of them are
+tabulated in
+[../formats/generated/balance-globals.tsv](../formats/generated/balance-globals.tsv),
+with the functions that read each one.
+
+**Every key sits at `global = 0x08b8d29c + its balance.bin file offset`, 343 of
+343 with no exception.** Those two numbers were recovered from *different
+binaries by different means* -- the offsets from `Sacred.exe` by
+`tools/binary/balance_keymap.py`, the globals from the Linux parser's
+disassembly -- and neither knew about the other. `balance.bin` is loaded
+verbatim as one struct at `0x08b8d29c`, and reading a balance field at runtime
+is a single absolute load.
+
+That is what makes the rest of this section reachable: name a tunable, get its
+address, and the functions that read it are the formulas that use it.
+
+## The derived-stat kernel
+
+Every attribute-to-combat-number conversion in `FUN_0820ef48` goes through one
+expression. Written as it decompiles, with `0.0064102565` being `1/156`:
+
+```
+K(S) = (156 - BalStatOff)*S/156 + BalStatOff + 9
+```
+
+A straight line in the attribute `S`, pinned so that `K(0) = BalStatOff + 9`
+and `K(156) = 165` whatever `BalStatOff` is. Retail ships `BalStatOff = 20`,
+making it `K(S) = 0.8718*S + 29`.
+
+Damage accumulates per channel, each channel dividing by its own tunable:
+
+```
+damage_channel += ( K(attr) * weapon_term * 0.1 + flat_term ) / BalChar<C>D
+```
+
+Retail ships `BalCharPD = 220`, `BalCharMD = 220`, `BalCharFD = 440`,
+`BalCharGD = 440`. The doubled divisors go with doubled numerators -- the `FD`
+and `GD` channels sum *two* weapon terms and count their flat terms twice -- so
+those two are a mean of both contributions rather than a halving.
+
+Resistances accumulate the same way, without the kernel:
+
+```
+res_ph += (a + b) / BalanceResPh      ; 22.0 in retail
+res_fe += c       / BalanceResFe      ; 17.0
+res_ma += d       / BalanceResMa      ; 17.0
+res_gi += (a + e) / BalanceResGi      ; 25.0
+```
+
+The `Ph/Fe/Ma/Gi` suffixes are the German *physisch / Feuer / Magie / Gift*, so
+the four channels are physical, fire, magic and poison. That is read off the
+key names, not assigned.
+
+`FUN_0820ef48` accumulates into eight damage floats at `+0xa6 ... +0xc2` of its
+first argument and four resistance floats at `+0x66 ... +0x72`, and is called
+from six sites clustered around `FUN_081f5014`, in the same neighbourhood as
+`FUN_081f686a`, which reads 117 balance keys and is the creature stat builder.
+
 ## Open
 
-One formula of a combat system. Damage, resistances, criticals, and every
-other resolution step are undecoded -- this document is the worked example of
-the method, not a model of combat.
+- **The resolution step is still undecoded.** This section is how a creature's
+  damage and resistance *numbers* are built. What consumes them at the moment
+  of a hit -- how damage is reduced by resistance, criticals, and the
+  `param_3` flag that selects between the `+0x4a` and `+0x4e` weapon terms --
+  is not read.
+- **The struct offsets are offsets, not names.** Which attribute lives at
+  `+0x56`, and which weapon slot at `+0x4a` against `+0x4e`, is not
+  established. `FUN_081f686a` and its 117 keys is where to establish it.
+- **The kernel is single-source.** Unlike to-hit it has been read only in
+  retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
+  obvious second arm and have not been checked.
+- 28 of the 348 balance keys are parsed and then read by nothing.
 
 ---
-Provenance: recovered by decompilation in this project's private analysis
-workspace and confirmed in a second binary. See
+Provenance: to-hit recovered by decompilation in this project's private
+analysis workspace and confirmed in a second binary. The key-to-global map and
+the derived-stat kernel from `sacred_orig` via `tools/binary/ghidra/`,
+cross-checked against `balance_keymap.py`'s independently recovered file
+offsets. See
 [../method/naming-oracle.md](../method/naming-oracle.md) for the technique.
 
