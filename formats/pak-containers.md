@@ -31,7 +31,11 @@ the prerelease's own `World/` directory:
 | `Sectors.key` | `WLK` **v4**, 1,201 | `WLK` **v5**, 6,050 | 512 → **768** | — |
 
 Same version, same payload and same flags byte, three times; the one container
-whose version moved is the one whose record moved. The world grew from 1,201
+whose version moved is the one whose record moved. **The version byte covers
+the record's size and field offsets, not the bit packing inside a field** —
+`floor.pak` is `OBJ` v1 in both builds and its `+0x04` word is split 16/16 in
+the prerelease and 17/15 in retail, because the tile table outgrew 16 bits.
+See [world-sectors.md](world-sectors.md). The world grew from 1,201
 sectors to 6,050 and from 2.6M to 6.7M floor records without the layout
 changing, so **the prerelease world data is a second corpus for the retail
 readers** — `pak.py` reads it unmodified.

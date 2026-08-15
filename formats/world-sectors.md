@@ -84,14 +84,58 @@ framebuffer    GL_BLEND, glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 So colour is the art tile modulated by the per-corner light, and alpha comes
 from the mask tile's texels.
 
-The 17/15 boundary is **proven, and was not until 2026-08-15**. The gate used
-to assert only that the top field resolves to a valid tile whose orientation
-equals its index mod 18 — and neither can fail, because that identity holds
-for **all 90,132** tiles.pak indices and a doubled small id stays inside the
-count. Reading the field from bit 16 instead of 17 passed. What settles it is
-that the two fields must partition the word with no shared bit: only 17/15
-reconstructs the original u32, and `floor_check` now asserts that. Drawing this layer is what moved the port's
-load-path invariant from 28,672 quads to 35,340.
+The 17/15 boundary is right for retail. **The argument previously recorded for
+it was not.** The gate first asserted only that the top field resolves to a
+valid tile whose orientation equals its index mod 18 — neither can fail,
+because that identity holds for all 90,132 tiles.pak indices and a doubled
+small id stays inside the count. Reading from bit 16 passed. The replacement
+argument — that the two fields must partition the word with no shared bit, so
+"only 17/15 reconstructs the original u32" — is **a tautology**:
+`(v & mask) | ((v >> s) << s) == v` for every `s`, measured 6872 of 6872 at
+splits 13, 16, 17, 18 and 20 alike. The companion `over16` test is circular in
+the same way: it counts values of the *17-bit read* that exceed 65535, which
+is just "bit 16 is sometimes set" and is equally consistent with bit 16
+belonging to the mask.
+
+What actually settles it is **which read fills the tile table**:
+
+| read | max art index | leaves unused |
+|---|---|---|
+| **17 bits** | **90,131** = exactly the last tile | nothing |
+| 16 bits | 65,420 — its own ceiling is 65,536 | tiles 65,421–90,131, 27% of the table |
+
+A field that runs to the final entry of its index space and stops is that
+index. `floor_check` now asserts the fill ratio, and that is the assertion
+that fires when the split is set to 16 — the other three do not.
+
+**The split is build-dependent.** The Armalion prerelease's `tiles.pak` holds
+13,402 tiles, and there the 17-bit read reaches 67,071 — impossible — while
+the 16-bit read tops out at 13,400. So Armalion packs **16/16** and retail
+packs **17/15**: the art field widened by a bit, taken from the mask, when the
+tile table outgrew 16 bits. Both files are `OBJ` v1 with the same 16-byte
+record, so **the version byte covers the record's size and field offsets, not
+the bit packing inside a field.**
+
+Drawing this layer is what moved the port's load-path invariant from 28,672
+quads to 35,340.
+
+## The prerelease is not a second corpus for this record
+
+`OBJ v1` is frozen, so the Armalion `Floor.PAK` and `Static.PAK` records are
+directly comparable (above). The **sector data is not**. `Sectors.key` is
+`WLK` **v4** with a 512-byte directory record against retail's 768, and its
+cell layout differs: the tile id sits at `+0x04`, not `+0x00`, with a flag
+word at `+0x00`. That is exactly what the version bump predicts.
+
+For anyone who does want to read it: 1,201 sectors, the block offset is the
+`u32` at directory-record `+92`, blocks are 131,360 bytes = a 288-byte prefix
+followed by 4,096 × 32-byte cells, and the cells are stored **uncompressed** —
+retail's zlib came later.
+
+> Two hazards. The prerelease is a debug build and leaked **uninitialised heap
+> into its shipped data**: 4,211 of 4.92M cells contain `0xcdcdcdcd`, MSVC's
+> debug fill. Anything measured against this corpus has to exclude them or it
+> will report nonsense — an unfiltered pass gave a "tile id" of 543,162,368.
 
 ## Walkability
 
