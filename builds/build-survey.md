@@ -1,5 +1,9 @@
 # The build survey — which binary to ask which question
 
+**Status:** Solved
+**Purpose:** Which of the seven Sacred builds to open for a given question, and what
+does and does not transfer between them.
+
 Seven builds of Sacred were surveyed with the same battery. They are not
 interchangeable: each lost or kept different things, and picking the wrong
 one costs days.
@@ -47,6 +51,11 @@ hardcoded to-hit clamp (absent from retail), the Excel balance exporter
 - `armalion-script-api.tsv` — script API surface extracted from the Armalion
   debug build.
 - `gold-linux-resource-comparison.tsv` — resource deltas between builds.
+
+## Open
+
+Nothing open. The survey answers which binary to open; it makes no claim
+about any finding recovered from one.
 
 ---
 Provenance: seven IDA sessions run in this project's private analysis

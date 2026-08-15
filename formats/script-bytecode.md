@@ -1,8 +1,12 @@
 # Script bytecode — `StartCode.bin` / `FunkCode.bin`
 
-**Status: parsed from the interpreter, not fitted to the data.** Reader:
-`tools/formats/startcode.py`. Opcode tables: [script-opcodes.md](script-opcodes.md)
-(static) and [script-opcodes-behaviour.md](script-opcodes-behaviour.md)
+**Status:** Read
+**Purpose:** The record framing and argument encoding of the script bytecode,
+taken from the interpreter rather than fitted to the data.
+
+Reader:
+`tools/formats/startcode.py`. Opcode tables: [script-opcodes.md](generated/script-opcodes.md)
+(static) and [script-opcodes-behaviour.md](generated/script-opcodes-behaviour.md)
 (behavioural).
 
 Files live at `bin/TYPE_NPC_*/{Start,Funk}Code.bin`.
@@ -70,6 +74,15 @@ Three rules complete it, and each cost several failed attempts:
 
 `builds/armalion-script-api.tsv` holds the script API surface extracted from
 the Armalion debug build — a second, independent view of the same interpreter.
+
+## Open
+
+The FORMAT is closed; the SEMANTICS are not. 102 opcodes have no verified
+meaning beyond what their string payloads suggest, and the 66 zero-width tags
+are presumably operators whose identity sits in handlers already located. One
+handler is unread by name: `0x0826de28`, serving tag `0x7a`, may or may not
+carry the negative-sentinel second string that its sibling does -- no record
+in the corpus can decide it.
 
 ---
 Provenance: `tools/formats/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module

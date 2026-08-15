@@ -8,21 +8,24 @@ in this repository — no extracted assets, no decompiler output, no symbol
 tables, no memory dumps. Those stay in a private workspace by design, and the
 `.gitignore` is an allowlist so they cannot arrive by accident.
 
-## Start here
+## Start here — and what state each answer is in
 
-| I want… | Read |
-|---|---|
-| to read a `.pak` | [formats/pak-containers.md](formats/pak-containers.md) |
-| to load the world | [formats/world-sectors.md](formats/world-sectors.md) |
-| models, skeletons, animation | [formats/granny-grn.md](formats/granny-grn.md) |
-| hero saves | [formats/pax-saves.md](formats/pax-saves.md) |
-| script bytecode and opcodes | [formats/script-bytecode.md](formats/script-bytecode.md) |
-| the rules and tunables | [formats/balance-bin.md](formats/balance-bin.md) |
-| how combat resolves | [engine/combat-formulas.md](engine/combat-formulas.md) |
-| what the Linux port is built on | [engine/tech-stack.md](engine/tech-stack.md) |
-| which binary to open | [builds/build-survey.md](builds/build-survey.md) |
-| how to name a function | [method/naming-oracle.md](method/naming-oracle.md) |
-| **how not to fool yourself** | [method/discipline.md](method/discipline.md) |
+| I want… | Read | Status |
+|---|---|---|
+| to read a `.pak` | [formats/pak-containers.md](formats/pak-containers.md) | Solved |
+| to load the world | [formats/world-sectors.md](formats/world-sectors.md) | Solved |
+| models, skeletons, animation | [formats/granny-grn.md](formats/granny-grn.md) | Read |
+| hero saves | [formats/pax-saves.md](formats/pax-saves.md) | Read |
+| script bytecode and opcodes | [formats/script-bytecode.md](formats/script-bytecode.md) | Read |
+| the rules and tunables | [formats/balance-bin.md](formats/balance-bin.md) | Read |
+| how combat resolves | [engine/combat-formulas.md](engine/combat-formulas.md) | Partial |
+| what the Linux port is built on | [engine/tech-stack.md](engine/tech-stack.md) | Solved |
+| whether RAD's own runtime can check our `.GRN` decode | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) | Blocked |
+| which binary to open | [builds/build-survey.md](builds/build-survey.md) | Solved |
+| how to name a function | [method/naming-oracle.md](method/naming-oracle.md) | Standing |
+| which instrument to reach for | [method/instruments.md](method/instruments.md) | Standing |
+| **how not to fool yourself** | [method/discipline.md](method/discipline.md) | Standing |
+| everything still unanswered | [open-questions.md](open-questions.md) | — |
 
 Read `method/discipline.md` before doing any measurement. Every rule in it
 was learned by getting it wrong first.
@@ -30,12 +33,48 @@ was learned by getting it wrong first.
 ## Layout
 
 ```
-formats/    one document per file format, with the generated tables beside it
-engine/     engine behaviour: tech stack, recovered formulas
-builds/     which of the seven Sacred builds answers which question
-method/     the techniques, and the mistakes that shaped them
-log/        the append-only findings log
+formats/            one document per file format
+formats/generated/  machine-written tables -- regenerate, never edit
+engine/             engine behaviour: tech stack, recovered formulas, oracles
+builds/             which of the seven Sacred builds answers which question
+method/             the techniques, and the mistakes that shaped them
+log/                the append-only findings log
+open-questions.md   every open item from every document, in one list
 ```
+
+## The shape of a document
+
+Every document in this repository, and every `README` in
+[tools](../tools), opens and closes the same way, so its state is readable
+without reading its body:
+
+```markdown
+# <subject>
+
+**Status:** <one word from the table below>
+**Purpose:** one sentence — the question this answers.
+
+…body…
+
+## Open        ← what is still unanswered, or the words "Nothing open"
+
+---
+Provenance: the decoders, tools and log rows this rests on.
+```
+
+| Status | Means |
+|---|---|
+| **Solved** | Two independent decoders agree. Nothing open. |
+| **Read** | The engine uses it in production; some fields remain unexplained. |
+| **Partial** | The core is understood; the gaps are named under `## Open`. |
+| **Blocked** | A stated obstacle, and what would remove it. |
+| **Open** | Not started. |
+| **Standing** | Not a result — a rule or a technique that stays true. `method/` only, and exempt from `## Open`. |
+| **Generated** | Machine-written. Regenerate it; do not edit it. |
+
+`## Open` is mandatory for every document that reports a result. A document
+with neither an open item nor the words "Nothing open" is unfinished, and that
+is a checkable claim rather than a matter of taste.
 
 ## The findings log
 

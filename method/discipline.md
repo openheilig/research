@@ -1,5 +1,8 @@
 # Research discipline
 
+**Status:** Standing
+**Purpose:** The rules that keep a measurement honest. Read before measuring anything.
+
 Every rule here was learned by getting it wrong first. They are cheap to read
 and expensive to rediscover.
 

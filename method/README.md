@@ -1,5 +1,7 @@
 # method — how the work is done, and how it goes wrong
 
+**Purpose:** How the work is done, and the ways it has gone wrong.
+
 Three documents. All are short, and the first two are worth more than any
 single finding in this repository.
 

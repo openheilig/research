@@ -1,8 +1,11 @@
 # Granny 1.x `.GRN` — models, skeletons, animation
 
-**Status: read end to end.** 3413 of 3421 animation clips decode; meshes,
-skeletons and per-bone transform tracks all resolve, and skeletal animation
-retargets across characters in the engine.
+**Status:** Read
+**Purpose:** How a `.GRN` is laid out -- meshes, skeletons, per-bone animation
+-- and which parts of it the engine consumes.
+
+3413 of 3421 animation clips decode; meshes, skeletons and per-bone transform
+tracks all resolve, and skeletal animation retargets across characters.
 
 The entries live inside `models.pak` (4993 of them). Two independent walkers
 exist and agree — `tools/formats/grn_tagwalk.py` in Python and the reader in
@@ -108,6 +111,13 @@ they are distinct node types.
 `tools/granny_oracle/` calls the **retail Granny 2.x runtime** directly to
 check our decode against the vendor's own. That is the oracle; agreement
 between our two readers is the gate (`tools/parity/grn_parity.sh`).
+
+## Open
+
+Eight of the 3421 animation clips do not decode. Separately, one mesh
+disagrees on vertex count with an outside reading (279 against 280); the
+attempt to settle it against RAD's own runtime is blocked, see
+[../engine/granny-runtime-oracle.md](../engine/granny-runtime-oracle.md).
 
 ---
 Provenance: `tools/formats/grn_tagwalk.py`, `grn_motion.py`, `grn_bonenames.py` module

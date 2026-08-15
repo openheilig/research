@@ -1,5 +1,8 @@
 # Instruments — what to reach for, and what each one cost to learn
 
+**Status:** Standing
+**Purpose:** Which instrument to reach for, and the trap each one sets.
+
 Techniques that repaid the time spent building them. The rule that decides
 when their output counts is in [discipline.md](discipline.md); this document
 is only about the tools themselves.
@@ -56,3 +59,8 @@ spatial structure; a picture of the same data does not.
   heuristic into a mechanism.
 - [discipline.md](discipline.md) — read before quoting any number these
   instruments produce.
+
+---
+Provenance: each entry is a technique this project ran and paid for; the
+findings log rows for the roof-cutaway capture, the `+0x18` reader hunt, and
+the `+0x1e`/`+0x1f` overlays carry the specific measurements.

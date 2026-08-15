@@ -1,7 +1,11 @@
 # World — `sectors.keyx` / `sectors.wldx`
 
-**Status: read and streaming, and the cell record is fully decoded.** The
-engine loads the grid straight out of the retail install at runtime.
+**Status:** Solved
+**Purpose:** How the world grid is stored and what every byte of a cell record
+means.
+
+The engine loads the grid straight out of the retail install at runtime, and
+the 32-byte cell record is fully accounted for.
 
 ## Geometry
 
@@ -103,6 +107,12 @@ Building construction — how pieces are placed and linked, and how the
 interior/exterior swap works — is deliberately **not** documented here. Its
 settled half is entangled with render-architecture decisions about the port,
 which are choices rather than facts about the format.
+
+## Open
+
+Nothing open on the cell record: all 32 bytes are accounted for. Building
+construction and the interior/exterior swap are a separate matter and are
+deliberately not documented here; the reason is under Related, above.
 
 ---
 Provenance: `tools/parity/verify_ref.py` and `engine/world/walkable.gd`, which are the

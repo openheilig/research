@@ -1,8 +1,10 @@
 # `balance.bin` — the rules dataset
 
-**Status: layout determined, keys named.** This is the most
-reimplementation-relevant result in the project: **the rules layer no longer
-needs decompiling, it needs reading.**
+**Status:** Read
+**Purpose:** The layout of the rules dataset and the names of its keys.
+
+The most reimplementation-relevant result in the project: **the rules layer no
+longer needs decompiling, it needs reading.**
 
 `install/bin/balance.bin`, 24,328 bytes, md5 `15ab686284b1ec1c386beb4ac42af5ff`.
 
@@ -30,8 +32,8 @@ using ~50 hardcoded absolute offsets, "compatible from Sacred 1.0 to
 
 Contiguous in the executable at VA `0x95b790`–`0x95ca78`, parsed by
 `balancing_parseKeys`. **380 unique keys**, German-named. **361 of the 379
-fields are now named** — see [balance-keymap.tsv](balance-keymap.tsv) and
-[balance-keymap.json](balance-keymap.json).
+fields are now named** — see [balance-keymap.tsv](generated/balance-keymap.tsv) and
+[balance-keymap.json](generated/balance-keymap.json).
 
 The two that unlock combat: **`AW` = *Angriffswert*** (attack rating) and
 **`VW` = *Verteidigungswert*** (defence rating). Those are exactly the to-hit
@@ -69,6 +71,12 @@ independent route to the dataset with no decompilation involved.
 
 The Linux port does **not** carry it — `sacred.xls`, `defaults.h`,
 `BALANCING:` and `CTRL+K` are all absent. The facility is Windows-only.
+
+## Open
+
+Nothing open on the layout or the key names. What the individual tunables
+*do* to the simulation is a separate question and is not answered here --
+the engine has to consume them before that can be checked against play.
 
 ---
 Provenance: `tools/binary/balance_keymap.py`; findings log rows 191-195; the key table

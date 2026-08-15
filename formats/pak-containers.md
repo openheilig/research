@@ -1,7 +1,11 @@
 # `.pak` containers
 
-**Status: solved.** Both shapes read, `--list` and `--extract` work,
-`--self-check` passes. Reader: `tools/formats/pak.py`.
+**Status:** Solved
+**Purpose:** The two `.pak` layouts, and which files are and are not this
+format.
+
+Both shapes read, `--list` and `--extract` work, `--self-check` passes.
+Reader: `tools/formats/pak.py`.
 
 The 256-byte header was derived independently here, then found to agree
 verbatim with Resacred's `rs_file.h:91-109` and the Delphi `PakExtractor`
@@ -68,7 +72,7 @@ container that happens to share the extension. Reader: `tools/formats/parse_trg.
 That raised the obvious follow-up, audited separately: which other files can
 the community toolchain misread the same way.
 
-## Still unread
+## Open
 
 `mixed.pak`'s heterogeneous payloads, Bink `.bik` (ffmpeg decodes it), Miles
 `.mss`.

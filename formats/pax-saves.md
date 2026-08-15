@@ -1,6 +1,10 @@
 # `.pax` hero saves
 
-**Status: decoded.** Section framing and the character stream both read;
+**Status:** Read
+**Purpose:** How a hero save is framed, and where the character's own numbers
+live inside it.
+
+Section framing and the character stream both read;
 `tools/parity/pax_diff.py` censuses a section type across the eight-hero corpus, and
 `engine/checks/pax_check.gd` gates every section inflating to exactly its declared
 size.

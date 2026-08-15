@@ -1,5 +1,7 @@
 # builds — which binary answers which question
 
+**Purpose:** Which of the seven Sacred builds to open for a given question.
+
 Seven builds of Sacred were surveyed with the same battery. They are not
 interchangeable: each lost or kept different things, and picking the wrong one
 costs days.

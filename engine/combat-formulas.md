@@ -1,5 +1,9 @@
 # Combat formulas
 
+**Status:** Partial
+**Purpose:** One combat formula recovered end to end, as the worked example of what the
+method yields. The rest of the combat system is not decoded.
+
 One formula is recovered end to end and independently confirmed in two
 binaries. It is offered as the worked example of what the method yields, not
 as a complete combat model — the rest of the system is not decoded.
@@ -74,6 +78,12 @@ DAMAGE**, 8 = heal, 10 = move/teleport, with `0x101` a special case and
 real negative. Scans must be chunked until *every* chunk reports
 `truncated: false` — otherwise the negative is worthless. See
 [../method/discipline.md](../method/discipline.md).
+
+## Open
+
+One formula of a combat system. Damage, resistances, criticals, and every
+other resolution step are undecoded -- this document is the worked example of
+the method, not a model of combat.
 
 ---
 Provenance: recovered by decompilation in this project's private analysis

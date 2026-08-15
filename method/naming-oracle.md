@@ -1,5 +1,8 @@
 # The naming oracle
 
+**Status:** Standing
+**Purpose:** How function naming became a mechanism instead of a heuristic.
+
 The single technique that changed the economics of this project. It turns
 function naming from a heuristic into a mechanism.
 

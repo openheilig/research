@@ -1,6 +1,9 @@
 # log — the findings log
 
-`autoresearch-results.tsv`, 830 rows, append-only. One row per investigated
+**Purpose:** The append-only findings log: what was asked, what was measured, what the
+verdict was.
+
+`autoresearch-results.tsv`, 800+ rows, append-only. One row per investigated
 question: what was asked, what was measured, what the verdict was — including
 the refutations, which are kept deliberately.
 
@@ -8,20 +11,33 @@ the refutations, which are kept deliberately.
 settled, or already dead. The log stands in for the git history of an analysis
 workspace that is not published.
 
+## Writing a row
+
+A new row is **exactly four tab-separated fields**:
+
+```
+id    YYYY-MM-DD    kebab-case-slug    the finding, one paragraph
+```
+
+The slug names the *result*, not the topic — `startcode-placement-closed-tag-04-is-the-position`,
+not `startcode`. The verdict lives in the slug and in the text's opening
+clause. Append programmatically and assert the field count before writing: a
+stray tab reshapes the row silently, and every later `awk -F'\t'` reads it
+wrong.
+
 ## Reading it
 
-The header names the six columns of the original schema
-(`iteration, binary, metric, runs, status, description`). The convention
-drifted as the work changed shape, and rows are not all the same width — 450
-rows have six fields, 291 have four, the rest scatter between three and ten.
-The later and commonest shape is:
-
-```
-id    date-or-verdict    subject    finding    method    artefacts
-```
+The header names the six columns of the *original* schema
+(`iteration, binary, metric, runs, status, description`), and field 2 used to
+hold a status word rather than a date. Both conventions drifted as the work
+changed shape, so rows are not all the same width or the same schema — roughly
+450 rows have six fields, 290 have four, the rest scatter between three and
+ten; the date form took over around row 600 and is now essentially universal.
 
 Read the row, not the header. A row is a record of one measurement, written
-when it was made.
+when it was made. **Nothing here is rewritten to match a later convention** —
+repairing the file that substitutes for history is worse than the
+inconsistency.
 
 ## What is in the artefacts column
 

@@ -1,5 +1,9 @@
 # The Linux port's tech stack
 
+**Status:** Solved
+**Purpose:** What the Linux port is actually built on, measured from the binary rather
+than from documentation.
+
 Measured from the binary, not from documentation.
 
 `install/sacred` is a stripped 32-bit i386 ELF with **615 dynamic imports**.
@@ -56,6 +60,11 @@ Linux binary, script interpreter: opcode jump table `0x086f4298`, dispatcher
 
 `global.res` is an `ID → {ger, eng, rus}` table, XOR-obfuscated per-WORD with
 key `0x45AD`. Loader at VA `0x0080DBF0`.
+
+## Open
+
+Nothing open that this document set out to answer. It is a survey of what the
+binary links and where a few known tables live, not a map of the engine.
 
 ---
 Provenance: measured from `install/sacred` with `tools/binary/vtables.py` and
