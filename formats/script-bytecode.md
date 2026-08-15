@@ -109,9 +109,29 @@ two disassemble instruction-for-instruction alike.
 
 ## Open
 
-The FORMAT is closed; the SEMANTICS are not. 102 opcodes have no verified
+The FORMAT is closed; the SEMANTICS are not. **96** opcodes have no verified
 meaning beyond what their string payloads suggest, and the 66 zero-width tags
 are presumably operators whose identity sits in handlers already located.
+
+Six were named this round from strings reachable *within two calls* of the
+handler rather than inside it — 17 award experience, 20 quest-in-sector
+trigger, 25 `CreateDynamicQuest`, 120 play movie, 121 `AUTOSAVE`, 126 NPC
+refusal speech — each requiring that the string be reachable from exactly one
+opcode **and** that `opsem.py`'s behavioural profile agree. They are marked
+`[reached]` in the generated table to keep them distinguishable from the 34
+named by a handler's own strings.
+
+That two-filter rule is what makes the tier usable. Opcode 79 uniquely reaches
+`cCreature::equipment_reset() EquipmentRef unknown?!` and would have been
+named "reset equipment" on the strings alone — but its operands are
+`(res:TEXT, small id)` carrying quest prose, so the string belongs to
+something deeper. It is left unnamed.
+
+The remaining lever for the rest is the decompiler, which has not been pointed
+at these handlers. Harvesting *named callees* instead of strings does not work
+here: the handlers reach C++ objects almost entirely through vtable dispatch,
+so 115 of 141 reach no named function at all and the 26 that do nearly all
+reach the same shared pair.
 
 ---
 Provenance: `tools/formats/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module

@@ -58,6 +58,37 @@ callee.** Mechanical, but skip it and every callee looks like a 5-byte stub.
 This gotcha is build-specific: the USA demo build has no thunk table, so it
 does not apply there.
 
+## The mechanism has more reach than 108
+
+`^c[A-Z]\w*::\w+\(` was the pattern. Relaxing it to any
+`identifier::identifier(` finds **275** distinct names, because the engine
+also asserts from classes that break the `c`-prefix convention (`dxDriver7`,
+`sState`, `BcCreatureQueue`, `granny_transform_state`) and from destructors.
+
+`tools/binary/armasource.py` binds **259** of them to the source file they sit
+in, by walking the string table in file-offset order — a translation unit's
+literals are emitted together, so the nearest preceding
+`armaSource\…\*.cpp` path names the file. That turns the oracle from a list
+of function names into a **module map**: 76 files, 80 classes, 25 of which are
+still in retail's RTTI. See
+[../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
+
+## The same rule works on opcodes
+
+The mechanism generalises past function naming. A string names a *script
+opcode* under the same uniqueness condition — reachable from exactly one
+handler — with one addition, because opcode handlers are reached through a
+jump table rather than by name and the string may live in a callee:
+
+> **The behavioural profile must agree.** Opcode 79 uniquely reaches
+> `cCreature::equipment_reset() EquipmentRef unknown?!`, which reads as a
+> name. Its operands are `(res:TEXT, small id)` carrying quest prose. The
+> string is a deeper callee's and 79 stays unnamed.
+
+Six opcodes were named this way and marked `[reached]` to keep them separate
+from those named by a handler's own strings. See
+[../formats/script-bytecode.md](../formats/script-bytecode.md).
+
 ## Worked result
 
 [../engine/combat-formulas.md](../engine/combat-formulas.md) is the to-hit
