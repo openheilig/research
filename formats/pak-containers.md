@@ -20,11 +20,24 @@ also logs each container's version, so `TEX` v3, `MDL` v3, `ISO` v3, `SND` v1,
 `ITM` went v2→v5 and the world containers v4→v5. See
 [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
 
-> **Version equality does not imply record equality.** `static.pak` is `OBJ`
-> v1 in both builds and its stride is 76 bytes, against Armalion's
-> `sObjectStatic` of 64. The version byte covers the container, not the
-> payload. (`cTrigger` at 16 bytes against `triggers.pak`'s 16-byte stride at
-> `TRG` v1 in both is the one case that does line up.)
+**The version byte does track the record layout**, checked against the
+prerelease's own `World/` directory rather than against its class table:
+
+| file | Armalion 2001-09 | retail | stride |
+|---|---|---|---|
+| `Floor.PAK` | `OBJ` v1, 2,591,136 | `OBJ` v1, 6,713,136 | **28 in both** |
+| `Static.PAK` | `OBJ` v1, 393,765 | `OBJ` v1, 1,038,014 | **76 in both** |
+| `Triggers.PAK` | `TRG` v1, 1,218 | `TRG` v1, 2,268 | **16 in both** |
+| `Sectors.key` | `WLK` **v4**, 1,201 | `WLK` **v5**, 6,050 | 512 → **768** |
+
+Same version, same stride, three times; bumped version, changed stride, once.
+The world grew from 1,201 sectors to 6,050 without the record layout moving.
+
+> **Do not compare an on-disk stride to an in-memory `sizeof`.** The Armalion
+> debug build prints `sObjectStatic` as 64 bytes while its *own* `Static.PAK`
+> record is 76. Those are different objects — the loader builds one from the
+> other — and reading the 64 as a contradiction of the 76 produced a wrong
+> caution here that this table replaces.
 
 `Scripts/SCRIPT.PAK` from the Armalion prerelease is this same format under a
 different magic — `ACS` v2, blob layout, read by `pak.py` unmodified. See
