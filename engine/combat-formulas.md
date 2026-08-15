@@ -236,20 +236,28 @@ off the code, not off the name.
   `BalanceGeschick` shows the table does use full German where it has room, so
   these are abbreviations of the same vocabulary.
 
-  Half the bridge is built. `FUN_081f64e8` is passed a resource id beside each
-  family -- `HM` 0x24b8, `FM` 0x24c6, `WM` 0x24c7, `EM` 0x24c8, `LM` 0x24c9,
-  `MM` 0x24ca, `KO` 0x24cb, `BA` 0x24d1, `BL` 0x24d3, `ZK` 0x24d4, `HOM`
-  0x24d7 -- and the character sheet's labels do sit together in `global.res` at
-  **slots 1395-1410**: *Hero Name, Damage, Resistance, Weapon, Spell, Combat
-  Arts, Strength, Endurance, Dexterity, Physical Regeneration, Mental
-  Regeneration, Charisma, Skills, Duration, Speed, New Skill* -- and the last
-  of those has a balance key, `NewSkill`, named after it.
+  **Eleven are now resolved.** The character sheet passes a resource id beside
+  each family, and those ids reach `global.res` through the engine's own name
+  hash -- see [../formats/global-res.md](../formats/global-res.md), which was
+  written to close exactly this:
 
-  What does not connect is the id. Those `0x24xx` values are neither a
-  `global.res` slot index nor its id field; `FUN_084c3806` resolves them
-  through `FUN_084c2e06` against an in-memory resource **tree**, then
-  `dynamic_cast`s the node to a string resource. Finding what builds that tree
-  is what closes this.
+  | `HM` Heavenly Magic | `FM` Fire Magic | `WM` Water Magic | `EM` Earth Magic |
+  |---|---|---|---|
+  | `LM` Air Magic (*Luftmagie*) | `MM` Moon Magic | `KO` Vampirism | `BA` Ballistics |
+  | `BL` Bloodlust | `ZK` Weapon Technology | `HOM` Hellpower (*Höllenmacht*) | |
+
+  Thirteen of thirteen ids resolve and every one is a stat name, which is what
+  makes it trustworthy -- a wrong hash returns nothing, not thirteen coherent
+  labels. Two of the thirteen settle the `SP` question from the other
+  direction: `SP` was called a *speed* modifier because the code divides a
+  duration by `1 + pct/100`, and ids 1100 and 1107 are literally **Attack
+  Speed** and **Regeneration**. That is the engine agreeing with a reading
+  taken from arithmetic alone.
+
+  Still unexpanded are the weapon-skill families carrying `_AW`/`_SP` suffixes
+  -- `AK`, `BK`, `FEK`, `FK`, `KK`, `STK`, `SK`, `HR`, `W`, `P`, `R`. For those
+  `FUN_081f686a` calls the curve directly and passes no resource id, so their
+  labels are somewhere in `cUI_StatisticsChar::vf06`.
 - **The kernel is single-source.** Unlike to-hit it has been read only in
   retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
   obvious second arm and have not been checked.

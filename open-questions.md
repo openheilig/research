@@ -15,6 +15,7 @@ strike it here.
 | Eight of 3421 animation clips do not decode. | [formats/granny-grn.md](formats/granny-grn.md) |
 | One mesh's vertex count disagrees with an outside reading, 279 against 280. | [formats/granny-grn.md](formats/granny-grn.md) |
 | `mixed.pak`'s heterogeneous payloads are unread; Bink `.bik` and Miles `.mss` are third-party formats we do not decode. | [formats/pak-containers.md](formats/pak-containers.md) |
+| `global.res`'s by-name namespace appears to hold only numeric names; no plain-word name resolves, so whether the Armalion build's named resources were carried over at all is unread. | [formats/global-res.md](formats/global-res.md) |
 | Whether the `0xC8` record type ids share the `items.pak` id space. A probe with a control arm exists; it has not returned a verdict. | [formats/pax-saves.md](formats/pax-saves.md) |
 | 102 script opcodes have no verified meaning beyond what their string payloads suggest, and 66 zero-width tags are presumably operators whose identity sits in handlers already located. | [formats/script-bytecode.md](formats/script-bytecode.md) |
 
