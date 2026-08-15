@@ -133,6 +133,56 @@ rigs, which is the reason this machinery exists, so pairing one mesh with
 another's clip can be *correct*. A control that can accidentally be right is
 not a control.
 
+## Equipment sockets
+
+A weapon is attached by a **named socket that exists on both sides of the
+join**, and the two sides are told apart by the socket's *parent*. Census over
+all 1571 rigged `models.pak` entries:
+
+| socket | parent `Bip01 R/L Hand` | parent `__Root` |
+|---|---|---|
+| `Bone_weapon_01` | 235 — the right-hand socket | 206 — the grip, in the weapon's own space |
+| `Bone_weapon_02` | 192 — the left-hand socket | 176 |
+
+**Zero entries cross**: `_01` never hangs off a left hand, `_02` never off a
+right one. The two populations are disjoint by parent, so one pair of names
+carries two meanings — *where I hold it* on a wearer, *where it is held* on a
+weapon — and attaching is aligning the second to the first.
+
+`_01` is the **main hand**, measured rather than read off the number.
+`startcode.bin`'s tag-0x02 occurrences 1 and 2 are the two hand slots, and over
+the 1111 armed slots the eight classes declare:
+
+- shields are **58.8%** of slot 2 against **10.5%** of slot 1 — a rate, 5.6×;
+- all 272 slot-2 meshes carry `Bone_weapon_02`, while **97 of 839** slot-1
+  meshes do not — the polearms (`PIKE`, `SPEAR`, `HELLEBARDE`, `STAFF_FIGHT`),
+  which have only a main-hand grip.
+
+The second is the load-bearing one: **zero** items sit in the off hand without
+an off-hand grip, which the opposite slot assignment could not produce.
+
+Only 192 entries carry the off-hand socket at all, so a body lacking it falls
+back to `Bip01 L Hand`. That is measured coincident with the socket (~1e-6) on
+the two NPC bodies carrying both — but **3.86 units away** on the DAEMONIA set,
+so the fallback is counted and reported, never treated as equivalent.
+
+### A weapon is a rigid prop, not a second garment
+
+Armour shares its wearer's skeleton (R1.4, `checks/equip_check.gd`). A weapon
+does **not**. Pointing that same local-rest instrument at the hand meshes
+returned median own-agreement `1.0000` **and** median cross-control `1.0000` —
+the control scoring exactly as well as the subject, i.e. measuring nothing. The
+bone *names* say why: a weapon carries 3–16 bones of its own and shares only
+`__Root` and the socket names with a body, so the matched names were the
+sockets agreeing with themselves.
+
+199 of the 221 entries carrying a weapon-side grip declare **no vertex weights
+at all** — `SWORD.GRN`'s `MeshWeights` node has a span of exactly the 12-byte
+header. A weapon is an unskinned prop on a moving socket, and its bones are
+locators. "Declares no weights" and "weights did not decode" must therefore be
+distinguished, or every weapon reads as a decode failure and every genuinely
+broken skin reads as a prop.
+
 ## Open
 
 Eight of the 3421 animation clips do not decode. Separately, one mesh
