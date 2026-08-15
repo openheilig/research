@@ -39,7 +39,7 @@ log/        the append-only findings log
 
 ## The findings log
 
-`log/autoresearch-results.tsv` — **838 rows**, one per investigated question,
+`log/autoresearch-results.tsv` — **800+ rows**, one per investigated question,
 append-only. Each row records what was asked, what was measured, and the
 verdict, including the refutations. It stands in for the missing git history
 of the analysis workspace.
