@@ -183,6 +183,25 @@ texture, then the lit pass. The lit pass issues exactly **six**
 | 4 | 280 | `Sera_head` 256×128 | 256×128 | **1.000** | — |
 | 5 | 270 | `Sera_boots` 128×128 | 128×128 | **1.000** | hair 0.26 |
 
+`GLADIATOR` confirms it a second time, on a *different* permutation and from a
+cheaper capture — the character-select screen renders all eight heroes as live
+Granny models, so no world load is needed:
+
+| group | triangles | material | our link says | retail uploaded | corr |
+|---|---|---|---|---|---|
+| 0 | 212 | 0 | `Gladiator_body` 512×512 | 512×512 | **1.000** |
+| 1 | 230 | 3 | `Gladiator_boots` 256×256 | 256×256 | **1.000** |
+| 2 | 260 | 1 | `Gladiator_body` 512×512 | 512×512 | **1.000** |
+| 3 | 258 | 5 | `Gladiator_body` | *reused, no upload* | **1.000** |
+| 4 | 350 | 2 | `Gladiator_body` | *reused, no upload* | **1.000** |
+| 5 | 385 | 4 | `Gladiator_Head` 512×256 | 512×256 | **1.000** |
+
+The two *skipped* uploads are themselves evidence: retail re-binds nothing
+between the 260, 258 and 350 batches, which is the engine saying materials 1, 5
+and 2 name the same image — exactly what the permutation `2,6,1,3,4,5` says.
+Identity is refuted on three of the six here (230 would take head not boots, 350
+boots not body, 385 body not head).
+
 Retail re-uploads the skin immediately **before each batch** as `GL_BGRA` +
 `GL_UNSIGNED_SHORT_4_4_4_4_REV` — so the pixels are in the trace, and the match
 above is against the actual image, not merely its dimensions. (That upload
@@ -288,15 +307,20 @@ and none has a correctly-named sibling. Retail can never reach them (its key is
 built by appending `.TGA`); the port's stem index can. A five-entry divergence,
 recorded rather than fixed.
 
-`GLADIATOR`'s head submesh reports a UV box of `u -3.194..3.194`,
-`v -11.277..0.961` while the other five batches stay inside `0..1`, so the UV
-decode is wrong for that submesh specifically — an orientation fault was ruled
-out above, a vertex-layout one was not.
+Eight of the 3421 animation clips do not decode.
 
-Eight of the 3421 animation clips do not decode. Separately, one mesh
-disagrees on vertex count with an outside reading (279 against 280); the
-attempt to settle it against RAD's own runtime is blocked, see
-[../engine/granny-runtime-oracle.md](../engine/granny-runtime-oracle.md).
+~~One mesh disagrees on vertex count with an outside reading (279 against
+280).~~ **Closed 2026-08-15 against retail's own index array**, not against the
+blocked converter: `GLADIATOR`'s 385-triangle head submesh references **279**
+distinct vertices in our reader, and retail's `glDrawElements` for that same
+batch — 1155 `u16` indices, captured off the character-select screen — resolves
+to exactly 279. The outside 280 is the reading that is wrong.
+
+~~The same submesh's UVs run outside `0..1`.~~ **Not a defect.** Retail's own
+`glTexCoordPointer` array for that batch has the identical box —
+`u -3.194..3.194`, `v -11.277..0.961`, 6 of the 279 vertices outside the unit
+square — and retail draws it with `GL_TEXTURE_WRAP_S`/`_T` set to `GL_REPEAT`.
+Authored data consumed under repeat; the reader needs no change.
 
 ---
 Provenance: `tools/formats/grn_tagwalk.py`, `grn_motion.py`, `grn_bonenames.py` module

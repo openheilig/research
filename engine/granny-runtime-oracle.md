@@ -74,9 +74,18 @@ clips without this oracle.
 
 ## Open
 
-The head-mesh vertex-count discrepancy (279 vs 280) that the oracle was meant
-to settle stays open. Reopening this line means a different converter build,
-not a different way of calling this one.
+Nothing. The head-mesh vertex-count discrepancy (279 vs 280) this oracle was
+built to settle was **closed on 2026-08-15 by a different instrument entirely**:
+an `apitrace` capture of the retail character-select screen contains the
+engine's own `glDrawElements` index array for that batch, and it resolves to
+279 distinct vertices. See
+[../formats/granny-grn.md](../formats/granny-grn.md).
+
+The lesson is worth more than the answer. This harness spent three hypotheses
+trying to make RAD's converter read a Sacred `.GRN`; the question fell out of
+watching the shipped game draw the mesh, which needed no converter, no SDK and
+no clean-room risk. Reach for what the game *does* before what a vendor tool
+*might*.
 
 ---
 Provenance: `tools/granny_oracle/granny_dump_skeleton.c` and `grn_extract.py`,

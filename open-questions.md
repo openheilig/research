@@ -13,7 +13,7 @@ strike it here.
 | Question | Where it lives |
 |---|---|
 | Eight of 3421 animation clips do not decode. | [formats/granny-grn.md](formats/granny-grn.md) |
-| One mesh's vertex count disagrees with an outside reading, 279 against 280. | [formats/granny-grn.md](formats/granny-grn.md) |
+| ~~One mesh's vertex count disagrees with an outside reading, 279 against 280.~~ Struck 2026-08-15: retail's own index array for that batch resolves to 279, so the outside reading is the wrong one. | [formats/granny-grn.md](formats/granny-grn.md) |
 | Bink `.bik` and Miles `.mss` are third-party formats we do not decode. (`mixed.pak` was listed here in error — the engine had read it; struck 2026-08-15 and confirmed in a second build.) | [formats/pak-containers.md](formats/pak-containers.md) |
 | Whether the `0xC8` record type ids share the `items.pak` id space. A probe with a control arm exists; it has not returned a verdict. | [formats/pax-saves.md](formats/pax-saves.md) |
 | **96** script opcodes have no verified meaning beyond what their string payloads suggest, and 66 zero-width tags are presumably operators whose identity sits in handlers already located. | [formats/script-bytecode.md](formats/script-bytecode.md) |
