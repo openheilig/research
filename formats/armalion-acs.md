@@ -103,6 +103,23 @@ Mutating the `0xff` marker drops the count to nothing. That pins the marker
 and the id space — and so **confirms `armalion-script-api.tsv`'s ids are
 right**, independently of however they were assigned.
 
+Ten of them are pinned *individually*, not just as a sequence: the id landed
+where the source names that same function, in a function whose whole call list
+aligned.
+
+| id | function | | id | function |
+|---|---|---|---|---|
+| 15 | `view_setLocked` | | 52 | `creature_setLevel` |
+| 35 | `creature_setFacing` | | 57 | `trigger_setState` |
+| 39 | `creature_setDialog` | | 58 | `trigger_resetState` |
+| 47 | `creature_setAlliance` | | 59 | `trigger_chkState` |
+| 51 | `creature_morph` | | 67 | `printTextResource` |
+
+No id maps to two names, which the tool checks and fails on. One id the table
+has **no** entry for — 63 — lands where the source writes `trigger_chkState`.
+That is a prediction from a gap, not a confirmation, and is reported
+separately for exactly that reason.
+
 Three honest limits:
 
 - The check is a **suffix**, not an equality, because every compiled function
