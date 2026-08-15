@@ -16,6 +16,8 @@ nobody looked first.
 | [pax-saves.md](pax-saves.md) | `.pax` hero saves | Read |
 | [script-bytecode.md](script-bytecode.md) | `StartCode.bin` / `FunkCode.bin` | Read — format closed, semantics open |
 | [balance-bin.md](balance-bin.md) | `balance.bin`, the rules dataset | Read |
+| [global-res.md](global-res.md) | `global.res`, the text resource tree and its two namespaces | Read |
+| [armalion-acs.md](armalion-acs.md) | `ACS` — Armalion's compiled scripts, checked against the source shipped beside them | Read — a vocabulary for retail's opcodes, not a key to them |
 
 Status words mean what [../README.md](../README.md) says they mean, and every
 document ends in a `## Open` section — read that before assuming a format is

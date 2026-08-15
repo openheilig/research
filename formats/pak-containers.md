@@ -11,6 +11,25 @@ The 256-byte header was derived independently here, then found to agree
 verbatim with Resacred's `rs_file.h:91-109` and the Delphi `PakExtractor`
 spec — two outside descriptions that were consulted only after the fact.
 
+A fourth source has since turned up, and it is the only one that gives the
+**field names**: the Armalion debug build asserts on `hdr.tag[0]`,
+`hdr.tag[1]`, `hdr.tag[2]`, `hdr.ver` and `hdr.numEntries` — the engine's own
+names for the three magic bytes, the version and the count. Its `DEBUG.LOG`
+also logs each container's version, so `TEX` v3, `MDL` v3, `ISO` v3, `SND` v1,
+`OBJ` v1 and `TRG` v1 are unchanged across the three years to retail, while
+`ITM` went v2→v5 and the world containers v4→v5. See
+[../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
+
+> **Version equality does not imply record equality.** `static.pak` is `OBJ`
+> v1 in both builds and its stride is 76 bytes, against Armalion's
+> `sObjectStatic` of 64. The version byte covers the container, not the
+> payload. (`cTrigger` at 16 bytes against `triggers.pak`'s 16-byte stride at
+> `TRG` v1 in both is the one case that does line up.)
+
+`Scripts/SCRIPT.PAK` from the Armalion prerelease is this same format under a
+different magic — `ACS` v2, blob layout, read by `pak.py` unmodified. See
+[armalion-acs.md](armalion-acs.md).
+
 ## Header — common to every `.pak`
 
 ```
