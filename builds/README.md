@@ -10,6 +10,8 @@ costs days.
 |---|---|
 | [build-survey.md](build-survey.md) | The survey and the rule that follows from it — what transfers between builds and what does not. |
 | `armalion-script-api.tsv` | The script API recovered from the pre-release Armalion build, which still carries debug information retail lost. |
+| [armalion-source-tree.md](armalion-source-tree.md) | Sacred's original source tree — 76 files, 259 methods, 80 classes — from the same build's assert strings. 25 of the classes are still in retail's RTTI. |
+| `armalion-source-tree.tsv` | That tree as `module / file / class / method`. |
 | `gold-linux-resource-comparison.tsv` | Resource-level comparison of the Gold and Linux builds. |
 
 Read `build-survey.md` before opening a binary. The most common wasted day in

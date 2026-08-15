@@ -74,6 +74,18 @@ Three rules complete it, and each cost several failed attempts:
 
 `builds/armalion-script-api.tsv` holds the script API surface extracted from
 the Armalion debug build — a second, independent view of the same interpreter.
+[`builds/armalion-source-tree.md`](../builds/armalion-source-tree.md) adds that
+build's own names for the VM (`cScriptCompiler`, `cScriptInterpreter`,
+`cScriptVM`, `cScriptLoader`, in `armaSource/scripts/`) and its invariants:
+`fp->code[ip]<256` states that an opcode is a byte indexing a byte array,
+`serialID<exportFunctions.size()` that the API dispatches by index into a
+vector rather than a fixed switch, and `chunk.type==CHUNK_TYPE_ACS` with
+`hdr.ver==2` name the compiled container.
+
+**The Armalion ids do not transfer.** Armalion 67 is `printTextResource` while
+retail opcode 67 is a variable setter, and every sampled pair disagrees the
+same way. That table is a *vocabulary* for naming retail opcodes, not a key to
+them; a join needs a shared invariant, not a shared index.
 
 ## The `res:` tag
 

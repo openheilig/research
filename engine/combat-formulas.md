@@ -301,7 +301,11 @@ Regenerated and re-checked by
   damage and resistance *numbers* are built. What consumes them at the moment
   of a hit -- how damage is reduced by resistance, criticals, and the
   `param_3` flag that selects between the `+0x4a` and `+0x4e` weapon terms --
-  is not read.
+  is not read. It is probably not one function: the Armalion source tree shows
+  combat as a **state machine split across two files**, `state_Attacking` in
+  `creature_fighting.cpp` and `state_Fighting` in `creature_collision.cpp`, so
+  the resolution is a transition rather than an expression. See
+  [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
 - **The struct offsets are offsets, not names.** Which attribute lives at
   `+0x56`, and which weapon slot at `+0x4a` against `+0x4e`, is not
   established. `FUN_081f686a` turned out to be the level curve rather than the
