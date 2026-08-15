@@ -166,6 +166,53 @@ Both are gated by `engine/checks/skin_check.gd` (joins 6 and 7), and the
 interleave gate additionally requires at least one submesh to be non-contiguous,
 so it cannot be passed by the slice it replaced.
 
+### Confirmed against retail, at pixel identity
+
+The permutation is not our reader's inference — **retail's own GL calls agree
+with it batch by batch.** An `apitrace` capture of a save-load run (hero
+`SERAPHIM.GRN`) draws the hero twice per frame: a shadow pass on a 16×16 dummy
+texture, then the lit pass. The lit pass issues exactly **six**
+`glDrawElements` in the file's own group order —
+
+| group | triangles | our link says | retail uploaded | correlation | next best |
+|---|---|---|---|---|---|
+| 0 | 144 | `Sera_hair` 128×128 | 128×128 | **1.000** | boots 0.26 |
+| 1 | 358 | `Sera_body` 256×256 | 256×256 | **1.000** | legs 0.32 |
+| 2 | 612 | `Sera_arms` 256×256 | 256×256 | **1.000** | legs 0.29 |
+| 3 | 390 | `Sera_legs` 256×256 | 256×256 | **1.000** | body 0.32 |
+| 4 | 280 | `Sera_head` 256×128 | 256×128 | **1.000** | — |
+| 5 | 270 | `Sera_boots` 128×128 | 128×128 | **1.000** | hair 0.26 |
+
+Retail re-uploads the skin immediately **before each batch** as `GL_BGRA` +
+`GL_UNSIGNED_SHORT_4_4_4_4_REV` — so the pixels are in the trace, and the match
+above is against the actual image, not merely its dimensions. (That upload
+format is also retail's own statement that the payload is ARGB4444.)
+
+Reading the material index as a texture index would have put a *different* image
+on four of the six batches, so the identity mapping is refuted by measurement.
+
+The Granny runtime is statically linked into the retail ELF — the `.GRN` tag
+constants sit in its `.text` (`0xCA5E0D00` at `0x8064e5c`, `0xCA5E0D01` at
+`0x8066975`, `0xCA5E0E06` at `0x8065f06`). That loader is **deliberately not
+read**: doing so would settle the format faster and destroy the clean-room
+posture the whole decoder rests on. The trace above is retail's *output*, which
+carries no such problem.
+
+### From the texture name to the pak entry
+
+The join is retail's own code, and it is an **exact name, not a stem**.
+`cGranny::bindTextures` (`0x80f7866`) walks the runtime's new-texture list and
+for each one does `sprintf("%s.TGA", name)`, uppercases it, and looks up that
+exact string — logging `Texture [%s] not in PAK! IGNORED!!!` on a miss.
+
+The lookup (`0x83c3fde` → `0x83cbd9c`) is a linear-probed hash table keyed on
+two further hashes of the name, **with no string compare**; its inserter
+(`0x83cbc0a`) probes to the first free slot and never overwrites. So where a
+name is duplicated the **first entry in pak order wins** — which is what the
+port's stem index already does, now confirmed rather than assumed.
+`texture.pak` duplicates 25 names, six of them with differing payloads
+(`DAEMONIA_1024`, `DRYADE_SCOUT_ARMS/HEAD/LEGS`, `DWARF`, `DWARF_WARHAMMER`).
+
 ### Which side is the front
 
 Orientation is read off the retail bitmap, not off the render.
@@ -233,6 +280,13 @@ distinguished, or every weapon reads as a decode failure and every genuinely
 broken skin reads as a prop.
 
 ## Open
+
+Five of `texture.pak`'s 25535 names are malformed — `TEX\x03\xbfC`,
+`AMAZONE_ARMOUR_KURZKHEMD_CELAL.T`, `PHEX_SHE_THIEF_HELMET_LEATHER.TG@`,
+`INSTRUMENT_HARFE_128X128_ALPHA.T\x80`, `GIGANT_SPIDER_HAIR_RED_DEMON.TGA@` —
+and none has a correctly-named sibling. Retail can never reach them (its key is
+built by appending `.TGA`); the port's stem index can. A five-entry divergence,
+recorded rather than fixed.
 
 `GLADIATOR`'s head submesh reports a UV box of `u -3.194..3.194`,
 `v -11.277..0.961` while the other five batches stay inside `0..1`, so the UV
