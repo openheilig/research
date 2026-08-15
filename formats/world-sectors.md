@@ -137,6 +137,31 @@ retail's zlib came later.
 > debug fill. Anything measured against this corpus has to exclude them or it
 > will report nonsense — an unfiltered pass gave a "tile id" of 543,162,368.
 
+## `static.pak` — the chain link is pinned, not cited
+
+A cell's `+0x04` names only the head; the rest hang off `nextStaticId` at
+record `+0x1f`, which came from Resacred's `rs_file.h`. Being able to read the
+value as an index proves nothing — **six** offsets in the 64-byte record are a
+valid index for every record. Two structural properties do settle it, and
+`tools/parity/static_next_check.py` measures both:
+
+| | retail | prerelease |
+|---|---|---|
+| links at `+0x1f`, minus distinct targets | **0** of 174,422 | **0** of 51,224 |
+| best rival carrying comparable traffic | `+0x2c`, 30,973 excess of 31,031 | `+0x24`, 7,030 of 7,054 |
+| targets that are also cell heads | **0** of 31,752 heads | (v4 cells, not comparable) |
+
+A chain is a linked list, so no record may be the target of two links; and a
+linked record is never a head, which the *world cells* say from a different
+file entirely. The 64-byte record otherwise decodes identically in both
+builds — self-index 393,765/393,765 and 1,038,014/1,038,014, and eight of the
+`+0x08` flag values are shared.
+
+> **Count excess, not colliding targets.** "How many targets are hit more than
+> once" scores a field that points 418,026 times at a *single* record as one
+> collision. `+0x1a` does exactly that and read as the closest rival until the
+> measure was fixed to `links − distinct targets`.
+
 ## Walkability
 
 Cell-space walkability is a lookup over Sacred's own region grids, not a
