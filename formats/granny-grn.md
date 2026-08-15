@@ -133,6 +133,55 @@ rigs, which is the reason this machinery exists, so pairing one mesh with
 another's clip can be *correct*. A control that can accidentally be right is
 not a control.
 
+## The material chain — which image a draw batch samples
+
+A mesh entry is drawn as **one batch per group**, and the group's material
+number is *not* a texture number. Two links, both measured on `GLADIATOR.GRN`:
+
+| Tag | Record | The field that matters |
+|---|---|---|
+| `0xCA5E0E02` | group | `{u32 mesh, u32 material (one-based), f32, f32}` |
+| `0xCA5E0E04` | group count | triangle count is the second `u32` |
+| `0xCA5E0E06` | group triangles | `u32 count`, then 16 bytes per triangle whose first `u32` indexes the **submesh's** triangle array |
+| `0xCA5E0D01` | MaterialSection | container |
+| `0xCA5E0D00` | Material | 16 bytes; `+4` is a **one-based texture reference** |
+
+**The material is not the texture.** `GLADIATOR`'s six materials reference
+textures `2,6,1,3,4,5` — a permutation, so reading the material number as a
+texture number put the head batch on the body image, an arm on the boots image
+and a leg on the head image, while every batch still carried plausible leather.
+That is why a corpus census passed while the character rendered scrambled. The
+structural check is a permutation test: where an entry has as many materials as
+textures the references must be distinct and in range, and they are on **1546 of
+1546** equinumerous entries, **131** of them non-identity.
+
+**A group names its own triangles, and they interleave.** Slicing the submesh's
+triangle range in group order assumes a contiguous layout. `GLADIATOR`'s
+442-triangle leg submesh splits 212 skin / 230 boot with the boot's indices
+running `28..441` *through* the skin's, so the slice put half a boot on a thigh.
+The invariant is exact: across a submesh's groups the indices cover `0..n-1`
+once — measured on 442/868/385 triangles, no gaps, no repeats.
+
+Both are gated by `engine/checks/skin_check.gd` (joins 6 and 7), and the
+interleave gate additionally requires at least one submesh to be non-contiguous,
+so it cannot be passed by the slice it replaced.
+
+### Which side is the front
+
+Orientation is read off the retail bitmap, not off the render.
+`Gladiator_body.tga` (512×512) lays out the torso **front** bottom-left
+(shoulder strap into a sternum plate), the torso **back** bottom-right (X-lacing
+between the shoulder blades), and the leg/kilt panel top-right. The port's
+staged viewer at yaw 270 shows the sternum plate and a face; at yaw 90 the
+X-lacing and the back of the skull with the braid behind it. Front and back
+agree with the atlas, so the mesh is not mirrored.
+
+Ten `.tga` path strings live in the entry and only **three** are referenced —
+`Temporary_Gladiator_Mapping/Gladiator_body`, `…/Gladiator_boots` and
+`Gladiator_new_exports_2/Gladiator_Head`. The `Models/Maps/` set (`arms`,
+`hands`, `legs`, `belt_skirt`) is a superseded export left in the file; four of
+the six materials share the one combined body atlas.
+
 ## Equipment sockets
 
 A weapon is attached by a **named socket that exists on both sides of the
@@ -184,6 +233,11 @@ distinguished, or every weapon reads as a decode failure and every genuinely
 broken skin reads as a prop.
 
 ## Open
+
+`GLADIATOR`'s head submesh reports a UV box of `u -3.194..3.194`,
+`v -11.277..0.961` while the other five batches stay inside `0..1`, so the UV
+decode is wrong for that submesh specifically — an orientation fault was ruled
+out above, a vertex-layout one was not.
 
 Eight of the 3421 animation clips do not decode. Separately, one mesh
 disagrees on vertex count with an outside reading (279 against 280); the
