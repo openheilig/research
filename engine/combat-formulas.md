@@ -220,6 +220,81 @@ and formatted for display as `"%s %s %+d%%"`. Dividing a duration by
 a hard floor of `1.0` and a running minimum tracked at `+0x12`. That reading is
 off the code, not off the name.
 
+### The family prefixes
+
+`AK`, `BK`, `FEK`, `FK`, `KK`, `STK`, `SK`, `W`, `P`, `R`, `HR`, `HP`, `WK`,
+`MK`, `Med`, `KO` and the magic families are German abbreviations that the
+engine never spells out. They are resolved by an identity the binary states
+about itself, so **none of it is a guess from the German**:
+
+- A creature holds 8 skill slots at `+0x24`, one byte each; that byte is the
+  **skill type**, returned by `FUN_0821b576(creature, slot)`.
+- `cUI_StatisticsChar::vf06` turns that same byte into the skill's name with a
+  literal `add $0x24b7, %eax` at `0x0854e99b` — **resource id = skill type +
+  9399** — and passes the byte *unchanged* to `FUN_081f686a`.
+- So `FUN_081f686a`'s jump table at `0x086ed568` is indexed **by skill type**.
+  Case *i* reads exactly the balance globals belonging to skill `9399 + i`.
+
+The table is a **permutation**, not the identity — index 1 jumps to the
+*tenth* case body by address. Reading the cases in address order therefore
+produces a complete, self-consistent and entirely wrong answer, which is what
+happened on the first attempt.
+
+The check is not an assertion but a coincidence that cannot survive being
+wrong: **thirteen** case bodies push their own skill's resource id as a
+literal, and every one equals `9399 +` that case's table index. 13 of 13,
+zero mismatches. Shifting the base by one, or the table pointer by one entry,
+breaks 12–13 of them.
+
+| abbrev | German | skill | id |
+|---|---|---|---|
+| `HM` | Himmelsmagie | Heavenly Magic | 9400 |
+| `WK` | Waffenkunde | Weapon Lore | 9401 |
+| `STK` | Stangenwaffenkunde | Long-handled Weapons | 9402 |
+| `SK` | Schwertkunde | Sword Lore | 9403 |
+| `AK` | Axtkunde | Axe Lore | 9404 |
+| `BK` | **Beidhändiger Kampf** | Dual Wielding | 9405 |
+| `FEK` | Fernkampf | Ranged Combat | 9406 |
+| `W` | **Wendigkeit** | Agility | 9407 |
+| `P` | Parieren | Parrying | 9408 |
+| `HR`, `HP` | — | Constitution | 9409 |
+| `R` | **Rüstung** | Armor | 9410 |
+| `Med` | Meditation | Meditation | 9411 |
+| `KK` | Klingenkampf | Blade Combat | 9412 |
+| `MK` | Magiekunde | Magic Lore | 9413 |
+| `FM`/`WM`/`EM`/`LM`/`MM` | Feuer/Wasser/Erd/Luft/Mond | the five magic schools | 9414-9418 |
+| `Reiten` | Reiten | Riding | 9421 |
+| `FK` | **Faustkampf** | Unarmed Combat | 9423 |
+| `KO` | **Konzentration** | Concentration | 9424, and shared with 9419, 9426 |
+| `BA` | Ballistik | Ballistics | 9425 |
+| `BL` | Blutdurst | Bloodlust | 9427 |
+
+**Only the last two columns are read from the binary.** The German column is
+inference — the expansion that makes the abbreviation fit the skill the engine
+assigned it. It is a reading aid and nothing downstream should depend on it;
+the *identity* being claimed here is prefix → skill, not prefix → German word.
+
+Four of these are exactly the trap. `FK` reads as *Fernkampf* and is
+*Faustkampf*; `BK` reads as *Bogenkampf* and is *Beidhändiger Kampf*; `W`
+reads as *Waffe* and is *Wendigkeit*; `R` reads as *Resistenz* and is
+*Rüstung*. Guessing from the German would have got **4 of 13 wrong** while
+looking entirely reasonable — and three of the four wrong answers would have
+put a weapon family on the wrong weapon.
+
+`KO` is the one prefix that is genuinely shared: its triple serves
+Concentration, Vampirism and Trap Lore, so an earlier reading of "KO =
+Vampirism" from a single call site was wrong twice over — wrong that it was
+one skill, and wrong about which.
+
+Skill type **30** (`9429` Two-handed Weapons) jumps to the default: it has no
+case and no balance family, and is the only skill in the list that does not.
+`9420` Trading, `9422` Disarming and `9432` Forge Lore have cases but touch no
+balance global.
+
+Regenerated and re-checked by
+[`tools/binary/skillmap.py`](../../tools/binary/skillmap.py) into
+[generated/skill-families.tsv](../formats/generated/skill-families.tsv).
+
 ## Open
 
 - **The resolution step is still undecoded.** This section is how a creature's
@@ -232,44 +307,8 @@ off the code, not off the name.
   established. `FUN_081f686a` turned out to be the level curve rather than the
   field map, so this is still open; the character-sheet strings that
   `cUI_StatisticsChar::vf06` prints beside each value are the next lead.
-- **The two- and three-letter family prefixes are unexpanded.** `AK`, `BK`,
-  `FEK`, `FK`, `KK`, `HR`, `BA`, `BL`, `EM`, `FM`, `HM`, `HOM`, `KO`, `LM` name
-  skills and attributes and are not yet matched to their German words.
-  `BalanceGeschick` shows the table does use full German where it has room, so
-  these are abbreviations of the same vocabulary.
-
-  **Ten are resolved, and one turned out not to be a name at all.** The
-  character sheet passes a resource id beside each family, and those ids reach
-  `global.res` through the engine's own name hash -- see
-  [../formats/global-res.md](../formats/global-res.md), written to close
-  exactly this:
-
-  | `HM` Heavenly Magic | `FM` Fire Magic | `WM` Water Magic | `EM` Earth Magic |
-  |---|---|---|---|
-  | `LM` Air Magic (*Luftmagie*) | `MM` Moon Magic | `BA` Ballistics | `BL` Bloodlust |
-  | `ZK` Weapon Technology | `HOM` Hellpower (*Höllenmacht*) | | |
-
-  Each of those ten is passed exactly one id. **`KO` is passed four** -- 9419
-  Vampirism, 9426 Trap Lore, 9430 Dwarven Lore and 1147 Special Move -- so it
-  is not the abbreviation of a skill but a **shared curve**, the triple reused
-  by skills that were never given one of their own. Reading it as "KO =
-  Vampirism" off its first call site would have been wrong, and only the
-  repeat-count shows it.
-
-  Two of the ids settle the `SP` question from the other direction. `SP` was
-  called a *speed* modifier because the code divides a duration by
-  `1 + pct/100`; ids 1100 and 1107 are literally **Attack Speed** and
-  **Regeneration**. That is the engine agreeing with a reading taken from
-  arithmetic alone.
-
-  Still unexpanded are the weapon-skill families carrying `_AW`/`_SP` suffixes
-  -- `AK`, `BK`, `FEK`, `FK`, `KK`, `STK`, `SK`, `HR`, `W`, `P`, `R`. For those
-  `FUN_081f686a` calls the curve directly and passes no resource id, and
-  `cUI_StatisticsChar::vf06` does not carry them either -- its only literal in
-  that range is `0x24b7`. The skill names they must map onto are now all known
-  (`global.res` 9400-9432), so this is a matching problem rather than a search,
-  but matching by plausibility is exactly what the `KO` case shows to be
-  unsafe. It wants the id, or a second source.
+- ~~**The two- and three-letter family prefixes are unexpanded.**~~ **Closed.**
+  See *The family prefixes* below.
 - **The kernel is single-source.** Unlike to-hit it has been read only in
   retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
   obvious second arm and have not been checked.

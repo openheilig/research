@@ -1,0 +1,33 @@
+skill_type	resource_id	skill	balance_families	self_confirmed
+1	9400	Heavenly Magic	HM	1
+2	9401	Weapon Lore	WK	0
+3	9402	Long-handled Weapons	STK_w_AW,STK_s_AW,STK,STK_w_SP,STK_s_SP	0
+4	9403	Sword Lore	SK_w_AW,SK_s_AW,SK,SK_w_SP,SK_s_SP	0
+5	9404	Axe Lore	AK_w_AW,AK_s_AW,AK,AK_w_SP,AK_s_SP	0
+6	9405	Dual Wielding	BK_w_AW,BK_s_AW,BK,BK_w_SP,BK_s_SP	0
+7	9406	Ranged Combat	FEK_w_AW,FEK_s_AW,FEK,FEK_w_SP,FEK_s_SP	0
+8	9407	Agility	W	0
+9	9408	Parrying	P	0
+10	9409	Constitution	HR,HP	0
+11	9410	Armor	R,R_w_SP,R_s_SP	0
+12	9411	Meditation	Med	0
+13	9412	Blade Combat	KK_w_AW,KK_s_AW,KK,KK_w_SP,KK_s_SP	0
+14	9413	Magic Lore	MK	0
+15	9414	Fire Magic	FM	1
+16	9415	Water Magic	WM	1
+17	9416	Earth Magic	EM	1
+18	9417	Air Magic	LM	1
+19	9418	Moon Magic	MM	1
+20	9419	Vampirism	KO	1
+21	9420	Trading	-	0
+22	9421	Riding	ReitenSKMW,ReitenSKLev,ReitenSkOff	0
+23	9422	Disarming	-	0
+24	9423	Unarmed Combat	FK_w_AW,FK_s_AW,FK,FK_w_SP,FK_s_SP	0
+25	9424	Concentration	KO	0
+26	9425	Ballistics	BA	1
+27	9426	Trap Lore	KO	1
+28	9427	Bloodlust	BL	1
+29	9428	Weapon Technology	BalanceDmg	1
+31	9430	Dwarven Lore	BalanceDmg	1
+32	9431	Hellpower	BalanceDmg	1
+33	9432	Forge Lore	-	0

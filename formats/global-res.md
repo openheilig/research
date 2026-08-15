@@ -105,6 +105,7 @@ ids expand the abbreviations that name half the balance table:
 | 9417 | `LM` | Air Magic (*Luftmagie*) |
 | 9418 | `MM` | Moon Magic |
 | 9419 | `KO` (†) | Vampirism |
+| 9424 | `KO` (†) | Concentration |
 | 9425 | `BA` | Ballistics |
 | 9427 | `BL` | Bloodlust |
 | 9428 | `ZK` | Weapon Technology |
@@ -114,8 +115,8 @@ ids expand the abbreviations that name half the balance table:
 
 Thirteen of thirteen resolve, and every one is a stat name, which is what makes
 the hash trustworthy rather than merely plausible — a wrong hash returns
-nothing at all, not thirteen coherent labels. († `KO` is the one entry in that
-table that is *not* a name; see the caution below.) The last two independently
+nothing at all, not thirteen coherent labels. († `KO` is the one prefix in that
+table serving more than one skill; see the caution below.) The last two independently
 confirm a reading taken from the code alone: `SP` was called a *speed* modifier
 because `FUN_081f64e8` divides a duration by `1 + pct/100`, and the engine
 labels that row **Attack Speed**.
@@ -142,9 +143,18 @@ are *physisch/Feuer/Magie/Gift* in that order.
 
 One caution the blocks make visible. A caller may reuse one balance triple for
 several skills, so an abbreviation resolved from a *single* call site can be
-mislabelled: `bal_KO*` is passed four different ids (Vampirism, Trap Lore,
-Dwarven Lore, Special Move) and is therefore a shared curve, not a skill name.
-Count the call sites before naming anything.
+mislabelled: `bal_KO*` serves three skills, not one. Count the call sites
+before naming anything.
+
+The whole family→skill map has since been closed properly, and not by
+matching names to ids at all: **resource id = skill type + 9399**, stated by
+the engine as a literal `add $0x24b7, %eax`, with the skill type indexing
+`FUN_081f686a`'s jump table directly. See
+[../engine/combat-formulas.md](../engine/combat-formulas.md) § *The family
+prefixes*. `KO` turned out to be *Konzentration* — Concentration (9424) —
+shared with Vampirism (9419) and Trap Lore (9426). Dwarven Lore is **not**
+among them; that was an artefact of reading the switch cases in address order
+when the jump table is a permutation.
 
 ## Open
 
