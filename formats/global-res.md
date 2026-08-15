@@ -21,8 +21,19 @@ u32  size              // payload length in bytes
 ```
 
 The `u32` sitting *at* `offset` is not the size; the text starts four bytes
-later. Entry 0's `offset` is where the index ends, so the entry count is
-`(first_offset − 4) / 16`.
+later.
+
+**The entry count is `first_offset / 16`, not `(first_offset − 4) / 16`.**
+Entry 0's `offset` is four bytes *short* of the index end, and `first − 4` is
+not even a multiple of 16 — it leaves a remainder of 12. The index runs to
+`first + 4`, giving 369968/16 = **23,123** exactly. The last entry is real:
+hash 2147266699, size 26, `Gero Wachholz`. Its `size` field lands on the four
+bytes in front of entry 0's text, which is the same "u32 at offset that is not
+the size" every payload carries.
+
+`globalres.py`'s `range(4, first, 16)` produced 23,123 by overshooting rather
+than by the rule, and the port's first reader used `i + 16 <= first` and lost
+the last entry. Both now state `first + 4` explicitly.
 
 ## Two namespaces, one file
 
@@ -186,7 +197,18 @@ Phex being DSA deities. Retail's Seraphim and Gladiator replaced all of them.
 
 ## Open
 
-Nothing.
+**Not every `res:` operand is numeric, and some resolve to nothing.** Of the
+1,521 `res:` display-name references the eight `startcode.bin` files carry,
+144 are `res:D1Dorf_01` … `res:D1Dorf_18` — 18 word names repeated across all
+eight character classes. They resolve under **neither** namespace: not by
+slot, because the tail is not an integer, and not by hash, because no such
+name is in the file (the substring `Dorf` appears in none of its 23,123
+entries). The retail engine cannot resolve them either — its tag handler
+`strtol`s the tail, which gives 0, and resource 0 does not exist. They are
+dangling references in the shipped data.
+
+That does not contradict the section above: `global.res` still contains only
+numeric names. It is the *references* that are not all numeric.
 
 ---
 Provenance: `tools/formats/globalres.py`, whose self-check runs on every
