@@ -115,10 +115,43 @@ container that happens to share the extension. Reader: `tools/formats/parse_trg.
 That raised the obvious follow-up, audited separately: which other files can
 the community toolchain misread the same way.
 
+## `mixed.pak` is not heterogeneous, and was not open
+
+This document listed `mixed.pak`'s payloads as open. They were not: the port's
+`engine/formats/mixed.gd` had already read them, and the entry here was simply
+never struck. Recorded rather than quietly fixed, because a research doc
+lagging the engine is the failure mode this split is supposed to prevent.
+
+Every slot is populated and every one has the same flags byte (`0x63`). A
+record is one **sprite assembled from pieces**:
+
+```
+u32  count            // 0 for the 15,840 records that are invisible markers
+u16  w, u16 h
+i16  dx, i16 dy
+u32  (uninitialised 0xcccccccc, in BOTH builds)
+{ char[32] name; u32 texture_id; u16 x1,y1,x0,y0; u32; f32 u0,v0,u1,v1 } × count
+```
+
+Confirmed against the Armalion prerelease's own `MIXED.PAK`, which is `MIX` v0
+there too (8,192 slots against retail's 32,096):
+
+| | retail | prerelease |
+|---|---|---|
+| `size == 16 + count*64` | 32,095/32,095 | 8,191/8,191 |
+| element names ending `.444` | 209,956/209,956 | 24,297/24,297 |
+| `texture_id` below `texture.pak`'s count | max 25,534 of 25,535 | max 17,138 of 17,146 |
+| the four floats inside [0,1] | 839,824/839,824 | 97,188/97,188 |
+| destination rect ordered `x1>=x0, y1>=y0` | 209,956/209,956 | 24,297/24,297 |
+
+`.444` is **Sacred's own image format** — `armaSource/library/formats/444.cpp`
+in the [source tree](../builds/armalion-source-tree.md), and the debug build
+asserts `hdr.tag[0]=='4'` through `hdr.tag[2]=='4'`. Retail ships no `.444`
+files; the names are provenance for art that became `texture.pak` TGAs.
+
 ## Open
 
-`mixed.pak`'s heterogeneous payloads, Bink `.bik` (ffmpeg decodes it), Miles
-`.mss`.
+Bink `.bik` (ffmpeg decodes it), Miles `.mss`.
 
 ---
 Provenance: measured against the retail install in this project's private
