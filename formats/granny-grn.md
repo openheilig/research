@@ -267,6 +267,52 @@ staged viewer at yaw 270 shows the sternum plate and a face; at yaw 90 the
 X-lacing and the back of the skull with the braid behind it. Front and back
 agree with the atlas, so the mesh is not mirrored.
 
+### Equipment is skinned by the ITEM, not by the mesh
+
+A body's textures come from its own material table, above. **A weapon's do
+not.** `cGranny::bindTextures` (`0x80f7866`) reads an override at `this+0x34`
+and uses it *instead of* the by-name pak lookup whenever it is non-zero. The
+setter is the 14-byte `0x80f7858`, and every caller follows one shape:
+
+```
+setOverride(granny, itemTexture(items, id));   // 0x8136692
+draw;
+setOverride(granny, 0);
+```
+
+`0x8136692(items, id)` is `*(u32*)(items + id*128 + 24)`, and its sibling
+`0x81365f8` returns `items + id*128 + 71` — the model name our reader already
+reads at record `+0x37`. So the engine's table base sits **16 bytes below record
+0**, and the override field is **`items.pak` record `+0x08`**: a direct
+`texture.pak` **entry index**, not a name and not a hash.
+
+Proof by bijection — the twelve items naming `SHIELD_KITE.GRN`:
+
+| item | `+0x08` | texture.pak entry |
+|---|---|---|
+| 1200 | 8391 | `SHIELD_KITE01.TGA` |
+| 1201 | 8392 | `SHIELD_KITE02.TGA` |
+| 1208–1217 | 8393–8402 | `_DARKELF`, `_IVORY`, `_IVORY1`, `_KING`, `_MASCARELL`, `_MORDREY`, `_ORGANIC`, `_VALOR`, `_VAMPIRE`, `_VAMPIRE1` |
+
+Twelve items onto twelve textures, one to one. Corpus control over the 2652
+item records that name a `.GRN` and index `texture.pak`: token agreement
+between model name and texture name is **mean 0.630, median 0.667** against a
+permuted control at **0.012 / 0.000** — a 50× separation. It is a general skin
+system, creatures included: `WOLF` → `WOLF_VAMPDAY025`, `BEAR` → `BEAR_MAGIC`,
+`NOBLE_MAL` → `NOBLE_MAL_GEIST`.
+
+This is why `SHIELD_KITE.GRN`'s own `Shield_kite_cross.tga` is not in the pak:
+the mesh's texture name is only the fallback, and no shipped item uses it.
+
+**Watched, but not yet isolated.** In the world capture the hero's weapon is a
+64-triangle batch on a 32×128 texture whose pixels correlate **1.000** with
+`SWORD_BASTARD.TGA` (entry 8654) and ≤0.322 with any other 32×128 entry;
+`SWORD_BASTARD.GRN` is 64 triangles and `items.pak` record 1724 names it with
+`+0x08 = 8654`. Consistent — but *not* discriminating, because that mesh names
+`sword_bastard.bmp`, whose stem resolves to the same texture. Isolating the
+override needs a case where the two routes disagree (a kite shield, or a
+variant-skinned creature), and neither was on screen in the scenes captured.
+
 ### The one exception, and it is a bug on our side
 
 `ELVE_SORCERESS`'s 372-triangle hands batch is the only one of the 45 our reader
