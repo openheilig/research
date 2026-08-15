@@ -221,9 +221,17 @@ which are choices rather than facts about the format.
 
 ## Open
 
-Nothing open on the cell record: all 32 bytes are accounted for. Building
-construction and the interior/exterior swap are a separate matter and are
-deliberately not documented here; the reason is under Related, above.
+All 32 bytes of the retail cell are accounted for, and one of them has since
+become slightly more open rather than less. `+0x08` is empty in every retail
+cell and was written off as a runtime slot; the prerelease populates it in 73
+cells, so it is a **dropped layer** and the table those 73 distinct values
+index is unidentified — `NonStatic.PAK` is the obvious candidate by name and
+does not fit, holding 106 records against a maximum value of 170. Nothing in
+the retail port depends on it, which is why this is a curiosity rather than a
+blocker.
+
+Building construction and the interior/exterior swap are a separate matter and
+are deliberately not documented here; the reason is under Related, above.
 
 ---
 Provenance: `tools/parity/verify_ref.py` and `engine/world/walkable.gd`, which are the
