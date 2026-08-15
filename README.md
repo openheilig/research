@@ -12,8 +12,10 @@ tables, no memory dumps. Those stay in a private workspace by design, and the
 
 | I want… | Read | Status |
 |---|---|---|
+| **to know what a file on the disc is** | [formats/install-inventory.md](formats/install-inventory.md) | Read |
 | to read a `.pak` | [formats/pak-containers.md](formats/pak-containers.md) | Solved |
 | to load the world | [formats/world-sectors.md](formats/world-sectors.md) | Solved |
+| sound, music, sound selection | [formats/install-inventory.md](formats/install-inventory.md) | Read |
 | models, skeletons, animation | [formats/granny-grn.md](formats/granny-grn.md) | Read |
 | hero saves | [formats/pax-saves.md](formats/pax-saves.md) | Read |
 | script bytecode and opcodes | [formats/script-bytecode.md](formats/script-bytecode.md) | Read |
@@ -78,7 +80,7 @@ is a checkable claim rather than a matter of taste.
 
 ## The findings log
 
-`log/autoresearch-results.tsv` — **800+ rows**, one per investigated question,
+`log/autoresearch-results.tsv` — **916 rows**, one per investigated question,
 append-only. Each row records what was asked, what was measured, and the
 verdict, including the refutations. It stands in for the missing git history
 of the analysis workspace.

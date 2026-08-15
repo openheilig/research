@@ -92,21 +92,40 @@ with a NUL-padded filename. Known flags: `0x04` TGA, `0x40` Granny `.GRN`,
 | File | Magic | v | Entries | Layout | Payload |
 |---|---|---|---|---|---|
 | `creature.pak` | CIF | 0 | 474 | fixed | 86 B (`0x56`) |
-| `weapon.pak` | WPN | 8 | 4883 | fixed | 322 B |
+| `weapon.pak` | WPN | 8 | 4883 | fixed | **two** sections: 258 B + 64 B |
 | `motions.pak` | MHP | 1 | 3423 | fixed | 198 B |
 | `items.pak` | ITM | 5 | 32768 | blob | uniform 128 B (`0x80`) |
 | `tiles.pak` | ISO | 3 | 90132 | blob | uniform 64 B |
 | `sndprofiles.pak` | SPF | 1 | 8192 | blob | uniform 184 B |
 | `models.pak` | MDL | 3 | 4993 | blob | `.GRN` |
 | `texture.pak` | TEX | 3 | 25535 | blob | `.TGA` |
-| `sound.pak` | SND | 1 | 50000 | blob | RIFF/WAVE |
+| `sound.pak` | SND | 1 | 50000 | blob | RIFF/WAVE **and** Ogg Vorbis |
 | `mixed.pak` | MIX | 0 | 32096 | blob | heterogeneous |
-| `items03` / `models03` / `texture03` | — | — | 32768 / 4 / 3 | blob | Underworld overlays |
+| `items03` / `models03` / `texture03` | — | — | 32768 / 4 / 3 | blob | one promo item |
 
 `world/sectors.keyx` is the same family: magic `WLK` v5, and
 `(4646656 − 256) / 768 = 6050` sector records exactly.
 
-## Two corrections worth keeping
+`sound.pak`'s index flag selects the codec, 1:1 across all 6598 payloads with
+zero exceptions: `0x20` ↔ `RIFF` (3194), `0x21` ↔ `OggS` (3404). Naming and
+the `sndprofiles` slot enum live in the executable, not on disk — see
+[install-inventory.md](install-inventory.md).
+
+## Three corrections worth keeping
+
+> **`weapon.pak` is not a 322-byte record.** 322 divides the body exactly
+> (`256 + 4883×322` = the file size), which is what made it convincing, but it
+> is the SUM OF TWO PARALLEL TABLES: 4883 records of 258 B from `0x100`, then
+> 4883 records of 64 B from `0x133966`. The discriminator is a name field —
+> at stride 258 an ASCII run sits at `+0x28` in 81.3% of records, at stride
+> 322 the best offset reaches 5.0%, which is noise. Measured 2026-08-16.
+
+> **The `03` overlays are not Underworld content.** They ship exactly one
+> item between them: `items03.pak` carries a single populated record (3999,
+> `Krombacher.grn`), `models03.pak` holds `KROMBACHER.GRN` plus a motion and
+> two `INVALID_` sentinels, `texture03.pak` holds `KROMBACHER.TGA` and
+> `CAB.TGA`. Krombacher is a brewery: it is product placement. Base slot 3999
+> is empty, so the overlay adds rather than replaces.
 
 > **`items.pak` is not 140-byte stride.** That figure was arithmetic
 > coincidence. It is a blob container of **128-byte** records — so the
