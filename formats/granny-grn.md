@@ -112,6 +112,27 @@ they are distinct node types.
 check our decode against the vendor's own. That is the oracle; agreement
 between our two readers is the gate (`tools/parity/grn_parity.sh`).
 
+## Why the clip-to-mesh match is believed
+
+The shipped names do not line up, so a clip is matched to a mesh by bone
+geometry: shared bone names, and rest origins agreeing within a tolerance.
+That resolves 121 of 124 distinct creature meshes — and a resolution rate,
+on its own, is not evidence. It could equally mean the clip corpus is dense
+enough that anything matches something.
+
+So the gate now measures what the score would be **if the hypothesis were
+false**. It permutes each mesh's bone origins among that mesh's own bone names
+— same bones, same names, same positions, same counts, so the matched-bone
+denominator cannot shrink — destroying only the name-to-position
+correspondence. Real pairs score **0.844 and above; permuted pairs 0.489 and
+below**, and the gate fails if those distributions come within 0.20 of each
+other.
+
+A cross-pairing control was considered and rejected: creatures genuinely share
+rigs, which is the reason this machinery exists, so pairing one mesh with
+another's clip can be *correct*. A control that can accidentally be right is
+not a control.
+
 ## Open
 
 Eight of the 3421 animation clips do not decode. Separately, one mesh
