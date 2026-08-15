@@ -149,6 +149,19 @@ in the [source tree](../builds/armalion-source-tree.md), and the debug build
 asserts `hdr.tag[0]=='4'` through `hdr.tag[2]=='4'`. Retail ships no `.444`
 files; the names are provenance for art that became `texture.pak` TGAs.
 
+## A header variant, so nobody assumes the count is always at +4
+
+The Armalion prerelease's `PAK/GFX.PAK` is `GFX` **v5**, and its entry count is
+at **+0x08**, not +0x04 where every retail container puts it: the header reads
+`"GFX", 5, 0, 65536, 0, 0`. The count is confirmed by arithmetic rather than
+by reading it — `0x100 + 65536*12` is exactly entry 1's offset. 2,454 of the
+65,536 slots are populated, all with flags `1`, and each payload begins
+`"GraphiMix\0"` followed by its own length.
+
+Retail ships no `GFX.PAK`; the 2D sprite archive became `mixed.pak` plus
+`texture.pak`. It is recorded only so that "the count is the `u32` at +4" is
+not treated as a rule of the family.
+
 ## Open
 
 Bink `.bik` (ffmpeg decodes it), Miles `.mss`.

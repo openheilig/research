@@ -14,13 +14,14 @@ strike it here.
 |---|---|
 | Eight of 3421 animation clips do not decode. | [formats/granny-grn.md](formats/granny-grn.md) |
 | One mesh's vertex count disagrees with an outside reading, 279 against 280. | [formats/granny-grn.md](formats/granny-grn.md) |
-| `mixed.pak`'s heterogeneous payloads are unread; Bink `.bik` and Miles `.mss` are third-party formats we do not decode. | [formats/pak-containers.md](formats/pak-containers.md) |
-| `global.res`'s by-name namespace appears to hold only numeric names; no plain-word name resolves, so whether the Armalion build's named resources were carried over at all is unread. | [formats/global-res.md](formats/global-res.md) |
+| Bink `.bik` and Miles `.mss` are third-party formats we do not decode. (`mixed.pak` was listed here in error — the engine had read it; struck 2026-08-15 and confirmed in a second build.) | [formats/pak-containers.md](formats/pak-containers.md) |
 | Whether the `0xC8` record type ids share the `items.pak` id space. A probe with a control arm exists; it has not returned a verdict. | [formats/pax-saves.md](formats/pax-saves.md) |
-| 102 script opcodes have no verified meaning beyond what their string payloads suggest, and 66 zero-width tags are presumably operators whose identity sits in handlers already located. | [formats/script-bytecode.md](formats/script-bytecode.md) |
+| **96** script opcodes have no verified meaning beyond what their string payloads suggest, and 66 zero-width tags are presumably operators whose identity sits in handlers already located. | [formats/script-bytecode.md](formats/script-bytecode.md) |
+| `world/static.pak`'s `WldxEntry +0x08` slot is empty in every retail cell but populated in 73 prerelease cells — a dropped layer whose target table is unidentified. | [formats/world-sectors.md](formats/world-sectors.md) |
 
-Nothing is open on `.pak` framing, the world cell record, or the `balance.bin`
-layout and key names.
+Nothing is open on `.pak` framing, `tiles.pak`, `global.res`, `mixed.pak`, or
+the `balance.bin` layout and key names. The world cell record is fully
+accounted for; the one loose end is the dropped layer noted above.
 
 ## Engine behaviour
 
