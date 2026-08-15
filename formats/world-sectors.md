@@ -1,7 +1,7 @@
 # World — `sectors.keyx` / `sectors.wldx`
 
-**Status: read and streaming.** The engine loads the grid straight out of the
-retail install at runtime.
+**Status: read and streaming, and the cell record is fully decoded.** The
+engine loads the grid straight out of the retail install at runtime.
 
 ## Geometry
 
@@ -27,6 +27,59 @@ Directory fields located in the `keyx` record:
 | 236 | `u32` byte offset into `sectors.wldx` |
 | 240 | `u32` compressed size |
 | 264 | `u32` decompressed size |
+
+## `WldxEntry` — all 32 bytes
+
+Every field is accounted for. Where a reading was settled by finding its
+consumer in the interpreter rather than by statistics, that is said so.
+
+| Offset | Field |
+|---|---|
+| `+0x00` | tile id |
+| `+0x04` | `static.pak` chain head |
+| `+0x08` | runtime mobile-object list head — **zero in all 24,780,800 cells** |
+| `+0x0c` | `floor.pak` overlay chain head |
+| `+0x10..13` | signed per-corner render heights |
+| `+0x14..17` | per-corner light bytes |
+| `+0x18..1b` | signed per-corner second height, ×2.5, bilinearly sampled |
+| `+0x1c`, `+0x1d` | signed parent-object deltas |
+| `+0x1e` | bit 0 structure, bit 1 room interior, bit 2 door; bits 3–7 never set |
+| `+0x1f` | low nibble = class; high nibble = a 16-class ground-type tag |
+
+Three of these are worth stating as negatives, because each cost a round of
+hypotheses:
+
+> `+0x08` carries no meaning to recover. It is empty in every cell of the
+> world — a slot the running engine fills, not data the map ships.
+>
+> ~~`+0x1e` bit 1 marks "covered by a region sub-grid".~~ Refuted.
+>
+> ~~`+0x18..0x1b` is a per-corner overlay blend.~~ Refuted; it is a second
+> height, sampled the same way as `+0x10`.
+
+`+0x1e` and `+0x1f` were both settled by **drawing the field** as a per-cell
+colour overlay after statistics stalled on them. A bit whose meaning will not
+separate in a census often separates instantly when you can see where in the
+world it is set.
+
+## `floor.pak` — the overlay layer
+
+`+0x04` of a `floor.pak` record holds **two** `tiles.pak` indices: the low 17
+bits are the art tile, the top 15 the mask tile, and 0 means no mask. Retail
+blends them in a single quad across two texture units — confirmed by capturing
+the retail process's own GL calls, not inferred from how it looks:
+
+```
+unit 1 (mask)  COMBINE_RGB=REPLACE    SRC0_RGB=PREVIOUS
+               COMBINE_ALPHA=REPLACE  SRC0_ALPHA=TEXTURE
+unit 0 (art)   ENV_MODE=COMBINE       COMBINE_RGB=MODULATE
+                                      SRC0_ALPHA=PRIMARY_COLOR
+framebuffer    GL_BLEND, glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+```
+
+So colour is the art tile modulated by the per-corner light, and alpha comes
+from the mask tile's texels. Drawing this layer is what moved the port's
+load-path invariant from 28,672 quads to 35,340.
 
 ## Walkability
 
