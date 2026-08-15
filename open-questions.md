@@ -28,8 +28,8 @@ accounted for; the one loose end is the dropped layer noted above.
 | Question | Where it lives |
 |---|---|
 | The combat RESOLUTION step is undecoded: how damage meets resistance, criticals, and what the weapon-slot flag selects. To-hit and the derived-stat kernel that builds the damage and resistance numbers are recovered. | [engine/combat-formulas.md](engine/combat-formulas.md) |
-| No recovered name has been confirmed by behaviour: cross-source agreement covers 34 of 131, the behavioural arm covers none. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
-| 11,303 of 13,716 callables in the retail binary have no identity, and the vtable route that produced the other 2,413 is saturated. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
+| No recovered name has been confirmed by behaviour. Cross-source agreement covers 34 of 131 against the Armalion name catalogue, plus 18 of 130 against the RTTI vtable walk at the same address (0 disagreements). The behavioural arm still covers none. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
+| 11,303 of 13,716 callables in the retail binary have no identity, and the vtable route that produced the other 2,413 is saturated. Widening the assert-string pattern past `c[A-Z]` adds ~9 names, so that route is close to saturated too. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
 | Which creature-struct offset is which named attribute: `+0x56` feeds every damage channel, `+0x4a` and `+0x4e` are two weapon slots. The skill slots at `+0x24` are now read (8 bytes, one skill type each), so the same route — a UI printer that pairs an offset with a resource id — should reach the rest. | [engine/combat-formulas.md](engine/combat-formulas.md) |
 | The Granny converter cannot be driven past a null dereference on any real Sacred `.GRN`. Reopening means a different converter build, not a different way of calling this one. | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) |
 

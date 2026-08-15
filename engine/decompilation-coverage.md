@@ -68,6 +68,17 @@ The scan is: find `c[A-Z]\w+::\w+` inside `.rodata`, compute each string's
 virtual address, and count occurrences of its 4-byte little-endian address in
 `.text`. One occurrence means one use site.
 
+> **`c[A-Z]` is a convention, and Sacred breaks it.** Scanning for any
+> `identifier::identifier` finds nine more real names —
+> `TypeManager::loadItemTypes`, `::loadWeaponInfo`, `::loadSoundProfiles`,
+> `::getRandomItem`, `::saveSpawnInfo`, `ItemTypeMgr::makeWeaponInfo`,
+> `::getDoorDirection`, `ItemDataMgr::saveHero`, `dxDriver::createSurface` —
+> plus every destructor, which `\w` cannot match through the leading `~`. The
+> item and weapon **type loaders** are in that list, which is the part worth
+> having. `tools/binary/assert_names.py` runs the wider scan and carries the
+> run-on guard it needs; see
+> [../method/naming-oracle.md](../method/naming-oracle.md).
+
 ## What a claim has to survive
 
 **A string's frame is a lead, not a result.** Where a method is named by more
@@ -81,7 +92,16 @@ than one string, the strings must agree on a frame. 35 methods qualify:
 error rate of the inference, and it is why a name needs a second arm:
 
 1. **A second source.** 34 of the 131 also appear in the Armalion symbol
-   catalogue of 789 game-class names.
+   catalogue of 789 game-class names — an agreement about a **name**.
+
+   A second, stronger one has since been added: the RTTI vtable walk, compared
+   at the **same address** rather than by name. Of the 130 functions the wider
+   scan names, **18 are also named by the vtable walk and the class agrees in
+   all 18, with no disagreement.** The two oracles share no input — one reads
+   typeinfo, the other reads strings. It needed the vtable's *ancestry* to be
+   carried, because a slot may hold an inherited method (`cWeapon3D`'s slot
+   holds `cItemBase::advanceTime`), and case to be ignored, because the engine
+   writes `cUI_Blacksmith` in its RTTI and `cUI_BlackSmith` in its own string.
 2. **Behaviour.** The named function must be observed doing what the name
    says — reached under a run that should reach it, absent from a run that
    should not.
@@ -121,7 +141,8 @@ the running game. The gap is not meaning, it is verification.
 ## Open
 
 No name and no opcode reading has been confirmed by **behaviour**. Cross-source
-agreement covers 34 of 131 names; the behavioural arm covers nothing at all.
+agreement covers 34 of 131 names against the Armalion catalogue and 18 of 130
+against the RTTI vtable walk; the behavioural arm covers nothing at all.
 Until a claim survives both, this document reports a method and a ranking, not
 a set of established facts.
 

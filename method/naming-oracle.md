@@ -73,6 +73,66 @@ of function names into a **module map**: 76 files, 80 classes, 25 of which are
 still in retail's RTTI. See
 [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
 
+## Widening it: the `c` prefix is a convention, not a rule
+
+[../engine/decompilation-coverage.md](../engine/decompilation-coverage.md)
+already ran this oracle against **retail** and got 131 distinct names from 248
+strings, scanning for `c[A-Z]\w+::\w+`. That pattern is Sacred's convention
+and Sacred does not always follow it. Scanning for any
+`identifier::identifier` instead, `tools/binary/assert_names.py` reaches names
+the `c` pattern cannot see:
+
+> `TypeManager::loadItemTypes`, `::loadWeaponInfo`, `::loadSoundProfiles`,
+> `::getRandomItem`, `::saveSpawnInfo`; `ItemTypeMgr::makeWeaponInfo`,
+> `::getDoorDirection`; `ItemDataMgr::saveHero`; `dxDriver::createSurface`;
+> `dxDriver7::*`; `dxDisplay::*` — plus every destructor, since `\w` cannot
+> match through a leading `~`.
+
+Widening costs something, and the tool pays it explicitly.
+
+- **A run-on guard.** The tail of a preceding string reads as part of the
+  class: `BcEngine::creature_equipItem` is `cEngine` with a stray `B`, and so
+  are `AcInventoryEntry`, `BcStatsManager`, `CcWorldView2`, `GcEngine`. A
+  class is dropped when removing its first character leaves a class that looks
+  like a `c`-name — which keeps `cItemDataMgr`, whose tail `ItemDataMgr` is a
+  real class in its own right.
+- **Ambiguity and aliasing are different things.** One name at several
+  addresses is the 11% inlining effect this document already measured, and
+  those names are dropped. One address under several names is usually the
+  engine spelling itself two ways — `cUI_Character::execAction` and
+  `::executeAction`, `cUI_BlackSmith` and `cUI_Blacksmith` — which is an alias
+  while the class agrees, and a dropped address when it does not (two cases:
+  `ItemDataMgr::loadHero` against `cObjectManager::loadHero`, and
+  `cTextureLoader::load` against `cTextureManager::createFromPak`).
+
+Result: **130 distinct retail functions, and 130 of 130 land on an exact
+function entry** per Ghidra, whose boundaries come from its own analysis
+rather than from this tool's `.eh_frame` walk. They are imported into the
+project, so decompiled output reads with them in it.
+
+## A second source that compares ADDRESSES, not names
+
+The existing second arm is the Armalion symbol *catalogue*: it agrees or not
+about a **name**. `assert_names.py --vtables` compares against the RTTI vtable
+walk at the **same address** — two oracles that share no input, one reading
+typeinfo and one reading strings. Where both reach a function they must agree
+on its class.
+
+**18 agree, 0 disagree.**
+
+Getting there needed two corrections, both of which would otherwise have
+produced false alarms:
+
+- **A vtable slot may hold an INHERITED method.** `cWeapon3D`'s slot legitimately
+  holds `cItemBase::advanceTime`, because `cWeapon3D` derives from `cItemBase`.
+  Comparing only the leaf class calls that a contradiction. `vmeth.py` now
+  emits each class's full ancestry so the comparison can accept it.
+- **The engine spells one class two ways.** `cUI_Blacksmith` in its RTTI and
+  `cUI_BlackSmith` in its own assert string. The comparison ignores case.
+
+Swapping class and method in the tool turns both agreements into failures,
+which is the check working.
+
 ## The same rule works on opcodes
 
 The mechanism generalises past function naming. A string names a *script
