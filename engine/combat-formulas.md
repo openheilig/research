@@ -146,7 +146,9 @@ res_gi += (a + e) / BalanceResGi      ; 25.0
 
 The `Ph/Fe/Ma/Gi` suffixes are the German *physisch / Feuer / Magie / Gift*, so
 the four channels are physical, fire, magic and poison. That is read off the
-key names, not assigned.
+key names, not assigned — and the engine says the same thing independently:
+`global.res` resources 1078-1081, the four rows the character sheet prints
+under *Damage*, are `Physical, Fire, Magic, Poison` in that order.
 
 `FUN_0820ef48` accumulates into eight damage floats at `+0xa6 ... +0xc2` of its
 first argument and four resistance floats at `+0x66 ... +0x72`, and is called
@@ -236,28 +238,38 @@ off the code, not off the name.
   `BalanceGeschick` shows the table does use full German where it has room, so
   these are abbreviations of the same vocabulary.
 
-  **Eleven are now resolved.** The character sheet passes a resource id beside
-  each family, and those ids reach `global.res` through the engine's own name
-  hash -- see [../formats/global-res.md](../formats/global-res.md), which was
-  written to close exactly this:
+  **Ten are resolved, and one turned out not to be a name at all.** The
+  character sheet passes a resource id beside each family, and those ids reach
+  `global.res` through the engine's own name hash -- see
+  [../formats/global-res.md](../formats/global-res.md), written to close
+  exactly this:
 
   | `HM` Heavenly Magic | `FM` Fire Magic | `WM` Water Magic | `EM` Earth Magic |
   |---|---|---|---|
-  | `LM` Air Magic (*Luftmagie*) | `MM` Moon Magic | `KO` Vampirism | `BA` Ballistics |
-  | `BL` Bloodlust | `ZK` Weapon Technology | `HOM` Hellpower (*Höllenmacht*) | |
+  | `LM` Air Magic (*Luftmagie*) | `MM` Moon Magic | `BA` Ballistics | `BL` Bloodlust |
+  | `ZK` Weapon Technology | `HOM` Hellpower (*Höllenmacht*) | | |
 
-  Thirteen of thirteen ids resolve and every one is a stat name, which is what
-  makes it trustworthy -- a wrong hash returns nothing, not thirteen coherent
-  labels. Two of the thirteen settle the `SP` question from the other
-  direction: `SP` was called a *speed* modifier because the code divides a
-  duration by `1 + pct/100`, and ids 1100 and 1107 are literally **Attack
-  Speed** and **Regeneration**. That is the engine agreeing with a reading
-  taken from arithmetic alone.
+  Each of those ten is passed exactly one id. **`KO` is passed four** -- 9419
+  Vampirism, 9426 Trap Lore, 9430 Dwarven Lore and 1147 Special Move -- so it
+  is not the abbreviation of a skill but a **shared curve**, the triple reused
+  by skills that were never given one of their own. Reading it as "KO =
+  Vampirism" off its first call site would have been wrong, and only the
+  repeat-count shows it.
+
+  Two of the ids settle the `SP` question from the other direction. `SP` was
+  called a *speed* modifier because the code divides a duration by
+  `1 + pct/100`; ids 1100 and 1107 are literally **Attack Speed** and
+  **Regeneration**. That is the engine agreeing with a reading taken from
+  arithmetic alone.
 
   Still unexpanded are the weapon-skill families carrying `_AW`/`_SP` suffixes
   -- `AK`, `BK`, `FEK`, `FK`, `KK`, `STK`, `SK`, `HR`, `W`, `P`, `R`. For those
-  `FUN_081f686a` calls the curve directly and passes no resource id, so their
-  labels are somewhere in `cUI_StatisticsChar::vf06`.
+  `FUN_081f686a` calls the curve directly and passes no resource id, and
+  `cUI_StatisticsChar::vf06` does not carry them either -- its only literal in
+  that range is `0x24b7`. The skill names they must map onto are now all known
+  (`global.res` 9400-9432), so this is a matching problem rather than a search,
+  but matching by plausibility is exactly what the `KO` case shows to be
+  unsafe. It wants the id, or a second source.
 - **The kernel is single-source.** Unlike to-hit it has been read only in
   retail Linux `sacred_orig`. The Armalion builds that confirmed to-hit are the
   obvious second arm and have not been checked.

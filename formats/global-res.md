@@ -104,7 +104,7 @@ ids expand the abbreviations that name half the balance table:
 | 9416 | `EM` | Earth Magic |
 | 9417 | `LM` | Air Magic (*Luftmagie*) |
 | 9418 | `MM` | Moon Magic |
-| 9419 | `KO` | Vampirism |
+| 9419 | `KO` (†) | Vampirism |
 | 9425 | `BA` | Ballistics |
 | 9427 | `BL` | Bloodlust |
 | 9428 | `ZK` | Weapon Technology |
@@ -114,10 +114,37 @@ ids expand the abbreviations that name half the balance table:
 
 Thirteen of thirteen resolve, and every one is a stat name, which is what makes
 the hash trustworthy rather than merely plausible — a wrong hash returns
-nothing at all, not thirteen coherent labels. The last two independently
+nothing at all, not thirteen coherent labels. († `KO` is the one entry in that
+table that is *not* a name; see the caution below.) The last two independently
 confirm a reading taken from the code alone: `SP` was called a *speed* modifier
 because `FUN_081f64e8` divides a duration by `1 + pct/100`, and the engine
 labels that row **Attack Speed**.
+
+Sweeping the neighbourhoods those ids sit in gives two contiguous blocks that
+were not otherwise reachable. **9400-9432 is the whole skill list**, in order:
+
+```
+Heavenly Magic, Weapon Lore, Long-handled Weapons, Sword Lore, Axe Lore,
+Dual Wielding, Ranged Combat, Agility, Parrying, Constitution, Armor,
+Meditation, Blade Combat, Magic Lore, Fire Magic, Water Magic, Earth Magic,
+Air Magic, Moon Magic, Vampirism, Trading, Riding, Disarming, Unarmed Combat,
+Concentration, Ballistics, Trap Lore, Bloodlust, Weapon Technology,
+Two-handed Weapons, Dwarven Lore, Hellpower, Forge Lore
+```
+
+with each skill's in-game description at `id + 50`. **1070-1199 is the
+character sheet and item tooltips**, and it names the four damage channels
+outright -- 1078-1081 are `Physical, Fire, Magic, Poison`, which is the
+independent confirmation that `BalCharPD/FD/MD/GD` and `BalanceResPh/Fe/Ma/Gi`
+are *physisch/Feuer/Magie/Gift* in that order.
+
+`globalres.py` prints either block; they are not reproduced further here.
+
+One caution the blocks make visible. A caller may reuse one balance triple for
+several skills, so an abbreviation resolved from a *single* call site can be
+mislabelled: `bal_KO*` is passed four different ids (Vampirism, Trap Lore,
+Dwarven Lore, Special Move) and is therefore a shared curve, not a skill name.
+Count the call sites before naming anything.
 
 ## Open
 
