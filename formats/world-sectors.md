@@ -82,7 +82,15 @@ framebuffer    GL_BLEND, glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 ```
 
 So colour is the art tile modulated by the per-corner light, and alpha comes
-from the mask tile's texels. Drawing this layer is what moved the port's
+from the mask tile's texels.
+
+The 17/15 boundary is **proven, and was not until 2026-08-15**. The gate used
+to assert only that the top field resolves to a valid tile whose orientation
+equals its index mod 18 — and neither can fail, because that identity holds
+for **all 90,132** tiles.pak indices and a doubled small id stays inside the
+count. Reading the field from bit 16 instead of 17 passed. What settles it is
+that the two fields must partition the word with no shared bit: only 17/15
+reconstructs the original u32, and `floor_check` now asserts that. Drawing this layer is what moved the port's
 load-path invariant from 28,672 quads to 35,340.
 
 ## Walkability
