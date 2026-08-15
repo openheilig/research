@@ -156,11 +156,37 @@ shared with Vampirism (9419) and Trap Lore (9426). Dwarven Lore is **not**
 among them; that was an artefact of reading the switch cases in address order
 when the jump table is a permutation.
 
+## Why only numeric names resolve — closed
+
+The by-name namespace holds only numeric names, and this is not an artefact of
+retail. The Armalion prerelease ships **`Scripts/us/resource.txt`, the source
+`RESOURCE.PAK` was compiled from**, and every resource in it is declared by
+integer:
+
+```
+#pragma resources 8192
+#pragma resource      1, 1,"OK"
+#pragma resource     32, 1,"AMAZON"
+#pragma resource     36, 1,"BORON PRIESTESS"
+```
+
+**376 of 376 declarations carry a numeric id**, none carries a word, the id
+range is 1..8191, and the type field is `1` in every one. That is exactly the
+376 populated slots of the 8192 recorded above.
+
+So resources were addressed by number from the beginning. Armalion indexed
+`RESOURCE.PAK` by that number directly; retail replaced the direct index with
+a hash of the number's decimal string. Nothing was ever named in words, so
+nothing was lost in the change — there is no missing vocabulary to look for.
+
+Incidentally the file is the Armalion hero list, and it is *Das Schwarze
+Auge* to the bone: `AMAZON`, `MAGE`, `ELF`, `WITCH`, `BORON PRIESTESS`,
+`PHEX PRIESTESS`, `WARRIOR`, `DRUID`, `BORON PRIEST`, `PHEX THIEF` — Boron and
+Phex being DSA deities. Retail's Seraphim and Gladiator replaced all of them.
+
 ## Open
 
-- The by-name namespace appears to hold only numeric names. No plain-word name
-  tried resolves, so how the non-numeric resources of the Armalion build were
-  carried over — or whether they simply were not — is unread.
+Nothing.
 
 ---
 Provenance: `tools/formats/globalres.py`, whose self-check runs on every
