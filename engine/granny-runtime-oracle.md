@@ -1,6 +1,6 @@
 # Driving RAD's Granny runtime as an oracle
 
-**Status:** Blocked
+**Status:** Blocked — and the question it existed for was answered elsewhere
 **Purpose:** Whether the shipped Granny converter can be made to read Sacred's
 `.GRN` dialect, so that its output could serve as ground truth for our own
 decoder — and what stopped it.
