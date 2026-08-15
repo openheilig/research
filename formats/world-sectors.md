@@ -53,8 +53,14 @@ consumer in the interpreter rather than by statistics, that is said so.
 Three of these are worth stating as negatives, because each cost a round of
 hypotheses:
 
-> `+0x08` carries no meaning to recover. It is empty in every cell of the
-> world — a slot the running engine fills, not data the map ships.
+> `+0x08` is empty in every cell of the retail world. It is **not** meaningless:
+> the Armalion prerelease populates the same slot in 73 cells, so it is a
+> layer the shipped game dropped rather than a field with nothing behind it.
+> What it indexes is still unidentified — the 73 values are distinct and run to
+> 170, while the prerelease's `World/NonStatic.PAK` (a file retail does not
+> ship at all) holds only 106 records, so they do not index it as an array.
+> See *The prerelease is not a second corpus* below for how the two records
+> line up.
 >
 > ~~`+0x1e` bit 1 marks "covered by a region sub-grid".~~ Refuted.
 >
@@ -132,6 +138,23 @@ For anyone who does want to read it: 1,201 sectors, the block offset is the
 followed by 4,096 × 32-byte cells, and the cells are stored **uncompressed** —
 retail's zlib came later.
 
+The v4 cell is retail's record **shifted by exactly one word**, with an extra
+flag word in front. Three of the four fields are pinned independently, each by
+filling its own table exactly and carrying no duplicate link:
+
+| v4 | retail | field | evidence in the prerelease |
+|---|---|---|---|
+| `+0x00` | — | flag word | only `0` or `0x20000000` |
+| `+0x04` | `+0x00` | tile id | max 13,395, and `Tiles.pak` holds 13,402 |
+| `+0x08` | `+0x04` | static chain head | 116,832 links, **0 excess**, max 393,764 = `Static.PAK` count − 1 |
+| `+0x0c` | `+0x08` | the slot retail zeroes | 73 links, 0 excess, max 170 |
+| `+0x10` | `+0x0c` | floor chain head | 1,969,048 links, **0 excess**, max 2,591,135 = `Floor.PAK` count − 1 |
+
+Two fields landing exactly on their table's last record, with not one record
+linked twice between them, is what makes the alignment safe — and it is what
+makes the `+0x0c` ↔ `+0x08` row an inference worth stating rather than a
+guess.
+
 > Two hazards. The prerelease is a debug build and leaked **uninitialised heap
 > into its shipped data**: 4,211 of 4.92M cells contain `0xcdcdcdcd`, MSVC's
 > debug fill. Anything measured against this corpus has to exclude them or it
@@ -178,7 +201,18 @@ general sector sample — the general list yields zero regions in every entry
 [script-bytecode.md](script-bytecode.md).
 
 `Triggers.PAK` is `TRG v1` and not a `.pak`; see
-[pak-containers.md](pak-containers.md).
+[pak-containers.md](pak-containers.md). `parse_trg.py` reads the Armalion
+prerelease's copy unmodified, and the 16-byte record is Armalion's own
+`cTrigger`, which its debug build prints as 16 bytes. Across both builds the
+first word is the record's **own index** in every populated record
+(209/209 and 1246/1246), the fourth is always zero, the second is a varying
+high half over a low-half flag that retail fixed at `0x0010`, and the third is
+bit 16 over a small code taking 16 distinct values in retail and 6 in the
+prerelease. That code is *not* named here: `trigger_setType` exists in the
+script API, but the prerelease's one `trigger_setType (1,1)` call refers to a
+trigger whose record is **all zeros**, which shows the file holds only
+authored triggers and scripts create the rest at runtime — useful in itself,
+and not a confirmation of anything.
 
 Building construction — how pieces are placed and linked, and how the
 interior/exterior swap works — is deliberately **not** documented here. Its
