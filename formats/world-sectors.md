@@ -185,6 +185,41 @@ builds — self-index 393,765/393,765 and 1,038,014/1,038,014, and eight of the
 > collision. `+0x1a` does exactly that and read as the closest rival until the
 > measure was fixed to `links − distinct targets`.
 
+## `tiles.pak` — the tile table is a product, and it names its own art
+
+Read fully, and confirmed against the Armalion prerelease's own `tiles.pak`
+(`ISO` v3 there too, 13,402 tiles against retail's 90,132):
+
+```
++0x00  char[32]  SOURCE TGA FILENAME, NUL-padded -- "iso00.tga".."iso999.tga"
++0x20  u32       texture.pak id
++0x24  u32       orientation, and it is EXACTLY tile_id % 18
++0x28  u32       0
++0x2c  u32       65536, constant in every record of both builds
++0x30  u32[4]    0
+```
+
+**Eighteen consecutive tile ids share one filename and one texture id** —
+5008 of 5008 groups in retail, 745 of 745 in the prerelease. So
+`tile_id = group * 18 + orientation`, and name, group and texture id are in
+bijection: 5008 names, 5008 groups, and not one name on two texture ids. The
+only content in a 5.8 MB file is 5008 texture ids and 5008 names.
+
+Two consequences.
+
+The filename was not documented before and is a **naming oracle for terrain
+art** — every tile now says which `.tga` it was cut from. `Tiles.source_name()`
+returns it.
+
+And `orientation(i) == i % 18` is an **identity by construction**, not a
+property of the data. `floor_check` had already measured that it cannot fail
+and treated it as an awkward coincidence; it is not a coincidence, and any
+test resting on it is permanently vacuous.
+
+`+0x20` and `+0x24` are each the *only* offset in the record that could be
+what they are: no other word is ever a plausible texture index, and no other
+word ever lies in 0..17. That holds in both builds.
+
 ## Walkability
 
 Cell-space walkability is a lookup over Sacred's own region grids, not a
