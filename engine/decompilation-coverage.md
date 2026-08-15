@@ -106,15 +106,40 @@ hands over with an address attached:
 | UI | 6 | `runThread`, `executeAction`, `tooltipCreate` |
 | Sound | 4 | `playMusic`, `playSFX`, `advanceTime` |
 
-The script group is the one that unblocks written-down work: the bytecode's
-*format* is closed and its *semantics* are not, and `cInterpretSQW` is where
-the semantics live.
+> ~~The script group is the one that unblocks written-down work: the bytecode's
+> format is closed and its semantics are not.~~ **Refuted the same day, row
+> 844.** Counting the `name` column of the static opcode table alone gives 34
+> of 141 and looks like a large gap. Counting the behaviour table with it gives
+> **116 opcodes with a recovered meaning and 25 without — and all 25 have zero
+> records in the shipped scripts.** Every one of the 1,360,204 records the game
+> actually runs is covered. Script semantics is not a bottleneck.
+
+What the same recount exposes instead: those 116 readings are **inferences**
+from operand shapes and handler statics. None has been confirmed by observing
+the running game. The gap is not meaning, it is verification.
 
 ## Open
 
-No name has been confirmed by **behaviour** yet. Cross-source agreement covers
-34 of 131; the behavioural arm covers none. Until a name survives both, this
-document reports a method and a ranking, not a set of established facts.
+No name and no opcode reading has been confirmed by **behaviour**. Cross-source
+agreement covers 34 of 131 names; the behavioural arm covers nothing at all.
+Until a claim survives both, this document reports a method and a ranking, not
+a set of established facts.
+
+The cheap behavioural oracles were checked and do not exist: retail's
+`debug.log` emits `makeSpawnInfo` once, as a `TypeManager` startup phase
+marker, not per spawn. What remains is live-process observation, which needs
+the game driven to a chosen sector — and that route is already recorded as
+abandoned, so establishing the behavioural arm means first solving navigation
+or finding a different observation point.
+
+The first experiment to run, stated so it can be argued with before it costs
+anything: opcode 115 declares spawn groups that only opcode 51 reads, and every
+one of its 184 distinct ids is a `creature.pak` id. Predict the creature set
+for a specific sector from the script data, observe what the running game
+actually instantiates there, and — this is the half that makes it a test —
+predict a *different* set for a second sector and check the observation
+changes with it. Without that control the first sector proves nothing, because
+common creatures appear nearly everywhere.
 
 ---
 Provenance: `tools/binary/ehframe_funcs.py` and `vtables.py` for the
