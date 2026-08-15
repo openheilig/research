@@ -27,6 +27,8 @@ layout and key names.
 | Question | Where it lives |
 |---|---|
 | Damage, resistances, criticals and every other combat resolution step are undecoded. One formula is recovered. | [engine/combat-formulas.md](engine/combat-formulas.md) |
+| No recovered name has been confirmed by behaviour: cross-source agreement covers 34 of 131, the behavioural arm covers none. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
+| 11,303 of 13,716 callables in the retail binary have no identity, and the vtable route that produced the other 2,413 is saturated. | [engine/decompilation-coverage.md](engine/decompilation-coverage.md) |
 | The Granny converter cannot be driven past a null dereference on any real Sacred `.GRN`. Reopening means a different converter build, not a different way of calling this one. | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) |
 
 ## Deliberately not open
