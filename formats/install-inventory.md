@@ -145,8 +145,8 @@ pairing is in the executable's `.rodata` (`scripts\Rustungenswitch.txt` →
 | `world2.bin` | 32 772 | **not a byte table** — `u32` byte-count + 16 384 `u16` sector-presence grid | Solved |
 | `balance.bin` | 24 328 | the tunables — flat int32/float32 at fixed absolute offsets | [balance-bin.md](balance-bin.md) |
 | `treppe.bin` | 19 952 | staircase footprint → anchor map, 2 494 pairs, 661 staircases | Solved |
-| `sets.bin` | 7 396 | 65 item sets, `u32 66` + 66 × 28 int32 | Solved |
-| `wea.bin` | 4 648 | 256 equipment pools; 906 members, **906/906** are items.pak ids naming a `.GRN` | Read |
+| `sets.bin` | 7 396 | 65 item sets, `u32 66` + 66 × 28 int32 | Solved — `engine/formats/sets.gd` |
+| `wea.bin` | 4 648 | 256 equipment pools; 906 members, **906/906** are items.pak ids naming a `.GRN` | Solved — `engine/formats/equipment.gd` |
 | `rust.bin` | 4 392 | armour switch — which mesh an armour becomes per wearer | `engine/formats/armour.gd` |
 | `merc.bin` | 1 872 | 117 **merchant** map icons `(cache, x, y, class)` | Solved |
 | `multistart.bin` | 768 | 48 multiplayer start world-positions | Solved |
