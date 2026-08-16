@@ -52,33 +52,40 @@ antidote at Faeries Crossing; resource 9400 is `Heavenly Magic`.
 
 ## The symbolic namespace is NOT in this install
 
-`res:N` resolves; a symbolic key does not. Measured over the Seraphim tree's
-`funkcode.bin`: **3377 distinct `Res:` operands, 728 numeric and 2435
-symbolic, and 0 of the 2435 resolve** — bare, with the prefix retained,
-lowercased, or with underscores stripped.
+**This section previously concluded that the symbolic namespace was absent
+from the install. That was wrong, and the cause was our own arithmetic — see
+[The hash](#the-hash). Corrected 2026-08-16, findings log row 954.**
 
-It is worse than a shortfall, because the two opcodes that carry prose use
-*only* symbolic keys:
+Both namespaces resolve, and the same `Res:` prefix carries both: a decimal
+payload is a **slot index**, anything else is a **name to hash**.
 
-| opcode | operands | numeric | symbolic | resolve |
-|---|---|---|---|---|
-| 53 `QuestBook` (all 601 quests) | 3676 | **0** | 3676 | 0 |
-| 26 `Text` (dialogue lines) | 3401 | 1 | 3367 + 33 computed | 0 |
+| operand | resolves |
+|---|---|
+| NPC names in `startcode.bin`, all eight trees | **1521 of 1521** (was 1377) |
+| static `QuestBook` keys, all eight trees | **319 of 1242** |
+| `UI_QUICKSAVE`, `INVENTAR_RES_PHYSICAL`, `EWT_Schwert` | yes |
 
-The 33 computed ones could never be static keys anyway —
-`NOVIZIN_0+Var(Zufallsdialog)`, `STEIN_000+Var(SNr)` — the line is selected at
-runtime by a variable.
+`DQ_BAUER_BEGRUESSUNG_LOG` is *"The peasants need my help."* The quest log
+reads in English.
 
-**The control says this is absence, not a broken hash.** The name namespace is
-real and populated: 64 of the 728 numeric keys also resolve when read *as
-names*, and `sets.bin`'s pre-hashed keys resolve 65 of 65 by the same route.
-The symbolic keys appear in `funkcode.bin` and in no other file in the
-install, the executable included.
+**The 144 `res:D1Dorf_01`..`_18` references are not dangling.** They were
+recorded as "references the retail game cannot resolve either". They are a
+village roster: `D1Dorf_01` is *Smith*, `_02` *Healer*, `_03` *Bartender*,
+`_18` *Witch*, and `_04`..`_17` fourteen *Peasant*s.
 
-**Consequence for a port.** Reading this install it can show NPC names
-(numeric `res:N`, 1377 of 1521) and German quest titles (plain text in
-`vectoren.bin`), and it cannot show a single quest-log line or line of
-dialogue. This is the 389-credits-key question at full size.
+### The unresolved remainder is composed, not missing
+
+The 923 `QuestBook` keys that do not resolve are **built at runtime**:
+
+```
+DQ_BRINGE_ITEM+Var(DQ_2604)+_LOG
+```
+
+Substituting the variable gives a real key. `DQ_BRINGE_ITEM1_LOGTITLE` is
+*"The Magic Cure"*, `DQ_BRINGE_ITEM2_LOGTITLE* is *"The Father's Sword."*, and
+`..._LOGHEADER` gives the objective line. 61 distinct templates are built this
+way. So this is a **VM feature** — the interpreter must substitute before it
+looks up — and not a data gap.
 
 > **A resolution rate is hollow until it names which operand it measured.** A
 > first pass here reported "3506 of 3506 numeric operands inside `Dialog:`
@@ -89,29 +96,69 @@ dialogue. This is the 389-credits-key question at full size.
 
 ## The hash
 
-`FUN_080ae4d2`, verbatim:
+`sub_80ACC3E`, verbatim — and **it is 32-bit and it overflows on purpose**:
 
 ```c
 uint name_hash(const char *s) {
-    uint h = 0;
-    for (; *s; s++) h = (h*0x71 + toupper(*s)) % 0x3b9ac9f7;
-    return h & 0x7fffffff;
+    int v = 0;                                  /* int32, and it WRAPS */
+    for (; *s; s++) v = (int32_t)(113*v + toupper(*s)) % 999999991;
+    return v & 0x7fffffff;
 }
 ```
 
-`0x3b9ac9f7` is 999999991, prime. `toupper` makes lookup case-insensitive.
+Three details carry the whole thing, and getting any of them wrong produces a
+hash that works on short names and fails on long ones:
 
-That final mask is why a caller may pass a **negative** id. `FUN_084c2e06`
+- **`113*v` passes 2^32 and wraps.** `v` can be as large as 999999990, so the
+  product reaches ~1.1e11. The first character at which this can happen is the
+  **fifth**.
+- **The `%` is x86 `idiv`** — C truncated division, so the remainder takes the
+  *dividend's* sign and `v` is genuinely negative between iterations.
+- **The mask is applied once at the end**, not per iteration, so a negative
+  final `v` comes back as `v + 0x80000000`.
+
+`toupper` runs in the C locale on the **sign-extended** byte, making lookup
+case-insensitive: `hash("EWT_Schwert") == hash("ewt_schwert") == 444989805`.
+
+That final mask is why a caller may pass a **negative** id. `sub_84C1FD0`
 branches on the sign: a value with the sign bit set is a key that is *already
 hashed* and is used directly after `& 0x7fffffff`; a non-negative one is a
 number to be stringified and hashed. One branch, two namespaces.
 
-> **The modulus is not verified by the data.** It is read off the
-> disassembly, but `h` only exceeds it at five characters or more, and nothing
-> in the shipped file reaches that: no non-numeric name resolves at all, and no
-> numeric id above 9999 does either. Mutating the modulus leaves
-> `globalres.py`'s self-check green; mutating the *multiplier* breaks it. Said
-> here so the green is not read as more than it is.
+### How this was got wrong, and why nothing caught it
+
+The port reimplemented the line above in GDScript, whose ints are **64-bit**.
+Nothing wrapped. The two hashes therefore **agree for exactly four characters
+and diverge from the fifth**.
+
+Every resource name in the shipped files is a 3–5 digit number. So the numeric
+namespace resolved, looked like proof, and the symbolic namespace — every key
+of which is longer — missed silently and was written up as absent from the
+install. The gate was green throughout because every name it hashed was
+`"9400"`-shaped.
+
+An earlier version of this document came within one sentence of the bug:
+
+> *"The modulus is not verified by the data. It is read off the disassembly,
+> but `h` only exceeds it at five characters or more, and nothing in the
+> shipped file reaches that."*
+
+The five-character boundary was noticed and read as a reason the modulus was
+**untested**, when it was also the boundary past which the implementation was
+**wrong**.
+
+`checks/resources_check.gd` now carries the mutation control: the naive 64-bit
+hash must **agree** with retail's at four characters and **miss the table** at
+twelve. Removing the wrap fails the gate instead of quietly restoring the old
+conclusion.
+
+## The first u32 is a count, not a magic
+
+There is no `SZ\0\0` signature. The loader (`sub_80AE930`) reads the first
+word as the **entry count**, and `23123 == 0x00005A53` — the "magic" was that
+number's bytes. A reader that checks for `'SZ'` therefore accepts only a
+`.res` holding exactly 23,123 entries. The index is exactly `4 + count*16`
+bytes, which is the structural check that replaced it.
 
 ## Where the tree comes from
 

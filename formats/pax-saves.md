@@ -87,12 +87,63 @@ it from `$SACRED_CHARS`.
 
 The retail install *does* ship save files of its own — `save/hero06.pax`,
 `save/hero07.pax` (two level-29 heroes) and the eight `templates/hero0N.ptx`,
-which are `.pax` files in all but extension and hold the new-game starting
-character for each class. The six section types this document lists are scoped
+which are read in full above. The six section types this document lists are scoped
 to the external corpus; the retail files carry eight, so they extend the list
 rather than contradict it.
 
+## `templates/hero0N.ptx` are the new-game characters
+
+Reader: `engine/formats/hero.gd`. Gate: `engine/checks/pax_check.gd`.
+
+The eight templates are `.pax` files in all but extension, and retail **never
+parses them**: `cUI_Character::executeAction` copies the chosen one 512 bytes
+at a time into `Save\HeroNN.pax` (the `fread`/`fwrite` loop at `0x853FA45`).
+A template *is* a savegame, so reading it with `Sacred.Pax` is correct rather
+than merely convenient.
+
+Every class starts **level 1, 5000 gold, zero experience, exactly two skills at
+level 1**:
+
+| type | class | attributes (STK RES GES REPHY REMAG CHA) | skills |
+|---|---|---|---|
+| 1 | Seraphim | 22 19 25 22 22 17 | Magic Lore, Weapon Lore |
+| 2 | Gladiator | 33 19 20 25 **0** 11 | Weapon Lore, Concentration |
+| 3 | Battle Mage | 16 15 20 14 **30** 10 | Magic Lore, Meditation |
+| 4 | Dark Elf | 26 18 26 20 0 16 | Weapon Lore, Concentration |
+| 5 | Wood Elf | 13 13 **29** 21 24 25 | **Agility**, Weapon Lore |
+| 6 | Vampiress | 26 22 21 22 0 21 | Weapon Lore, **Vampirism** |
+| 8 | Dwarf | 26 18 25 24 0 **8** | Weapon Lore, Constitution |
+| 9 | Daemon | 35 21 22 18 28 15 | Magic Lore, Weapon Lore |
+
+Six `u16` attributes at `+0x3E5`, in `creature.pak`'s own order, duplicated
+byte-identically at `+0x41F` — presumably base and current, equal because a
+level-1 character's starting gear has not moved them. Nothing recovered says
+so, so both are exposed and neither is named "current".
+
+### `CharacterType` is a one-based class index
+
+Established **twice, independently**. `global.res` slot `N-1` names it, and the
+executable's own `GetTypeName` (`sub_815B3A2`, over 5624 68-byte records at
+`0x8735AC0`) gives the same order — and it is that table which builds the
+`bin/type_npc_*` directory name at runtime, since no lowercase tree name exists
+as a string in the binary.
+
+```
+1 SERAPHIM   2 GLADIATOR  3 MAGICIAN  4 DARKELVE  5 ELVE
+6 VAMPIRELADY  7 VAMPN_DO_NOT_USE  8 ZWERG  9 DAEMONIN
+```
+
+**Type 7 never appears** because `sub_8265BF6` opens with
+`if (charType == 7) charType = 6;`.
+
+The identifications are corroborated by the *characters*, not by the ordering:
+the Vampiress is the only class with Vampirism, the Gladiator has the highest
+STK and REMAG exactly 0, the Battle Mage the highest REMAG, the Wood Elf the
+highest GES *and* the Agility skill, the Dwarf the lowest CHARISMA. Each is
+asserted in the gate.
+
 ## Open
+
 
 Nothing open.
 

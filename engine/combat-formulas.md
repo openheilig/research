@@ -369,7 +369,59 @@ Regenerated and re-checked by
 [`tools/binary/skillmap.py`](../../tools/binary/skillmap.py) into
 [generated/skill-families.tsv](../formats/generated/skill-families.tsv).
 
+## The creature's level is a CLAMP on the hero's, not a draw
+
+`sub_81806DC`, the only consumer of the per-sector band (row 953), called once
+from the creature spawn path `sub_8180B22`:
+
+```c
+level = hero_level;                       /* party: the highest */
+if (marker[211] && marker[213]) {
+    lo = DiffLo[difficulty] + marker[211];
+    hi = DiffHi[difficulty] + marker[213];
+    if      (level <  lo) level = lo;
+    else if (level <= hi) level = level + rand() % 2;
+    else                  level = hi;
+}
+```
+
+So the band **clamps the player's level** — it is not a range to sample, and
+the only randomness in the whole rule is `+0` or `+1`. Sacred's world is
+level-scaled by construction. A uniform draw across `[lo, hi]` produces levels
+inside the same interval and so passes any range check while getting the
+difficulty curve wrong everywhere, which is why `spawnlevel_check.gd` asserts
+each branch separately.
+
+`DiffLo`/`DiffHi` are at `0x8B89BA8` and `0x8B89DAC` in the executable, not in
+any shipped file; their values are unrecovered, so `level_for` takes them as
+arguments rather than assuming a difficulty.
+
+## Where AT and PA actually live
+
+`cCreatureHero::CalcResults` (`sub_820E04C`) initialises **attack at `+0xE6`
+and defence at `+0xEA` to `1.0f`** and calls `sub_81F596E(creature, 0, 0, 0)`.
+
+`sub_81F596E` is a **skill-effect applier, not a level-taking stat builder**:
+it loops the creature's eight skill slots (ids at `+0x24`, base `+0x2C`, bonus
+`+0x34`), switches on the skill type, and multiplies each through the curve at
+`sub_81F55B0`. It is passed **no level at all**.
+
+A rating is therefore `base x product-of-skill-curves`, and it is the **base**
+that is unrecovered.
+
+**Correction: `+0x3C/+0x3E/+0x40` are not AT/PA.** `CalcResults` sets them to
+140/120/<table>, or 100/120/100, or 140/130/120 by creature class, clamps them
+to a floor of 80 or 100 and a ceiling of 220, and subtracts 15 from all three
+under a curse flag. A triple of percentages near 100–140 is the three speed
+ratings, not two combat ratings.
+
+For the MVP this is sharper than half an answer: a new Seraphim knows Magic
+Lore and Weapon Lore, families `MK` and `WK`, and **neither carries an `AW` or
+a `VW` triplet**. At level 1 no skill she has feeds either rating, so both are
+entirely base.
+
 ## Open
+
 
 - **The resolution step is still undecoded.** This section is how a creature's
   damage and resistance *numbers* are built. What consumes them at the moment
