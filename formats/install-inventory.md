@@ -277,12 +277,56 @@ field left untouched when no `EWT_` tag appears.
 
 | Field | Meaning |
 |---|---|
-| `blk[0]` | low 16 = chance/percent; **bit 31 = RESISTANCE** |
-| `blk[1]` | low 16 = bonus id; high bits = flags |
-| `blk[2]` | two `u16`, (min, max) |
-| `blk[3]` | class-spell group, 0 = none |
-| `blk[4]` | default **20** |
-| `blk[5]` | default **10** |
+| `blk[0]` | low 16 = chance percent; **bit 31 = RESISTANCE** |
+| `blk[1]` | low 16 = id (three namespaces); bits 16–18 = conditioning attribute |
+| `blk[2]` | magnitude **range**: `u16 min`, `u16 max` |
+| `blk[3]` | group id — **1…11** skill groups, **14…34** class-spell groups |
+| `blk[4]` | the `Spell:` section's magnitude, default **20** |
+| `blk[5]` | the `Skill:` section's magnitude, default **10** |
+
+`blk[0]`'s low half is a clean percentage ladder — 10, 15, 17, 20, 25, 30, 33,
+40, 50, 60, 70, 80, 100 — with 572 of 1010 blocks at 100.
+
+**The block is a tagged union: which slot carries the magnitude depends on
+which source section produced it.** That is not inferred from the shape; it is
+what the parser does, and the file agrees to within three records:
+
+| Section | Magnitude lives in | `blk[2]` | `blk[4]` | `blk[5]` |
+|---|---|---|---|---|
+| `Bonus:` (773 blocks) | `blk[2]` | non-zero in **770/773** | all 20 | all 10 |
+| `Spell:` (100) | `blk[4]` | **zero in 100/100** | overridden 68× | all 10 |
+| `Skill:` (129) | `blk[5]` | **zero in 129/129** | all 20 | overridden 114× |
+
+`blk[4] != 20` occurs in 68 blocks and **all 68 are `Spell:`**; `blk[5] != 10`
+occurs in 114 and **all 114 are `Skill:`**. A `Bonus:` block never touches
+either.
+
+#### `blk[2]` is a hyphen range, not two fields
+
+The parser `strchr`s a **`'-'`**, `strtol`s the part before it into *both*
+halves, and only then overwrites the high half from the part after. So the
+source writes `min-max`, and a bare number yields `min == max`.
+
+The file bears that out: `min <= max` in **1010/1010** blocks with zero
+violations, and `min == max` in the 242 bare-number cases. Ranges run
+`min` 0…60 and `max` 0…90, scaled per bonus — `VW` spans 3…60 / 9…90, `PD`
+physical damage 2…30 / 5…50, `GS` 2…9 / 5…19.
+
+The unit is therefore whatever the bonus itself is denominated in; the source
+text carries no unit and `scripts\waffenmod.txt` is not shipped.
+
+#### `blk[4]` and `blk[5]` are positional, not tagged
+
+Neither has a tag name. `blk[4]` is the number following the class-spell group
+in a `Spell:` line; `blk[5]` is the number following the skill name in a
+`Skill:` line. Both fall back to their default when the number is absent, which
+is why 942 and 896 blocks carry 20 and 10.
+
+Their observed values are `blk[4]` ∈ {12, 15, 17, 18, 20, 25, 30} and `blk[5]`
+∈ {10, 11, 12, 14, 15, 20, 22, 25, 27, 30}. Since the block that uses them
+never carries a `blk[2]` range, they occupy the magnitude role for their
+section — but what they are denominated in (a level, a rank, a percentage) is
+named nowhere in the shipped data.
 
 `blk[1]`'s low 16 bits carry an id from **three disjoint namespaces**, and
 every value in the file falls inside them with nothing left over:
@@ -680,8 +724,10 @@ Sound System) inert in a Linux install.
 
 ## Open
 
-- `wpmod.bin`'s `blk[2]` (min, max) units, and what `blk[4]`/`blk[5]` mean when
-  a record overrides their 20/10 defaults. The id namespaces are closed.
+- What `wpmod.bin`'s magnitudes are *denominated* in. The structure is closed —
+  `blk[2]` is a `min-max` range, `blk[4]`/`blk[5]` are the positional magnitudes
+  of the `Spell:`/`Skill:` sections — but no tag names a unit, and
+  `scripts\waffenmod.txt` is not shipped.
 - Whether `treppe.bin` is live at all: no lookup site was found by
   member-offset search, and `sacredserver` has no `treppe` string.
 - `vectoren.bin` section 2's two enums at `+0x104` `{0,15,28,53}` and `+0x108`
