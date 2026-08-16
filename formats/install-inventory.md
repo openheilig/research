@@ -139,7 +139,7 @@ pairing is in the executable's `.rodata` (`scripts\Rustungenswitch.txt` →
 
 | File | Bytes | What it is | State |
 |---|---|---|---|
-| `wpmod.bin` | 147 796 | item-modifier table, 572 records; **length = 54 + 6×int[53]** | Solved |
+| `wpmod.bin` | 147 796 | item-modifier table, 572 records; **length = 54 + 6×int[53]** | Solved — `engine/formats/wpmod.gd` |
 | `world.bin` | 46 264 | sector directory: `u32 3855`, then 3 855 × `(idx, X, Y)`; X,Y all multiples of 64 | Solved |
 | `static10_18.bin` | 41 440 | generated remap, magic `map` v0, 2 574 × 16 B; consumed by `cWorld::remapTrigger_load` | Partial |
 | `world2.bin` | 32 772 | **not a byte table** — `u32` byte-count + 16 384 `u16` sector-presence grid | Solved |
