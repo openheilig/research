@@ -50,6 +50,43 @@ whose name hashes like the four characters `"9400"` — `Heavenly Magic`.
 The two disagree completely. Slot 9400 is a paragraph of quest prose about an
 antidote at Faeries Crossing; resource 9400 is `Heavenly Magic`.
 
+## The symbolic namespace is NOT in this install
+
+`res:N` resolves; a symbolic key does not. Measured over the Seraphim tree's
+`funkcode.bin`: **3377 distinct `Res:` operands, 728 numeric and 2435
+symbolic, and 0 of the 2435 resolve** — bare, with the prefix retained,
+lowercased, or with underscores stripped.
+
+It is worse than a shortfall, because the two opcodes that carry prose use
+*only* symbolic keys:
+
+| opcode | operands | numeric | symbolic | resolve |
+|---|---|---|---|---|
+| 53 `QuestBook` (all 601 quests) | 3676 | **0** | 3676 | 0 |
+| 26 `Text` (dialogue lines) | 3401 | 1 | 3367 + 33 computed | 0 |
+
+The 33 computed ones could never be static keys anyway —
+`NOVIZIN_0+Var(Zufallsdialog)`, `STEIN_000+Var(SNr)` — the line is selected at
+runtime by a variable.
+
+**The control says this is absence, not a broken hash.** The name namespace is
+real and populated: 64 of the 728 numeric keys also resolve when read *as
+names*, and `sets.bin`'s pre-hashed keys resolve 65 of 65 by the same route.
+The symbolic keys appear in `funkcode.bin` and in no other file in the
+install, the executable included.
+
+**Consequence for a port.** Reading this install it can show NPC names
+(numeric `res:N`, 1377 of 1521) and German quest titles (plain text in
+`vectoren.bin`), and it cannot show a single quest-log line or line of
+dialogue. This is the 389-credits-key question at full size.
+
+> **A resolution rate is hollow until it names which operand it measured.** A
+> first pass here reported "3506 of 3506 numeric operands inside `Dialog:`
+> procedures resolve" and concluded dialogue was available. It had scraped
+> every `res:` operand in the procedure body — and was reporting the text of
+> `SetButton res:1024`, a UI button, as the dialogue. The line itself is
+> opcode 26, and it is symbolic.
+
 ## The hash
 
 `FUN_080ae4d2`, verbatim:

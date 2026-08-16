@@ -25,7 +25,7 @@ strike it here.
 | `vectoren.bin` section 2's two enums at `+0x104` and `+0x108`, and whether the dynamic-quest region system shipped functional — its content is placeholder (`ToDo:-1.<slot>`) in every base tree. | [formats/install-inventory.md](formats/install-inventory.md) |
 | What references a `wea.bin` equipment pool (0…255) or a `sndprofiles.pak` profile index (0…8191). Neither `items.pak` nor `creature.pak` carries a column that agrees. | [formats/install-inventory.md](formats/install-inventory.md) |
 | What selects the current music/atmosphere profile as the player moves — it is in neither `global.res` nor `bin/*.bin`. | [formats/install-inventory.md](formats/install-inventory.md) |
-| The 389 symbolic keys in `credits.txt`/`credits2.txt` resolve in no shipped file. | [formats/install-inventory.md](formats/install-inventory.md) |
+| **The whole symbolic `Res:` namespace resolves in no shipped file** — 0 of 2435 in one script tree, including every one of the 3676 `QuestBook` and 3367 `Text` operands, so no quest-log line and no line of dialogue can be displayed from this install. The 389 `credits.txt` keys are one corner of it. Struck as a *format* question and restated as a *data* one: the mapping is not present to be found. | [formats/global-res.md](formats/global-res.md) |
 
 Nothing is open on `.pak` framing, `tiles.pak`, `global.res`, `mixed.pak`, or
 the `balance.bin` layout and key names. The world cell record is fully
