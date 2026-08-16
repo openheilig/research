@@ -77,12 +77,37 @@ Retail's `W` triplets: AW `7 / 50 / 125`, VW `13 / 50 / 225`.
 `HP` VW: `4 / 50 / 130`. `VWFakBoss` = 2.0 and `VWFakChamp` = 1.5 multiply the
 defence rating; what marks a creature boss or champion is not recovered.
 
-> **The open link.** The curve consumes a skill *level*, and `creature.pak`
-> carries skill **types** only — two at `+0x14`, sixteen more at `+0x16` — with
-> no level beside them. So a monster's ratings cannot be computed from that
-> table alone; something must supply the level at which it knows its skills.
-> The creature's own level is the obvious candidate and is set where it spawns,
-> not in the table, so it is recorded as a gap rather than assumed.
+### Where the level comes from — a per-sector band
+
+The curve consumes a skill *level*, and `creature.pak` carries skill **types**
+only. The level comes from the **spawn**, not the creature table.
+
+Opcode 100 `SpawnValues` carries `(50, lo, hi)`. The first is 50 in all 11,498
+records; the other two are an ordered band — `lo ≤ hi` in **11,498 of 11,498**,
+against **0.00%** for the same test on the first pair.
+
+It is **geographic**, which is what makes it a level band rather than a weight.
+Each `Sector<cx><cyyy>Init`/`Enter` procedure owns a funkcode span, and the
+`SpawnValues` inside it belong to that sector:
+
+| sector | | band |
+|---|---|---|
+| 50,39 | Seraphim start | **(1, 4)** |
+| 51,39 · 53,42 · 54,43 · 59,5 | magician, elves, dwarf, gladiator starts | **(1, 4)** |
+| 5,26 | Daemoness start | (45, 80) |
+| 97,60 | Underworld start | (30, 50) |
+
+**Seven of nine class starts land on the game's lowest band.** The Daemoness is
+the counter-example that keeps it honest — the claim is not "every start is
+low" but "each start sits where its class begins" — and only 22% of banded
+sectors are `(1,4)`, so five hits is not chance.
+
+5666 sectors carry a band; **60 declare more than one** and nothing says what
+chooses between them.
+
+> **Still open:** how a level is *drawn* from the band, and whether that number
+> is also the level at which the creature's skills are known. Both are needed
+> before the ratings above can be computed.
 
 ## Roll semantics
 
