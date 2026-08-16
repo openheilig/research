@@ -22,6 +22,43 @@ u16 LENGTH      // counts these four bytes
 Confirmed by the engine itself, which reads the length as
 `movsx eax, WORD PTR [ebx+0x2]` at `0x0826af24`.
 
+## The opcode names, from the compiler's own keyword table
+
+**120 of the 141 opcodes carry the name retail's own script compiler binds
+them to.** They are not inferred from handler strings: the binary ships two
+keyword tables, each a run of name strings followed immediately by a pointer
+array and then a **parallel `u32` opcode array** whose first slot is a zero
+sentinel. Table A is 61 entries at file `0x69b240` / `0x69b334`; table B is 60
+at `0x69b750` / `0x69b840`. Pairing pointer *i* with number *i+1* gives
+name→opcode directly. Full table:
+[generated/script-opcode-names.tsv](generated/script-opcode-names.tsv).
+
+The control is that this was read *after* seven opcodes had already been named
+by unrelated routes — handler `.rodata` strings and, for `AddExp` and
+`AutoSave`, strings reachable within two calls. **All 7 agree**: 1 `CreateNPC`,
+8 `CreateObj`, 17 `AddExp`, 46 `Teleport`, 63 `QuestKompassPos`,
+64 `QuestKompassObj`, 121 `AutoSave`. A wrong pairing does not reproduce seven
+independently-recovered names.
+
+**It also refutes three earlier entries.** Opcodes 67, 75 and 76 were listed as
+`atmo_rg` in [generated/script-opcodes.md](generated/script-opcodes.md); they
+are `SetVar`, `IncVar` and `DecVar`. `atmo_rg` is a frequent *operand* string,
+not the opcode's identity — which is exactly the failure mode naming-by-payload
+has. Opcode 58's `if IsNotVarBit:%s=%d` was closer: it is `IF`.
+
+**21 opcodes remain unnamed**: 0, 27–34, 39–44, 47, 101, 102, 111, 122, 123 —
+two contiguous runs and four strays, i.e. the keyword tables omit them rather
+than scattering them, which suggests a third table or a deliberately
+unexposed group.
+
+The names make the language legible at a glance: `IF` / `ELSEIF` / `ELSE` /
+`NOP` (58/66/59/62), `SetVar` / `IncVar` / `DecVar` / `SetVarBit` /
+`UnsetVarBit`, `QuestBook` (53), `TriggerQuest`, `QuestDone`,
+`QuestInProgress`, `CreateNPC` / `CreateObj` / `EquipNPC` / `DelOBJ`,
+`TalkTo` / `NPC_TalkTo` / `NPC_Goto` / `Attack` / `GroupGoto`, `PlayMusic`,
+`PlaySound`, `PlayAnim`, `Teleport`, `SetHP`, `GiveStat`, `GiveSkill`,
+`SetDrop`, `AddExp`, `AddGold`, and `StartPosition` (45).
+
 ## The opcode table
 
 The jump table is at `0x086f4298`, **141 entries**. The dispatcher is
@@ -117,24 +154,48 @@ use **53 distinct opcodes, of which 21 cover 98.1%**:
 
 | | | |
 |---|---|---|
-| 53 (26.3%) | 67 (12.0%) | 63 (11.0%) |
-| 3 (8.2%) | 23 (6.3%) | 76 (5.0%) |
-| 1 (3.9%) | 86 (3.5%) | 58 (3.3%) |
-| 22 (3.2%) | 59 (3.2%) | 66 (2.1%) |
-| 132 (1.5%) | 62 (1.5%) | 5 (1.4%) |
-| 46 (1.3%) | 68 (1.2%) | 64 (1.1%) |
-| 4 (0.9%) | 75 (0.8%) | 8 (0.4%) |
+| 53 `QuestBook` (26.3%) | 67 `SetVar` (12.0%) | 63 `QuestKompassPos` (11.0%) |
+| 3 `SetNPCState` (8.2%) | 23 `DefPos` (6.3%) | 76 `DecVar` (5.0%) |
+| 1 `CreateNPC` (3.9%) | 86 `SetIcon` (3.5%) | 58 `IF` (3.3%) |
+| 22 `CallFunktion` (3.2%) | 59 `ELSE` (3.2%) | 66 `ELSEIF` (2.1%) |
+| 132 `InfoPlayer` (1.5%) | 62 `NOP` (1.5%) | 5 `DelBaseTrigger` (1.4%) |
+| 46 `Teleport` (1.3%) | 68 `SetVarBit` (1.2%) | 64 `QuestKompassObj` (1.1%) |
+| 4 `SetBaseTrigger` (0.9%) | 75 `IncVar` (0.8%) | 8 `CreateObj` (0.4%) |
 
-Nine already carry handler-derived names — `CreateNPC` 1, `CreateOBJ` 8,
-`Teleport` 46, `IsNotVarBit` 58, `QuestkompassPos` 63, `QuestkompassOBJ` 64,
-`atmo_rg` 67/75/76 — and opcode 23 is the named-position declaration already
-read by `engine/formats/startcode.gd`.
+**All 21 are named** by the keyword table above — nothing in the head of this
+distribution is a mystery. It is variables, conditionals, quest-log writes,
+compass targets, NPC and object creation, and triggers.
 
 **The tail is safe to ignore, and that is a property of retail rather than a
 concession.** The dispatcher's default case is `mov ecx,1; ret`: an opcode with
 no case is skipped by its length field and does nothing. An interpreter that
 implements the head of this distribution and length-skips the rest behaves the
 way the shipped engine behaves on its own unhandled opcodes.
+
+## `StartPosition` (45) — one record per class, and it is the new-game spawn
+
+Each `bin/type_npc_*/startcode.bin` carries **exactly one** opcode-45 record:
+two or three bare `int32`. That is why the classes begin in different regions.
+
+| Tree | Cell | Layer | Sector |
+|---|---|---|---|
+| `type_npc_daemonin` | 352, 1722 | — | 5,26 |
+| `type_npc_gladiator`, `netscriptcamp` | 3790, 349 | — | 59,5 |
+| `type_npc_magician` | 3292, 2508 | — | 51,39 |
+| `type_npc_seraphim` | 3236, 2511 | 1 | 50,39 |
+| `type_npc_darkelve` | 3442, 2698 | — | 53,42 |
+| `type_npc_elve` | 3440, 2703 | — | 53,42 |
+| `type_npc_vampirelady` | 3500, 2477 | 2 | 54,38 |
+| `type_npc_zwerg` | 3470, 2779 | — | 54,43 |
+
+All ten `addon/` trees instead share **one** Underworld start, cell 6265,3864
+(sector 97,60) — consistent with nine of ten addon trees being byte-identical.
+
+The third int is absent in six of the eight base trees, so a reader must not
+require it. `engine/formats/startcode.gd` reads this record and
+`checks/startcode_check.gd` pins all eight cells plus their *distinctness* —
+a reader that finds the wrong opcode returns one value for every tree, and
+eight equal cells is what that failure looks like.
 
 Quest 1101, the one every shipped `questcode.bin` seeds, walks out as 19
 records of `OnEnter` (ten `CreateNPC` priests at `pos_Priester1..10`, a ritual
@@ -146,9 +207,16 @@ is fitted. See findings log rows 936–937.
 
 ## Open
 
-The FORMAT is closed; the SEMANTICS are not. **96** opcodes have no verified
-meaning beyond what their string payloads suggest, and the 66 zero-width tags
-are presumably operators whose identity sits in handlers already located.
+The FORMAT is closed. The NAMES are now closed too, for 120 of 141 — see the
+keyword table above; **21 opcodes remain unnamed** (0, 27–34, 39–44, 47, 101,
+102, 111, 122, 123). The 66 zero-width tags are presumably operators whose
+identity sits in handlers already located.
+
+A NAME IS NOT A BEHAVIOUR. `SetIcon`, `SetNPCState` and `CallFunktion` are the
+compiler's words for them; what each does to the world, and what its operands
+mean, is still only what the operands themselves suggest. The section below is
+kept because it is the record of how far string-based naming got before the
+keyword table replaced it — and of where it went wrong.
 
 Six were named this round from strings reachable *within two calls* of the
 handler rather than inside it — 17 award experience, 20 quest-in-sector
