@@ -38,13 +38,38 @@ size}`, then payloads. Details and the exceptions: [pak-containers.md](pak-conta
 | `items03.pak` | 4 587 776 | `ITM` v5 | overlay — **one** real record (see below) | same | Solved |
 | `sndprofiles.pak` | 1 605 888 | `SPF` v1 | 8 192 slots, **175** populated 184-byte sound-selection profiles | none | Solved, unread |
 | `weapon.pak` | 1 572 582 | `WPN` v8 | **flat** table (no blob index): 4 883 × 258 B from `0x100` | none | Partial |
-| `motions.pak` | 678 010 | `MHP` v1 | fixed 198-byte side table, one per merged motion | none | Partial |
+| `motions.pak` | 678 010 | `MHP` v1 | 3 423 × 198 B = `u32 id; u16 id; float slot[48]` | none | Solved |
 | `creature.pak` | 41 020 | `CIF` v0 | **flat** table: 474 × 86 B | `engine/formats/creatures.gd` | Solved |
 | `models03.pak` | 61 752 | `MDL` v3 | overlay — 4 entries | generic | Solved |
 | `texture03.pak` | 27 361 | `TEX` v3 | overlay — 3 entries | generic | Solved |
 | `texture.tmp` | 2 043 320 | `TXL` v1 | **not a pak** — the texture manager's merged name/offset cache | none | Solved |
 | `models.tmp` | 2 755 924 | — | derived cache of the merged `models.pak` + `models03.pak` | none | Solved |
 | `*.bmp` (6) | 1.5–2.4 M each | — | plain Windows BMP 1024×768, load/save screens | Godot native | Solved |
+
+### `motions.pak` — animation timing marks
+
+`198 = 4 + 2 + 48×4` exactly, and slot *n* sits at byte `6 + 4n`. The slot
+meanings come from retail's own `MOTIONTAG` parser, whose tag list sits in
+`.rodata` immediately before the string `PAK\MOTIONS.PAK`:
+
+| Slot | Tag | Byte |
+|---|---|---|
+| 16 | `Foot l` | +70 |
+| 17 | `Foot r` | +74 |
+| 18 | `Foot F_l` (front-left) | +78 |
+| 19 | `Foot F_r` | +82 |
+| 23 | `Speed` | +98 |
+| 24+n | `Hit` | +102… |
+
+The foot slots are footfall phases: 406 of 500 `WALK`/`RUN`/`FLY` clips carry
+them and **zero** carry `Hit`, against rotated controls that give 68–91 foot
+hits and 135–226 spurious `Hit` hits. Slots 18/19 appear only on quadrupeds.
+`Damping`, `RF`, `RG` are not float slots — they set a mode enum, and slots
+20/21/22 are zero in all 3 423 records.
+
+The in-memory record is `char name[64]; float slot[48]` at a 256-byte stride —
+which is exactly `models.tmp`'s motion record, so the on-disk 198 bytes are
+that record's tail from +58.
 
 `texture.tmp` and `models.tmp` are **derived**, not source: `models.tmp`'s
 header stamps `models.pak`'s exact byte size (`+8` = 434 340 164) and the pair
@@ -123,8 +148,8 @@ pairing is in the executable's `.rodata` (`scripts\Rustungenswitch.txt` →
 | `sets.bin` | 7 396 | 65 item sets, `u32 66` + 66 × 28 int32 | Solved |
 | `wea.bin` | 4 648 | 256 equipment pools; 906 members, **906/906** are items.pak ids naming a `.GRN` | Read |
 | `rust.bin` | 4 392 | armour switch — which mesh an armour becomes per wearer | `engine/formats/armour.gd` |
-| `merc.bin` | 1 872 | 117 world placements `(0, x, y, layer)` | Partial |
-| `multistart.bin` | 768 | 48 records; three blocks of 16, blocks 0 and 2 byte-identical | Partial |
+| `merc.bin` | 1 872 | 117 **merchant** map icons `(cache, x, y, class)` | Solved |
+| `multistart.bin` | 768 | 48 multiplayer start world-positions | Solved |
 
 ### `sets.bin`, fully read
 
@@ -215,16 +240,77 @@ undermining it. The three zero-block records are cosmetics that grant nothing
 (`dwarf_goggles.grn`, the two `vlady` hairs, `magician_cowl.grn`) — exactly
 what a zero block count should mean.
 
+### `world.bin` is a legacy-savegame remap, not a live index
+
 `world.bin`'s 3 854 sector coordinates are a **strict subset** of the 6 050 in
-`sectors.keyx` — 0 world.bin-only, 2 196 keyx-only. A 100% subset relation on
-3 854 entries is not what a wrong stride produces.
+`sectors.keyx` — 0 world.bin-only, 2 196 keyx-only. The reason is not
+statistical: `cWorld::load()` reads the table only when `floor.pak` is larger
+than **139 999 999 bytes** (ours is 187 968 064, so it loads), and the
+serializer uses it to translate a *saved* sector ordinal into a current one.
+`col0` is the sector's id in the **older, smaller** world; `(X, Y)` is where it
+sat. The 3 854 are the pre-expansion sectors, a subset of today's 6 050 because
+the add-on appended sectors and never moved the old ones — which is also why
+the records are in the same raster order `keyx` assigns slots today.
+
+So the file matters only for loading pre-expansion saves.
 
 > **Earlier belief.** Log row 805 called `world.bin` a dead end. It is right
 > that the file contains no text; it is wrong that the file is unstructured.
 > Log row 744 discarded `world2.bin` because "every nonzero byte value occurs
 > exactly 280 times" — measured, 22 values occur 280×, 139 occur 24×, 93 occur
-> 23× and one occurs 187× (summing to 11 822). The advice to leave it alone may
-> still be sound; the stated reason is not a fact.
+> 23× and one occurs 187× (summing to 11 822). Both are dealt with above.
+
+### `static10_18.bin` — a save-version trigger remap the port must not implement
+
+The name reads as "static 10 → 18", and that is exactly what it is: a
+migration table between save version 10 and 18. Its four columns are
+`(old static index, new static index, old trigger id, new trigger id)`, and
+`cWorld`'s load path uses `col3` as an index into the live trigger array and
+writes `col1` into the relocated trigger's placing-static field. The first 8
+records carry `0xCCCCCCCC` filler in the last two columns only.
+
+An open reimplementation starting from current saves never needs it. Recorded
+so nobody decodes it twice.
+
+> **Earlier belief.** Its `col0`/`col1` were read as packed world positions and
+> refuted at 45.5% against a 60.5% baseline. That refutation stands — they are
+> `static.pak` indices, not positions.
+
+### `merc.bin` — merchant map icons, not mercenaries
+
+117 records × 16 bytes, and the German gloss was wrong: `merc` is *Merchant*.
+
+```
++0x00 u32  ALWAYS 0 on disk — a runtime cache slot the loader fills in
++0x04 u32  world cell x
++0x08 u32  world cell y
++0x0C u32  merchant class 0..3
+```
+
+The class is not a layer. The world-map renderer switches on it to pick an
+icon: `0 → MOUSE_TRADER.TGA`, `1 → MOUSE_BLACKSMITH.TGA`, `2 → MOUSE_COMBO.TGA`,
+`3 → mouse_horsetrader.tga`. So the measured histogram `{0:46, 1:28, 2:23,
+3:20}` reads as 46 traders, 28 blacksmiths, 23 combined shops, 20 horse
+traders. The 0…3 range coinciding with startcode's layer field was chance.
+
+The record carries no entity id because it does not need one: after the read,
+the loader resolves the object standing at each cell **by position** and caches
+it into `+0x00`.
+
+### `multistart.bin` — 48 multiplayer starts, and the unit is pinned
+
+A flat 768-byte blob, `48 × {u16, pad, s32 wx, s32 wy, u8, pad}`. The values
+are **world positions**, not cells, and the conversion is
+`cell = (int)(wp * 0.0186339)` — truncation, and `1/0.0186339 = 53.665 630 92`,
+the project's known tile size.
+
+Both earlier candidate units are refuted. All 96 coordinates are the truncated
+*centre* of their cell: `wp − floor((cell+0.5) × 53.66563)` lands in `(−1, 0]`
+for 96 of 96, a window 0.0161 wide, against 0.9375 under /32, 0.9219 under /64,
+0.9465 for a byte-rotated control and 0.9761 for random-in-range. The earlier
+"48/48 land in a real sector" for both /32 and /64 was chance against the
+60.5% baseline — the fractional test separates them where the sector test
+cannot.
 
 ### The twenty script trees
 
@@ -259,10 +345,73 @@ Every tree seeds quest `1101` and flag `DaemonTotFranz`; the Gladiator/campaign
 tree adds `31`. **Quests do not live here.** Quest *titles* are in
 `vectoren.bin`'s second section; quest *logic* is in `funkcode.bin`.
 
-`vectoren.bin` section 1 is the procedure table for `funkcode.bin`:
-`name[64]` + five `i32`, of which the first two are a byte offset and length
-that tile `funkcode.bin` exactly (18 768/18 768 chained, `sum(len)` =
-2 774 680 = the file's exact size). See [script-bytecode.md](script-bytecode.md).
+### `vectoren.bin` — three sections, and this is where quests live
+
+```
+SECTION 1  procedure table for funkcode.bin
+  u32 count, then count x 84 B from offset 4:
+    +0x00 char name[64]
+    +0x40 i32 byte offset into funkcode.bin
+    +0x44 i32 length
+    +0x48 i32 quest id, -1 = none
+    +0x4c i32, +0x50 i32
+  Record 0 is an ALL-ZERO SENTINEL (offset 0, length 0).
+
+SECTION 2  quest table, at 4 + count*84
+  u32 count, then count x 292 B:
+    +0x000 u32  quest id
+    +0x004 char title[256]   German quest-log title
+    +0x104 u32  enum {0,15,28,53}   unknown
+    +0x108 u32  enum {0,13,15,25}   unknown
+    +0x10c u32  section-1 index -> QIS_Trigger<id>
+    +0x110 u32  ...              -> QIS_OnEnter<id>
+    +0x114 u32  ...              -> QIS_OnSetUp<id>   (0 = absent)
+    +0x118 u32  ...              -> QIS_OnExit<id>
+    +0x11c u32  ...              -> QIS_OnLose<id>    (0 = absent)
+    +0x120 u32  always 0
+
+SECTION 3  dynamic-quest ("Zufallsquest") region table, VARIABLE length
+  Present only in the base type_npc_* trees and netscriptcamp; absent from
+  every addon/ tree and from base netscript/. Regions 1..13 and 15..23 —
+  Region14 does not exist. In the base trees every symbol it references is
+  named `ToDo:-1.<slot>`: the content is placeholder.
+```
+
+Section 1 chains exactly: `offset[i] + length[i] == offset[i+1]` for
+18 768/18 768 entries in `netscript`, and `sum(len)` = 2 774 680 = `funkcode.bin`'s
+exact size. See [script-bytecode.md](script-bytecode.md).
+
+**Section-1 indices are based at offset 4, counting the sentinel.** This is the
+one thing to get right, and it is checkable: resolving each quest's
+`+0x10c` and asking whether the symbol is literally `QIS_Trigger<that quest id>`
+gives **285/285** at base 4 and **0/285** at base 88, where it lands one record
+early on `SelfTriggerQuest<id>` every time.
+
+> `engine/formats/funk.gd` uses `VEC_HDR := 88`, and that is **not** a bug for
+> what it does — it looks symbols up by funkcode *offset*, and 88 simply skips
+> the zero sentinel, which a zero-length record cannot contribute to. But its
+> comment calls 88 "u32 count, then padding to the first record", and there is
+> no padding: 88 = 4 + 84 is one whole record. Any future consumer that treats
+> a vectoren value as an **index** must use base 4.
+
+### `defpos.bin` is a regenerable cache, and 19 of 20 copies are stale
+
+The loader checks a magic first: `u32 == 1234`, then three counted sections of
+100-, 80- and 76-byte records. If the magic fails it **closes the file,
+rebuilds all three tables from the already-open `startcode.bin` and
+`funkcode.bin`, and writes the file back**.
+
+Of the 20 shipped copies, exactly **one** carries the magic —
+`bin/type_npc_seraphim/defpos.bin`. The other 19 begin with their own first
+section count (975 / 1485 / 1908 / 1910 / 1921 / 1945) and are therefore
+rejected on sight and regenerated at load. The same check sits at a
+byte-identical instruction in all six shipped clients; `sacredserver` has no
+`defpos` loader at all.
+
+That reframes the file: it is **derived**, not a source of truth, so a port has
+no obligation to read it — and the one file that differs most likely differs
+because this install has only ever been played as a Seraphim, which is an
+inference and is flagged as one.
 
 ## Audio — decoded end to end, previously undocumented
 
@@ -342,6 +491,32 @@ Where they disagree, `items.pak` is right: ids 1224/1227/1230 are
 items that the `global.res` reading collapses into three copies of the word
 "Shield". This closes the open question in [pax-saves.md](pax-saves.md).
 
+### `.pax` section `0xCD` is the explored-map bitmap
+
+The largest section in every hero file by a factor of 35 — 822 824 bytes
+inflated, identical in size across both saves and all eight templates, so it is
+structural rather than per-hero.
+
+```
+u32 0xB00BB00B ; u32 6051 ; 12 zero bytes ; u32 0xDEADB00B
+then 6050 records of 136 B:
+  +0x00 u32 k+1        (holds for 6050/6050)
+  +0x04 u32 0
+  +0x08 128 B          32x32 reveal bitmap
+24 + 136 * 6050 = 822 824 exactly
+```
+
+6 050 is `sectors.keyx`'s exact record count, and record *k* corresponds to
+`keyx` record *k*. Sectors are 64×64 tiles and the bitmap is 32×32, so **one
+bit per 2×2 tile block**.
+
+Two independent confirmations. Spatially, the shared edge between two
+*geometrically adjacent* sectors differs by 1 bit while non-adjacent controls
+differ by 21 — revealed blobs cut off at a sector edge and resume in the
+neighbour. Semantically, `templates/hero07.ptx`, a character who has never been
+played, has exactly **one** revealed sector, against eight in `save/hero07.pax`
+and five in `hero06.pax`.
+
 ## Media and runtime — closed out
 
 | Path | Count / size | What |
@@ -393,11 +568,12 @@ Sound System) inert in a Linux install.
   base rate for ids 1–1000 is 62.9%, so that is *not* evidence on its own — and
   601, 606–611, 620, 624 do not resolve at all. Two namespaces, or the wrong
   table.
-- Why `world.bin` lists only 3 854 of the 6 050 sectors. Compressed and
-  decompressed sizes of the in-list and not-in-list groups overlap heavily, so
-  it is not a size or emptiness filter.
 - Whether `treppe.bin` is live at all: no lookup site was found by
   member-offset search, and `sacredserver` has no `treppe` string.
+- `vectoren.bin` section 2's two enums at `+0x104` `{0,15,28,53}` and `+0x108`
+  `{0,13,15,25}`.
+- Section 3's region content is placeholder (`ToDo:-1.<slot>`) in the base
+  trees, so whether the dynamic-quest system shipped functional is unresolved.
 - What references a `wea.bin` pool (0…255) or a `sndprofiles` index (0…8 191).
   Neither `items.pak` nor `creature.pak` carries a column that agrees; both are
   most likely script arguments.

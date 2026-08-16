@@ -20,7 +20,9 @@ strike it here.
 | `world/static.pak`'s `WldxEntry +0x08` slot is empty in every retail cell but populated in 73 prerelease cells — a dropped layer whose target table is unidentified. | [formats/world-sectors.md](formats/world-sectors.md) |
 | ~~`wpmod.bin`'s record length rule.~~ Struck 2026-08-16: length = 54 + 6×int[53], the block count being the last int of the fixed part. 572 records, consuming the file exactly. Its FIELD NAMES remain unbound to columns. | [formats/install-inventory.md](formats/install-inventory.md) |
 | ~~`treppe.bin`'s key encoding and `world2.bin`'s index space.~~ Struck 2026-08-16: treppe packs `(level<<26)｜(y<<13)｜x` (2494/2494 = 100.0000% vs a 61.3% control — the earlier refutation had the wrong divisor), and world2 is a u16 sector-presence grid set-identical to keyx. `static10_18.bin`'s key space is still refuted as a packed position (45.5% against a 60.5% baseline). | [formats/install-inventory.md](formats/install-inventory.md) |
-| Why `world.bin` lists only 3854 of the 6050 sectors, and whether `treppe.bin` is queried at all — no lookup site was found. | [formats/install-inventory.md](formats/install-inventory.md) |
+| ~~Why `world.bin` lists only 3854 of the 6050 sectors.~~ Struck 2026-08-16: it is a legacy-savegame remap listing the pre-expansion sectors, read only when `floor.pak` exceeds 139,999,999 bytes. `static10_18.bin` is the same idea for triggers (save v10→v18); neither is needed by a port starting from current saves. | [formats/install-inventory.md](formats/install-inventory.md) |
+| Whether `treppe.bin` is queried at all — no lookup site was found by member-offset search, and `sacredserver` has no `treppe` string. | [formats/install-inventory.md](formats/install-inventory.md) |
+| `vectoren.bin` section 2's two enums at `+0x104` and `+0x108`, and whether the dynamic-quest region system shipped functional — its content is placeholder (`ToDo:-1.<slot>`) in every base tree. | [formats/install-inventory.md](formats/install-inventory.md) |
 | What references a `wea.bin` equipment pool (0…255) or a `sndprofiles.pak` profile index (0…8191). Neither `items.pak` nor `creature.pak` carries a column that agrees. | [formats/install-inventory.md](formats/install-inventory.md) |
 | What selects the current music/atmosphere profile as the player moves — it is in neither `global.res` nor `bin/*.bin`. | [formats/install-inventory.md](formats/install-inventory.md) |
 | The 389 symbolic keys in `credits.txt`/`credits2.txt` resolve in no shipped file. | [formats/install-inventory.md](formats/install-inventory.md) |
@@ -59,8 +61,12 @@ These are settled decisions, not gaps, and re-raising them costs time:
 Decoded, written up, and simply not wired into the engine yet. Named here so
 they are not mistaken for research:
 
-- `triggers.pak` and `DefPos.bin` have readers and appear in no engine
-  code path.
+- `triggers.pak` has a reader and no `formats/` class, though
+  `checks/trigger_check.gd` and six probes do read it.
+- `DefPos.bin` is **no longer integration debt**: it is a regenerable cache of
+  `startcode.bin` + `funkcode.bin` that retail rebuilds whenever its `1234`
+  magic is absent, which is true of 19 of the 20 shipped copies. A port has no
+  obligation to read it.
 
 ---
 Provenance: the `## Open` section of each document named above; the findings
