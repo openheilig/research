@@ -172,6 +172,56 @@ no case is skipped by its length field and does nothing. An interpreter that
 implements the head of this distribution and length-skips the rest behaves the
 way the shipped engine behaves on its own unhandled opcodes.
 
+## Running a quest: what four opcodes buy, and what refusing costs
+
+Choosing a quest to execute was done by measurement. Over all 601 quests in
+the Seraphim tree, counting how many opcodes each needs beyond a state-and-log
+core: **none need zero, exactly two need one** — 65 and 74.
+
+**Quest 74, "Kampf gegen den Dämon"**, is 178 bytes across two hooks and uses
+four opcodes: `SetQuestInfo`, `QuestBook`, `SetVarBit`, `AutoSave`.
+
+```
+OnEnter (125 B)   SetQuestInfo 3
+                  QuestBook 74, 0, "Res:HQ_7_4_1_Log_Title"
+                  QuestBook 74, 1, "Res:HQ_7_4_1_Log_Header"
+                  QuestBook 74, 1, "Res:HQ_7_4_1_Log_Qstart"
+OnExit  (53 B)    QuestBook 74, 1, "Res:HQ_Log_Qend"
+                  SetVarBit "74", 3
+                  AutoSave
+```
+
+`QuestBook(i32 quest, i32 kind, string key)` — **kind 0 is the title line** and
+1 is every other. `SetVarBit(string name, i32 value)` — the name is the quest
+id **as a decimal string**.
+
+Three things one quest alone would have hidden:
+
+- **74's OnEnter writes no state variable at all**; only its OnExit does, with
+  3. Quest 65 writes 1 on entry and 3 on exit. The corpus is not
+  self-consistent, so *"has this quest started"* is not answerable from the
+  bytecode — a port needs its own flag.
+- **Every `Trigger` hook in the corpus is zero bytes.** Entry and exit are
+  driven from outside the quest by something not yet identified.
+- The four `Res:` keys appear in `funkcode.bin` and **in no other file in the
+  install**, so 0 of 4 resolve through `global.res` — the same gap as the 389
+  symbolic keys in `credits.txt`.
+
+### An interpreter must refuse, not skip
+
+Retail's dispatcher default case is `mov ecx,1; ret`, so an unhandled opcode is
+skipped by its length field. **Copying that into a port is wrong**, and the
+reason is opcode 58 `IF`: retail skipping an opcode it never implemented leaves
+behaviour it never had, but a port skipping `IF` runs the guarded body
+*unconditionally* — different behaviour, not less.
+
+So `engine/world/script.gd` refuses any hook containing an opcode outside its
+implemented set, before executing any of it. With four opcodes implemented,
+**481 of 496 non-empty OnEnter hooks are refused and 15 run.**
+
+An empty hook is *not* a refusal — every `Trigger` is zero bytes and must run
+vacuously, or no quest could ever be entered.
+
 ## `StartPosition` (45) — one record per class, and it is the new-game spawn
 
 Each `bin/type_npc_*/startcode.bin` carries **exactly one** opcode-45 record:
