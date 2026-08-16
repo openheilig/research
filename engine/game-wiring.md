@@ -104,14 +104,15 @@ reached through the name hash at `sub_80ACC3E`.
 
 ## What is actually left for a 1:1 small-scale MVP
 
-Seven items were listed here on 2026-08-16. **Six are closed** (rows 954–963);
-what follows is the state after that pass.
+Seven items were listed here on 2026-08-16. **Five are closed** (rows 954–963),
+one is a capture decision rather than a gap, and **one — facing — stays open
+with both of its routes now measured** (row 964).
 
 | # | Item | State |
 |---|---|---|
 | 1 | HUD | **Closed.** The layout is a static 1887-entry sub-rect table at `0x880DC68` placed by `cUI_Taskbar2` onto a fixed 1024×768 canvas. `view/hud.gd` draws the console, wings, buttons, combat-art arc and both slot wings from retail's own art. **Except the life/mana gauges** — see Open. |
-| 2 | Facing | **Open.** `set_yaw` is still passed `0.0`. See Open. |
-| 3 | NPCs by default | **Open, deliberately.** `--npcs` places the scripted cast at real cells; turning it on by default changes frames that other gates md5, so it is a runbook decision rather than a code one. |
+| 2 | Facing | **Open, with two routes measured and neither settling it** (row 964). See Open. |
+| 3 | NPCs by default | **Decided, not open.** `--npcs` already places the scripted cast at real retail cells. It stays opt-in because `tools/parity/follow_parity.sh` and `loggia_sweep.sh` photograph the world and rely on the current default rather than passing a flag; flipping it would silently change frames they compare. Closing this properly means adding `--nonpcs` to those runbooks first, which is a capture decision and not a research gap. |
 | 4 | Quest text on screen | **Closed.** The console shows the quest's own line; quest 74 reads *"The Soul of the Demon"* / *"Kill the demon, after Shareefa has summoned it."* |
 | 5 | Composed keys in the VM | **Closed.** `QuestLog.resolve_with` substitutes from its own variables, and `SetVarBit` is now understood as a bit index, so the variables it reads are right. |
 | 6 | The AT/PA base | **Closed.** `0.5·(STR+DEX)` and `0.2·STR + 0.8·DEX`. The MVP fight is 31%, entirely derived. |
@@ -125,10 +126,17 @@ what follows is the state after that pass.
   to the mercenary window. So the most recognisable part of the screen is
   deliberately not drawn rather than guessed.
 - **Character facing.** `set_yaw` and `rig_placement.yaw` are built and unused.
-  `ActorState.heading` is per-tick movement intent, not a facing, and the
-  cell-space→yaw convention is uncalibrated — implementing it means inventing a
-  constant that could be 180° wrong. The measurable route is a walk clip's root
-  translation direction, which gives the model's own forward axis.
+  Two routes were measured (`probes/facing_probe.gd`) and neither settles it:
+  - **A walk clip's root translation** — *refuted*. Sacred's clips are **in
+    place**: `GLAD_WALK_BH`'s root has three position keys and nets to exactly
+    zero over the cycle, and the same holds for every class body's WALK and
+    RUN. The engine moves the body, the clip does not.
+  - **`Toe0 − Foot` in global rest** — sign-unambiguous by anatomy, but the
+    seven bodies **disagree** (worst pairwise dot 0.46) and split into two
+    families: four put forward in XZ, three in YZ. That is two authoring
+    frames, most likely the 90°-Z alignment bone `rigs.gd` names being in some
+    chains and not others. Resolving that per mesh is the next step; averaging
+    the two answers is not.
 - **The damage/resolution step** — how damage meets resistance, criticals, and
   what the weapon-slot flag selects. To-hit and both ratings are recovered;
   this is what is left of a fight.
