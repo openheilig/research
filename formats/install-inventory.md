@@ -284,11 +284,62 @@ field left untouched when no `EWT_` tag appears.
 | `blk[4]` | default **20** |
 | `blk[5]` | default **10** |
 
-The bonus ids come from the `Bonus:` tag list and are literal constants in the
-compiler: `PD,`→801, `FD,`→802, `MD,`→803, `GD,`→804, `BonusP,`→805,
-`BonusF,`→806, `BonusM,`→807, `BonusG,`→808, `AW,`→809, `VW,`→810,
-`ASpeed,`→811, `WSpeed,`→812, `RegSpell,`→813, `RegMove,`→814, and the
-attribute tags `ST, GS, WI, CH` from 815.
+`blk[1]`'s low 16 bits carry an id from **three disjoint namespaces**, and
+every value in the file falls inside them with nothing left over:
+
+| Range | Meaning | Blocks |
+|---|---|---|
+| `0` | a `Spell:` block — the payload is `blk[3]` | 148 |
+| `599 + skill` | a SKILL bonus | 89 |
+| `801…820` | a `Bonus:` id | 773 |
+
+**The 6xx band is `599 + skill id`**, written by the `Skill_` tag: it parses
+the trailing name, looks it up in the executable's 34-entry `SKILL_*` table
+(ids 0…33, index == id), and the helper it passes the result through adds
+**599**. The observed 601, 606–611, 620, 624 are therefore
+`Waffenkunde, Fernkampf, Wendigkeit, Parade, Konstitution, Rüstung,
+Meditation, Handel, Konzentration`.
+
+That offset is confirmed semantically, which is the part a wrong constant could
+not survive — each skill lands on exactly the gear that skill governs:
+
+| Skill | The items it modifies |
+|---|---|
+| `Fernkampf` (ranged) | `Pistol_simple`, `Pistol_multi`, `Pistol_nice`, `muskette_1` |
+| `Parade` (parry) | `daem_shield01`, `daem_shield02`, `daem_shield03` |
+| `Waffenkunde` (weapon lore) | `Dark_Sword`, `D_Sword_02` |
+| `Rüstung` (armour) | `Dwarf_metal_body`, `Dwarf_curious_body` |
+| `Handel` (trade) | `Dwarf_AM_Brosche`, `Seraphim_AM_Brosche` |
+
+The `Bonus:` ids are literal constants in the compiler: `PD,`→801, `FD,`→802,
+`MD,`→803, `GD,`→804, `BonusP,`→805, `BonusF,`→806, `BonusM,`→807,
+`BonusG,`→808, `AW,`→809, `VW,`→810, `ASpeed,`→811, `WSpeed,`→812,
+`RegSpell,`→813, `RegMove,`→814.
+
+#### `blk[1]`'s high bits name a conditioning attribute
+
+The six `Bedingung:` tags each write a standalone id **or**, when the block
+already carries one, `or` a small selector into bits 16–18:
+
+| Tag | Standalone id | Selector |
+|---|---|---|
+| `ST,` Stärke | 815 | 1 |
+| `GS,` Geschicklichkeit | 816 | 2 |
+| `WI,` Wissen | 817 | 3 |
+| `RP,` | 818 | 4 |
+| `RM,` | 819 | 5 |
+| `CH,` Charisma | 820 | 6 |
+
+220 blocks carry a selector, and in **every one** the low half is a `Bonus:` id
+in 801…810 — so the pairing reads as "this bonus is conditioned on that
+attribute": `ST + 801` is physical damage scaling with Strength, `WI + 802`
+fire damage with Wissen.
+
+> **Earlier belief, mine.** I first read the selector as stacking on a *skill*
+> id, because the compiler's test is only "something is already set" and the
+> `Skill_` tag is parsed just before these. The control refutes it: of 220
+> flagged blocks, **220** carry a low half outside the skill range. A skill and
+> an attribute never co-occur in the shipped data.
 
 **The resistance tags reuse the damage ids.** `PR, FR, MR, GR` are assigned
 801–804 exactly as `PD, FD, MD, GD` are, and then `or`ed with `0x8000` in the
@@ -629,11 +680,8 @@ Sound System) inert in a Linux install.
 
 ## Open
 
-- `wpmod.bin`'s **second id band, 601–624**. The 801+ band is the `Bonus:` tag
-  list, transcribed from the compiler's own constants; the 6xx ids come from a
-  different lookup and are not skill ids (skills are 0…33). 148 blocks carry
-  id 0. Also unread: `blk[2]`'s (min, max) units, and what `blk[4]`/`blk[5]`
-  mean when a record overrides their 20/10 defaults.
+- `wpmod.bin`'s `blk[2]` (min, max) units, and what `blk[4]`/`blk[5]` mean when
+  a record overrides their 20/10 defaults. The id namespaces are closed.
 - Whether `treppe.bin` is live at all: no lookup site was found by
   member-offset search, and `sacredserver` has no `treppe` string.
 - `vectoren.bin` section 2's two enums at `+0x104` `{0,15,28,53}` and `+0x108`
