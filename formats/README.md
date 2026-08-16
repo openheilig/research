@@ -34,6 +34,17 @@ until the next run and no longer. Change the generator instead.
 | [script-opcodes.md](generated/script-opcodes.md) / `.json` | `tools/binary/opcodes.py` — handler addresses, strings, RTTI classes |
 | [script-opcodes-behaviour.md](generated/script-opcodes-behaviour.md) | `tools/binary/opsem.py` — what the shipped scripts do with each opcode |
 | [balance-keymap.tsv](generated/balance-keymap.tsv) / `.json` | `tools/binary/balance_keymap.py` — 361 of the 379 balance fields, resolved to offsets with type and shipped value |
+| [balance-globals.tsv](generated/balance-globals.tsv) | `tools/binary/skillmap.py` — each balance key's global, store site and consumers |
+| [script-opcode-names.tsv](generated/script-opcode-names.tsv) | `tools/binary/opcode_names.py` — the script compiler's own keyword tables, naming 120 of 141 opcodes |
+| [skill-families.tsv](generated/skill-families.tsv) | `tools/binary/skillmap.py` — skill type, resource id and the balance families each one tunes |
+
+Every table here regenerates byte-for-byte from the tool beside it; that was
+checked on 2026-08-16, when the last two acquired an entry. Both of those
+generators are also gates — they exit non-zero rather than emit a table they
+cannot justify. `opcode_names.py` re-checks the seven opcodes that were named
+by unrelated routes before the keyword tables were read, and `skillmap.py` the
+thirteen jump-table cases that push their own resource id; shift either table
+by one slot and the count drops and the run fails.
 
 ## Related
 

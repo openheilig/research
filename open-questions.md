@@ -2,11 +2,19 @@
 
 **Status:** Standing
 **Purpose:** Every open item from every document in this repository, in one
-list, so the state of the project is one read rather than eleven.
+list, so the state of the project is one read rather than nineteen.
 
 Each entry is the `## Open` section of the document it names — that document
 is the authority, this is the index. If you close one, close it there and
 strike it here.
+
+Nineteen documents carry an `## Open` section. Three of them — `balance-bin`,
+`tech-stack`, `build-survey` — say "nothing open" and are deliberately absent
+below. The rest are indexed. An audit on 2026-08-16 found five items that were
+open in their own document and missing here; they are the five marked
+**(indexed 2026-08-16)**. An index that under-reports is worse than no index,
+so check this list against `grep -l '^## Open' **/*.md` when you add a
+document.
 
 ## Formats
 
@@ -25,6 +33,10 @@ strike it here.
 | `vectoren.bin` section 2's two enums at `+0x104` and `+0x108`, and whether the dynamic-quest region system shipped functional — its content is placeholder (`ToDo:-1.<slot>`) in every base tree. | [formats/install-inventory.md](formats/install-inventory.md) |
 | What references a `wea.bin` equipment pool (0…255) or a `sndprofiles.pak` profile index (0…8191). Neither `items.pak` nor `creature.pak` carries a column that agrees. | [formats/install-inventory.md](formats/install-inventory.md) |
 | ~~What selects the current music/atmosphere profile as the player moves.~~ **Struck 2026-08-16 (row 960).** It is in neither of those because it is a per-sector field in `world/sectors.keyx`: 6050 records of 768 bytes (and `256 + 6050*768` is the file length exactly), each carrying a climate byte and a 256-byte `cSectorEnvironment` with a region id, a `SOUND_FX_*` music id and a secondary atmosphere id. `sub_80DB27C` reads them on sector CHANGE. `sndprofiles.pak` is ruled out — it is the per-creature combat sound variation sets. | [formats/install-inventory.md](formats/install-inventory.md) |
+| **(indexed 2026-08-16)** The `.acs` argument encoding: a call with an inline string emits an extra word before its arguments where a call without one does not. | [formats/armalion-acs.md](formats/armalion-acs.md) |
+| **(indexed 2026-08-16)** HP is in no table read so far, and neither are the attack and defence ratings — `creature.pak` carries base *attributes* and retail derives the combat numbers from them. | [formats/creature-pak.md](formats/creature-pak.md) |
+| **(indexed 2026-08-16)** The life and mana gauges. All 46 `cUI_Taskbar2` functions were enumerated and the class references no orb, globe or fill-bar art and computes no fraction or scissor rect, so whatever draws them is elsewhere. | [formats/ui-taskbar.md](formats/ui-taskbar.md), [engine/game-wiring.md](engine/game-wiring.md) |
+| **(indexed 2026-08-16)** The Armalion script API id space is not joined to retail's opcodes: ~85 API names, 62 recorded with handler addresses, against a 141-entry dispatcher whose ids do not line up. | [builds/armalion-source-tree.md](builds/armalion-source-tree.md) |
 | ~~**The whole symbolic `Res:` namespace resolves in no shipped file**~~ **Struck 2026-08-16 — the claim was false and the cause was our own arithmetic.** The name hash was transcribed correctly but reimplemented in 64-bit GDScript, while retail runs it in int32 where `113*v` wraps from the fifth character on. The two agree for exactly four characters, which is every numeric key in the shipped files and no symbolic one. With the wrap in place NPC names resolve 1521 of 1521 (was 1377), 319 of 1242 static `QuestBook` keys come back as English quest-log prose, and the rest are runtime-composed rather than absent. See row 954. | [formats/global-res.md](formats/global-res.md) |
 
 Nothing is open on `.pak` framing, `tiles.pak`, `global.res`, `mixed.pak`, or
@@ -63,6 +75,13 @@ they are not mistaken for research:
 
 - `triggers.pak` has a reader and no `formats/` class, though
   `checks/trigger_check.gd` and six probes do read it.
+- `formats/equipment.gd` and `formats/wpmod.gd` each have a passing gate and
+  **no production caller** — `equipment_check.gd` and `wpmod_check.gd` are the
+  only things that construct them. Decoded and unwired, which is this
+  section's definition. (`formats/sectors.gd` was the third of these until
+  2026-08-16, when `main.gd` began firing the environment lookup on a change
+  of the player's sector; link 6c in `engine/game-wiring.md` claimed "yes"
+  for the whole of the interval it was gate-only.)
 - `DefPos.bin` is **no longer integration debt**: it is a regenerable cache of
   `startcode.bin` + `funkcode.bin` that retail rebuilds whenever its `1234`
   magic is absent, which is true of 19 of the 20 shipped copies. A port has no

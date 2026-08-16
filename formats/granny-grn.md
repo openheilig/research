@@ -53,8 +53,11 @@ A structure separate from the header chain, reached at
 section_offset(entry) = magic_offset(entry) + 376
 ```
 
-then `+16` to a `u32` count followed by `{tag, rel, children}` triples of
-stride 12.
+A `u32` node count sits at `+0`, and the `{tag, rel, children}` triples of
+stride 12 begin at `+16`; the 12 bytes between the two are not read. (This
+paragraph previously put the count itself at `+16`. `formats/models.gd` has
+always read it at `+0` — `DIR_OFF` is the offset of the triples, not of the
+count — so the code was right and the sentence was wrong.)
 
 `376` is not a new magic number — it reconciles the constants the engine
 already shipped for kind 64 (`1634 − 1258 = 376`) and extends them to kind 65
