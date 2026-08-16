@@ -1,6 +1,6 @@
 # Combat formulas
 
-**Status:** Partial
+**Status:** Partial — to-hit and both ratings recovered; the resolution step is not
 **Purpose:** The combat arithmetic recovered so far: to-hit end to end, and the
 derived-stat kernel that feeds damage and resistance. The resolution step that
 consumes them is not decoded.
@@ -34,6 +34,55 @@ int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
   return v5;
 }
 ```
+
+## Where AT and PA come from — skills, not attributes
+
+**No base attribute becomes either rating.** Both accumulate from **skill
+levels**.
+
+`sub_81F596E`, the creature stat builder, dispatches on skill *type* through
+the jump table at `0x81F5A94`. For each skill a creature carries it feeds that
+skill's **level** — the `u16` at `+2` of the skill entry, the type being at
+`+0` — into one shared curve, twice, once per `balance.bin` triplet belonging
+to the skill's family.
+
+`sub_81F55B0`, verbatim:
+
+```c
+float f(float off, float S, float s, float w)
+{
+  if (S < 1.0) return 0.0;
+  float v = (1.0 - 1.0/((S - 1.0)/s + 1.0)) * (w - off);
+  return off + v + v;
+}
+```
+
+A saturating function of the skill level: `f(1) = off`, `f(1+s) = off+(w−off)`,
+and a ceiling of `off + 2(w−off)` it approaches without reaching. **An
+untrained skill contributes zero, not `off`** — a floor, not a clamp.
+
+Case 8 is *Agility* (family `W`) and computes **AW** from
+`WoffAW/W__sAW/W__wAW` and **VW** from `WoffVW/W__sVW/W__wVW` off the same
+level. Case 3 is *Long-handled Weapons* (family `STK`) and computes AW and then
+**SP** — so the second output's meaning is per-family, not fixed.
+
+### Which skills
+
+| | families | skills |
+|---|---|---|
+| **AW** (attack) | STK, SK, AK, KK, FK, BK, FEK, W, HR, *WT* | Long-handled Weapons, Sword Lore, Axe Lore, Blade Combat, Unarmed Combat, Dual Wielding, Ranged Combat, Agility, Constitution (`WT` maps to no skill) |
+| **VW** (defence) | **W, HP** | **Agility and Constitution — and nothing else** |
+
+Retail's `W` triplets: AW `7 / 50 / 125`, VW `13 / 50 / 225`.
+`HP` VW: `4 / 50 / 130`. `VWFakBoss` = 2.0 and `VWFakChamp` = 1.5 multiply the
+defence rating; what marks a creature boss or champion is not recovered.
+
+> **The open link.** The curve consumes a skill *level*, and `creature.pak`
+> carries skill **types** only — two at `+0x14`, sixteen more at `+0x16` — with
+> no level beside them. So a monster's ratings cannot be computed from that
+> table alone; something must supply the level at which it knows its skills.
+> The creature's own level is the obvious candidate and is set where it spawns,
+> not in the table, so it is recorded as a gap rather than assumed.
 
 ## Roll semantics
 
