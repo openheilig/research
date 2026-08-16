@@ -6,7 +6,7 @@ own call order, each link's file, and whether this port has it. Written because
 the project had eleven format documents and no map of how the formats meet.
 
 Provenance: the new-game trace through `install/sacred` (findings log rows
-954–957), plus the readers and gates named per row. Function addresses are
+954–963), plus the readers and gates named per row. Function addresses are
 virtual (`vaddr = 0x08048000 + file_offset`).
 
 ---
@@ -36,15 +36,21 @@ virtual (`vaddr = 0x08048000 + file_offset`).
       |   opcode 100 SpawnValues(50, lo, hi) -> marker object {+211=lo, +213=hi}
       v
  [6] sector Enter                           sub_80DB06C -> sub_829FAF4
-      |   runs "Sector<cx><cyyy>Enter"; walks placements; fires triggers;
-      |   selects sound/music (sub_83C58C6 group)
+      |   runs "Sector<cx><cyyy>Enter"; walks placements; fires triggers
+      |   (music is NOT selected here -- see the sector-change path below)
       v
  [7] creature spawn                         sub_8180B22
       |   level = clamp(hero level, band) + rand()%2                 sub_81806DC
       v
  [8] stat build                             cCreatureHero::CalcResults  sub_820E04C
-          AT (+0xE6) and PA (+0xEA) start at 1.0f, then every one of the
-          eight skill slots multiplies in through the curve at sub_81F55B0
+          base AT (+0x5A) = 0.5*(STR+DEX), base PA (+0x5E) = 0.2*STR + 0.8*DEX
+          multipliers (+0xE6, +0xEA) start at 1.0f and every one of the eight
+          skill slots folds in through the curve at sub_81F55B0
+          AT = base * mult * ProzAW[difficulty]        sub_81FA5AA / sub_81FA622
+
+ [9] sector CHANGE (not entry)              sub_80DB27C
+          world/sectors.keyx env -> music id, climate, region
+          -> cMSS::receive_event, then the chooser sub_84EADBA
 ```
 
 The **text layer** hangs off every one of [4]–[8]: quest titles are plain text
@@ -61,21 +67,22 @@ reached through the name hash at `sub_80ACC3E`.
 | 2 | template → save | `templates/hero0N.ptx` | **yes** `formats/hero.gd` | `pax_check` |
 | 3 | save → character | PAX `0xC7` | **yes** — level, xp, gold, 6 attributes, 8 skill slots | `pax_check` |
 | 3b | save → inventory | PAX `0xC8` | **ids only**, not equipped | `pax_check` |
+| 3c | save → quest bits | PAX `0xCE` | **understood, not persisted** — 5 tiers x 160 bits | `quest_check` |
 | 4 | CharacterType → tree | `GetTypeName` table | **yes** — confirmed twice | `pax_check` |
 | 4b | tree load | `startcode`/`funkcode`/`vectoren` | **yes** | `startcode_check`, `quest_check` |
 | 5 | sector → Init proc | `Sector<cx><cyyy>Init` | **yes** | `spawnlevel_check` |
 | 5b | `SpawnValues` → band | opcode 100 | **yes** | `spawnlevel_check` |
 | 6 | sector → Enter proc | `Sector<cx><cyyy>Enter` | **partly** — hooks run for quests, not per-sector | `quest_check` |
 | 6b | placements → world | `startcode.bin` | **yes** (`--npcs`) | `spawn_check` |
-| 6c | sector → music | `sndprofiles.pak` | **no code at all** | — |
+| 6c | sector → music | `world/sectors.keyx` | **yes** `formats/sectors.gd` | `sectorenv_check` |
 | 7 | band + hero level → level | `sub_81806DC` | **yes** | `spawnlevel_check` |
 | 7b | body id → creature | `creature.pak` | **yes**, all 86 bytes | `creature_check` |
 | 7c | class pair → hostility | faction matrix | **yes** | `factions_check` |
-| 8 | skills → AT/PA | `sub_81F596E` + `balance.bin` | **curve yes, BASE unrecovered** | `combat_check` |
+| 8 | attributes+skills → AT/PA | `sub_81FA5AA` / `sub_81FA622` | **yes** — base and multiplier | `combat_check` |
 | 8b | AT/PA → to-hit | `sub_428790` | **yes** | `combat_check` |
 | 8c | damage vs resistance | undecoded | **no** — deliberately no formula | — |
 | T | key → text | `global.res` | **yes** since row 954 | `resources_check` |
-| T2 | composed key → text | VM variable substitution | **`compose()` exists, VM does not call it** | `resources_check` |
+| T2 | composed key → text | VM variable substitution | **yes** `QuestLog.resolve_with` | `quest_check` |
 
 ## The render side
 
@@ -86,44 +93,49 @@ reached through the name hash at `sub_80ACC3E`.
 | statics, chains, painter order | **done** | 935 objects in sector 50,39 vs 777 heads |
 | camera, projection, zoom steps | **done** | zoom steps recovered by driving retail under Xvfb |
 | player mesh, armour, weapons | **done** | refuses rather than approximating |
-| **player animation** | **done (row 957)** | 5 of 7 class bodies; 2 build no rig |
+| **player animation** | **done** | 5 of 7 bodies, each playing its own IDLE (rows 957, 963) |
 | NPC / creature animation | **opt-in flags only** | not on in a default run |
 | facing / heading | **built and unused** | `set_yaw` is called with `0.0` everywhere |
-| idle vs walk vs attack | **no** | one clip per mesh, looped forever |
-| **HUD** | **none — zero lines** | the single largest screenshot delta |
+| idle vs walk vs attack | **selection done, switching not** | `Rigs` resolves a clip per ACTION (row 963); nothing changes clip at runtime yet |
+| **HUD** | **done (row 962)** | retail's own rects and coordinates; gauges still open |
 | sound, particles, water, weather | **none** | no screenshot impact |
 
 ---
 
 ## What is actually left for a 1:1 small-scale MVP
 
-Ranked by screenshot-and-behaviour delta per unit of cost. The first two are
-not research.
+Seven items were listed here on 2026-08-16. **Six are closed** (rows 954–963);
+what follows is the state after that pass.
 
-1. **HUD.** ~25–30% of a Sacred screenshot by area, and there is no code. The
-   art is in `texture.pak`, which is already decoded — `view/cursor.gd` shows
-   the name-based lookup. No new reverse-engineering required.
-2. **Facing.** `set_yaw` exists and is passed `0.0` at every call site. A crowd
-   all facing one way reads as broken instantly.
-3. **NPCs on by default.** `--npcs` places the scripted cast at real retail
-   cells. An empty village is not what retail looks like. This is a flag.
-4. **Quest text on screen.** The prose now resolves; nothing displays it.
-   Depends on (1).
-5. **Composed keys in the VM.** `Resources.compose()` is written; `ScriptVM`
-   must substitute the variable before looking a key up.
-6. **The AT/PA base.** The multiplier chain is recovered and the base is not.
-   Until then a fight's *numbers* are invented even though its levels are real.
-7. **Clip selection** (idle/walk/attack). Needs a clip-naming decode; this is
-   the one research item in the list.
+| # | Item | State |
+|---|---|---|
+| 1 | HUD | **Closed.** The layout is a static 1887-entry sub-rect table at `0x880DC68` placed by `cUI_Taskbar2` onto a fixed 1024×768 canvas. `view/hud.gd` draws the console, wings, buttons, combat-art arc and both slot wings from retail's own art. **Except the life/mana gauges** — see Open. |
+| 2 | Facing | **Open.** `set_yaw` is still passed `0.0`. See Open. |
+| 3 | NPCs by default | **Open, deliberately.** `--npcs` places the scripted cast at real cells; turning it on by default changes frames that other gates md5, so it is a runbook decision rather than a code one. |
+| 4 | Quest text on screen | **Closed.** The console shows the quest's own line; quest 74 reads *"The Soul of the Demon"* / *"Kill the demon, after Shareefa has summoned it."* |
+| 5 | Composed keys in the VM | **Closed.** `QuestLog.resolve_with` substitutes from its own variables, and `SetVarBit` is now understood as a bit index, so the variables it reads are right. |
+| 6 | The AT/PA base | **Closed.** `0.5·(STR+DEX)` and `0.2·STR + 0.8·DEX`. The MVP fight is 31%, entirely derived. |
+| 7 | Clip selection | **Closed.** The action is readable from the clip name even though the character is not; all five buildable bodies now play their IDLE instead of whatever scored highest. |
 
 ## Open
 
-- The PAX section → subsystem map. Sections `0xC3 0xC4 0xCA 0xCB 0xCD 0xCE` are
-  framed and inflate correctly, and what consumes each is not recovered. Leads:
-  `sub_80AFCDE`, `sub_80B33FC`, `sub_80CCA20`.
-- The two difficulty tables at `0x8B89BA8` / `0x8B89DAC` that shift the level
-  band. Not in any shipped file.
-- The base attack and defence ratings — see
-  [combat-formulas.md](combat-formulas.md).
-- What selects music on sector entry; the `sub_83C58C6` group is located and
-  its input is not.
+- **The life and mana gauges.** All 46 functions of `cUI_Taskbar2` were
+  enumerated: the class references no orb, globe or fill-bar art and computes
+  no fraction or scissor rect. The orb-looking elements in `GUI_main_02` belong
+  to the mercenary window. So the most recognisable part of the screen is
+  deliberately not drawn rather than guessed.
+- **Character facing.** `set_yaw` and `rig_placement.yaw` are built and unused.
+  `ActorState.heading` is per-tick movement intent, not a facing, and the
+  cell-space→yaw convention is uncalibrated — implementing it means inventing a
+  constant that could be 180° wrong. The measurable route is a walk clip's root
+  translation direction, which gives the model's own forward axis.
+- **The damage/resolution step** — how damage meets resistance, criticals, and
+  what the weapon-slot flag selects. To-hit and both ratings are recovered;
+  this is what is left of a fight.
+- **Hit points.** In no table read so far.
+- **The 200× factor and the 5..95 clamp** are in the Windows binary's
+  `sub_428790` and are *not* in the Linux build, whose display path computes
+  `100·AT/(AT+PA)` through `sub_815D44C` with no level term. Recorded as a
+  discrepancy between two binaries rather than resolved.
+- **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
+- **Eight of 3421 animation clips** do not decode.
