@@ -368,6 +368,45 @@ back to `Bip01 L Hand`. That is measured coincident with the socket (~1e-6) on
 the two NPC bodies carrying both — but **3.86 units away** on the DAEMONIA set,
 so the fallback is counted and reported, never treated as equivalent.
 
+### The FormMeshBone pairing rule
+
+A mesh's weight stream stores **local** bone indices; a `FormMeshBoneSection`
+turns them into global bone ids. Which section belongs to which mesh is not
+stated anywhere obvious, and two natural answers are both wrong:
+
+- **Containment** — the sections are *not* children of the `Mesh` nodes. They
+  sit together near the end of the directory.
+- **Position** — section order is not mesh order. `DWARF_BLACK_BODY.GRN`'s
+  three meshes need 27, 3 and 12 bones while its sections run 12, 27, 3.
+  Measured over the corpus, plain positional pairing gains 171 entries and
+  **loses 87**.
+
+The constraint that *is* right is `len(list) >= highest + 1` — a mesh's local
+indices must fit inside its list. **Not equality**: a mesh may use a *prefix*,
+which is what `SERABOOTS01.GRN` does with two meshes needing 4 against two
+lists of 5, and what made an earlier equality search refuse it.
+
+So the pairing is solved as a **perfect matching** under that constraint,
+accepted only when every valid matching hands each mesh the same list.
+
+| rule | decodes |
+|---|---|
+| equality search (previous) | 736 |
+| perfect matching (current) | 802 |
+| both succeed | 736 — **agree on all 736, 0 disagreements** |
+
+Zero regressions, so this is a strict generalisation rather than a different
+answer.
+
+**The residue is genuinely ambiguous, and refusing it is correct.** The 169
+that still fail are *left/right symmetric* pieces whose two lists are the same
+size but different bones — `SERABOOTS01`'s sections are `[6,7,8,5,12]` and
+`[10,11,12,9,8]`, one leg each; `SERASHOULDER01`'s are `[6,8,7,9]` and
+`[6,10,7,11]`. A coin flip would bind one boot to the opposite leg, which is
+worse than leaving it off. The next lever is **geometric** — score each
+candidate matching by the distance from a mesh's vertices to its assigned
+bones' rest positions — with the 736 already-decided entries as the control.
+
 ### Wearing a garment: the join, and the control that nearly passed
 
 Armour is put on by remapping the garment's skin binds onto the wearer's
@@ -433,18 +472,10 @@ recorded rather than fixed.
 
 Eight of the 3421 animation clips do not decode.
 
-**240 of the 971 weight-declaring meshes — 24.72% — fail the FormMeshBone
-pairing rule.** The weight stream itself parses and consumes its span exactly;
-what fails is the map from a mesh's local bone indices to global bones, which
-searches the `FormMeshBone` lists for one of length `highest + 1` and refuses
-unless exactly one matches. Both failure modes appear inside a single item set:
-`SERABOOTS01.GRN` finds 0 such lists, `SERASHOULDER01.GRN` finds 2. Failures
-concentrate in armour (`DAEMONIA_ARMOR01_BODY`, `_SHOES`, `_SHOULDER`,
-`DAEM_SA1_ARMS`, …), so a composed character is dressed in part of an outfit.
-The length search is a heuristic, not something read off the interpreter; the
-likely correct rule is **positional** — the *i*-th mesh pairs with the *i*-th
-list, which the code already half-assumes by consuming lists as it goes — but
-that needs evidence before replacing a rule that at least refuses loudly.
+**169 of the 971 weight-declaring meshes — 17.40% — still have no
+unambiguous FormMeshBone pairing**, down from 240 (24.72%). See "The pairing
+rule" above for what changed and why the residue is refused rather than
+guessed.
 
 Two of the seven class body meshes do not build at all: `DUNKELELVE.GRN` and
 `MAGICIAN.GRN`. Both are correctly *named*, so this is the decoder being short
