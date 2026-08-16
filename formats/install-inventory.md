@@ -114,23 +114,106 @@ pairing is in the executable's `.rodata` (`scripts\Rustungenswitch.txt` →
 
 | File | Bytes | What it is | State |
 |---|---|---|---|
-| `wpmod.bin` | 147 796 | item-modifier table; variable-length records, 5 item-id slots + ~53 numeric fields. Header count 572. | Partial — **no length rule** |
+| `wpmod.bin` | 147 796 | item-modifier table, 572 records; **length = 54 + 6×int[53]** | Solved |
 | `world.bin` | 46 264 | sector directory: `u32 3855`, then 3 855 × `(idx, X, Y)`; X,Y all multiples of 64 | Solved |
 | `static10_18.bin` | 41 440 | generated remap, magic `map` v0, 2 574 × 16 B; consumed by `cWorld::remapTrigger_load` | Partial |
-| `world2.bin` | 32 772 | `u32 32768`, then 32 768 `u8`; 11 822 nonzero, 255 distinct values | **Unknown index space** |
+| `world2.bin` | 32 772 | **not a byte table** — `u32` byte-count + 16 384 `u16` sector-presence grid | Solved |
 | `balance.bin` | 24 328 | the tunables — flat int32/float32 at fixed absolute offsets | [balance-bin.md](balance-bin.md) |
-| `treppe.bin` | 19 952 | sorted `u32 → u32` map, 2 494 pairs, binary-searchable | Partial — **key encoding unsolved** |
-| `sets.bin` | 7 396 | 65 item sets, `u32 66` + 66 × 28 int32 | Read |
+| `treppe.bin` | 19 952 | staircase footprint → anchor map, 2 494 pairs, 661 staircases | Solved |
+| `sets.bin` | 7 396 | 65 item sets, `u32 66` + 66 × 28 int32 | Solved |
 | `wea.bin` | 4 648 | 256 equipment pools; 906 members, **906/906** are items.pak ids naming a `.GRN` | Read |
 | `rust.bin` | 4 392 | armour switch — which mesh an armour becomes per wearer | `engine/formats/armour.gd` |
 | `merc.bin` | 1 872 | 117 world placements `(0, x, y, layer)` | Partial |
 | `multistart.bin` | 768 | 48 records; three blocks of 16, blocks 0 and 2 byte-identical | Partial |
 
-`sets.bin` field 11 is solved: it equals `(record_index << 8) | member_count`
-for 65 of 65 records. Record 0 is entirely `0xcccccccc` (MSVC uninitialised
-filler), so 65 of the 66 declared records carry data. Members are coherent
-suites — record 6 is the seven Seraphim pieces, records 33–38 the Christmas
-set.
+### `sets.bin`, fully read
+
+```
+u32 count = 66, then 66 records of 28 int32 (112 B)
+  [0..9]   up to 10 items.pak member ids, zero-padded
+  [10]     the SET NAME, as a PRE-HASHED global.res key
+  [11]     (record_index << 8) | member_count
+  [12..27] always zero
+```
+
+Record 0 is entirely `0xcccccccc` (MSVC uninitialised filler), so 65 records
+carry data. Field 11 holds for 65 of 65. Field 10 was the last unknown and is
+now closed: `global.res` treats a **negative** id as a key that is already
+hashed, and read that way all **65 of 65** resolve to English set names —
+"Dark Side of Feac", "Uriel's Legacy", "Astrala's Powermonger", "Dream Netting
+of the Gods". Meaningful names at 65/65 are not a coincidence a wrong reading
+produces. Members are coherent suites: record 6 is the seven Seraphim pieces,
+records 33–38 the Christmas set.
+
+### `treppe.bin` — staircase footprints
+
+Each record is a `(key, value)` pair of `u32`, 2 494 of them in ascending key
+order, no header. **Both halves are the same 29-bit packed world position**:
+
+```
+poskey = (level << 26) | (y << 13) | x        level 0..4, x/y on the 6400x6400 tile grid
+```
+
+Every one of the 2 494 keys lands in a sector `sectors.keyx` actually holds —
+**2494/2494 = 100.0000%**, against a 61.3% random-uniform control. The table
+maps each cell a staircase covers to that staircase's anchor cell; 661 pairs
+are identity, so there are 661 staircases. Footprints run 2–27 cells, and 562
+of 661 are full rectangles.
+
+> **Earlier belief.** A packed-position decode was tried and refuted at 62.4%
+> against a 60.5% baseline — chance. That refutation was right about the
+> *divisor*, not the idea: it assumed a 6400 stride, and the engine shifts by
+> 13, i.e. a stride of 8192. With the correct shift the same test returns
+> 100.0000%. A refuted decode is not the same as a refuted hypothesis.
+
+Caveat worth keeping: no site in `install/sacred` was found that ever *queries*
+this map — it is loaded, constructed and destructed, and `sacredserver` has no
+`treppe` string at all. Stated as "no lookup site found", not as proof of
+absence, so the port impact is unknown.
+
+### `world2.bin` — the sector-presence grid
+
+```
+u32  32768        <- a BYTE count, not an entry count
+u16  grid[16384]  <- value = grid[(y << 7) + x], a 128-wide power-of-two stride
+```
+
+0 means no sector at that grid cell; nonzero is a 1-based ordinal in row-major
+scan order. Exactly **6 050** cells are nonzero and their values are the dense
+set 1…6050 with no gap and no repeat. Those 6 050 cells are **set-identical to
+the 6 050 sector coordinates in `sectors.keyx` — symmetric difference zero**.
+
+The ordinal is *not* a `keyx` row: `world2` is row-major and `keyx` is stored
+column-major, so only 3 of 6 050 coincide. Anything treating one as the other
+is wrong. For the port the file is redundant — it says nothing that is not
+derivable from `keyx` — but it is a free startup oracle.
+
+> **Earlier belief.** Log row 744 read this as 32 768 single bytes, found "255
+> distinct values in ascending order", and discarded it as a generated pattern.
+> The byte reading was the error: those 255 values are the low/high halves of
+> `u16` counters. Row 805's "world2.bin likewise holds only a byte ramp" fails
+> for the same reason.
+
+### `wpmod.bin` — the length rule
+
+```
+u32 count = 572, then records from int index 1:
+  54 int32 fixed part, whose LAST int (int[53]) is a block count 0..5
+  then int[53] blocks of 6 int32
+  length = 54 + 6 * int[53]
+```
+
+That consumes the file exactly, 572 records ending on the last byte. Length
+histogram 54×3, 60×241, 66×240, 72×70, 78×11, 84×7 — the earlier heuristic
+segmenter reported 591 starts because it missed both the zero-block and
+five-block records.
+
+`int[0..4]` are five items.pak ids and `int[5]` is how many are live; slots at
+or above the count hold **stale values from the previously written record**,
+which is a compiler artifact that corroborates the field rather than
+undermining it. The three zero-block records are cosmetics that grant nothing
+(`dwarf_goggles.grn`, the two `vlady` hairs, `magician_cowl.grn`) — exactly
+what a zero block count should mean.
 
 `world.bin`'s 3 854 sector coordinates are a **strict subset** of the 6 050 in
 `sectors.keyx` — 0 world.bin-only, 2 196 keyx-only. A 100% subset relation on
@@ -302,16 +385,19 @@ Sound System) inert in a Linux install.
 
 ## Open
 
-- `wpmod.bin`'s record length rule. The used-count sits *after* the id slots
-  and the tail varies in 6-int steps, so the 572 declared records cannot be
-  enumerated; a heuristic segmenter over-segments to 591.
-- `treppe.bin`'s key encoding. The packed `layer*6400*6400 + y*6400 + x`
-  reading scores 62.4% of decoded cells inside a real sector against a
-  **60.5% analytic random baseline** — chance. Every shift 8…21 and every
-  hi/lo split was tested; none beat chance.
-- `world2.bin`'s index space. 32 768 entries matches `items.pak` exactly and
-  nothing else in the install, but only 4 646 of 11 822 nonzero indices land on
-  a named record and group membership is incoherent.
+- `wpmod.bin` parses completely but **no field name is bound to a column**. The
+  `.rodata` vocabulary beside it (`ASpeed`, `WSpeed`, `BonusP/F/M/G`, `RegMove`,
+  `RegSpell`, `MinLev`, `MinRare`, `Rare: EINS…VIER`) names the concepts and
+  nothing ties them to indices. Its block field `blk[1]` low half draws from 30
+  values: the 20 in 801–820 resolve in `global.res` to effect names, but the
+  base rate for ids 1–1000 is 62.9%, so that is *not* evidence on its own — and
+  601, 606–611, 620, 624 do not resolve at all. Two namespaces, or the wrong
+  table.
+- Why `world.bin` lists only 3 854 of the 6 050 sectors. Compressed and
+  decompressed sizes of the in-list and not-in-list groups overlap heavily, so
+  it is not a size or emptiness filter.
+- Whether `treppe.bin` is live at all: no lookup site was found by
+  member-offset search, and `sacredserver` has no `treppe` string.
 - What references a `wea.bin` pool (0…255) or a `sndprofiles` index (0…8 191).
   Neither `items.pak` nor `creature.pak` carries a column that agrees; both are
   most likely script arguments.
