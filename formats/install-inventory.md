@@ -240,6 +240,75 @@ undermining it. The three zero-block records are cosmetics that grant nothing
 (`dwarf_goggles.grn`, the two `vlady` hairs, `magician_cowl.grn`) — exactly
 what a zero block count should mean.
 
+#### The fields, bound to columns
+
+Read off the compiler, which parses `scripts\waffenmod.txt` and writes this
+file. Every tag `strstr`s the source line and `strtol`s what follows into a
+fixed stack slot, and the record buffer's base is visible in the code, so the
+tag→column map is transcribed rather than fitted.
+
+| Column | Tag | Meaning | Measured |
+|---|---|---|---|
+| `int[0..4]` | — | five `items.pak` ids | 1508 distinct, all naming a `.GRN` |
+| `int[5]` | — | how many of the five are live | 1…5 |
+| `int[6]` | `mod:` | modifier magnitude | 8…180, never 0 |
+| `int[7]` | `var:` | variance around it | 0…35 |
+| `int[8..37]` | `ph: fe: ma: gi: rp: rf: rm: rg: aw: vw:` | **ten channels × 3 values** | see below |
+| `int[38]` | `EWT_*` | item-type enum | −1…32 |
+| `int[39]` | `MinLev:` | minimum level | 0…90 |
+| `int[40]` | `MinRare:` | minimum rarity | 0…15 |
+| `int[53]` | — | block count | 0…5 |
+
+The ten triples are the damage/resistance channels in source order:
+`ph` physisch, `fe` feuer, `ma` magie, `gi` gift, then `rp rf rm rg` their
+resistances, then `aw` and `vw` (the `AW,`/`VW,` pair). Each parses as three
+comma-separated integers.
+
+`int[38]`'s 33 values are the `EWT_` equipment-type enum, listed in the
+executable: `0 Schwert, 1 Dolch, 2 Degen, 3 Säbel, 4 2HSchwert, 5 Axt,
+6 2HAxt, 7 Schild, 8 Bogen, 9 Armbrust, 10 Klingenwaffe, 11 Kettenwaffe,
+12 Peitsche, 13 Rüstung, 14 Ring, 15 Amulett, 16 Helm, 17 Armschiene,
+18 Beinschiene, 19 Gürtel, 20 Schulter, 21 Speer, 22 Keule, 23 Stab,
+24 Magierstab, 25 Zaumzeug, 26 Schuhe, 27 Handschuhe, 28 Flügel, 29 Item,
+30 Pistole, 31 Muskete, 32 Rucksack`, with `−1` = `EWT_NichtGut` and the
+field left untouched when no `EWT_` tag appears.
+
+#### The 6-int block
+
+| Field | Meaning |
+|---|---|
+| `blk[0]` | low 16 = chance/percent; **bit 31 = RESISTANCE** |
+| `blk[1]` | low 16 = bonus id; high bits = flags |
+| `blk[2]` | two `u16`, (min, max) |
+| `blk[3]` | class-spell group, 0 = none |
+| `blk[4]` | default **20** |
+| `blk[5]` | default **10** |
+
+The bonus ids come from the `Bonus:` tag list and are literal constants in the
+compiler: `PD,`→801, `FD,`→802, `MD,`→803, `GD,`→804, `BonusP,`→805,
+`BonusF,`→806, `BonusM,`→807, `BonusG,`→808, `AW,`→809, `VW,`→810,
+`ASpeed,`→811, `WSpeed,`→812, `RegSpell,`→813, `RegMove,`→814, and the
+attribute tags `ST, GS, WI, CH` from 815.
+
+**The resistance tags reuse the damage ids.** `PR, FR, MR, GR` are assigned
+801–804 exactly as `PD, FD, MD, GD` are, and then `or`ed with `0x8000` in the
+high half — so the same channel id means damage or resistance according to
+bit 31 alone. Measured: 151 of 1010 blocks carry bit 31, and their ids are
+**only** 801–808, which is precisely the set of tags that come in
+damage/resistance pairs. Nothing outside that set ever carries the bit.
+
+`blk[4] = 20` and `blk[5] = 10` are not near-constant by accident: they are the
+values the block initialiser writes before any tag is parsed, so they are
+defaults and the 942/1010 and 896/1010 majorities are records that never
+override them.
+
+> **Earlier belief.** `blk[1]`'s high half was read as "a level or rank 0…6".
+> It is a flag field: an attribute tag `or`s `0x10000` into it when a skill id
+> is already present, and writes a standalone id otherwise.
+
+> **Earlier belief.** `int[38]` was ruled out as `EWT_` on the grounds that
+> `EWT_` has 21 members. It has 33, and they match the measured range exactly.
+
 ### `world.bin` is a legacy-savegame remap, not a live index
 
 `world.bin`'s 3 854 sector coordinates are a **strict subset** of the 6 050 in
@@ -560,14 +629,11 @@ Sound System) inert in a Linux install.
 
 ## Open
 
-- `wpmod.bin` parses completely but **no field name is bound to a column**. The
-  `.rodata` vocabulary beside it (`ASpeed`, `WSpeed`, `BonusP/F/M/G`, `RegMove`,
-  `RegSpell`, `MinLev`, `MinRare`, `Rare: EINS…VIER`) names the concepts and
-  nothing ties them to indices. Its block field `blk[1]` low half draws from 30
-  values: the 20 in 801–820 resolve in `global.res` to effect names, but the
-  base rate for ids 1–1000 is 62.9%, so that is *not* evidence on its own — and
-  601, 606–611, 620, 624 do not resolve at all. Two namespaces, or the wrong
-  table.
+- `wpmod.bin`'s **second id band, 601–624**. The 801+ band is the `Bonus:` tag
+  list, transcribed from the compiler's own constants; the 6xx ids come from a
+  different lookup and are not skill ids (skills are 0…33). 148 blocks carry
+  id 0. Also unread: `blk[2]`'s (min, max) units, and what `blk[4]`/`blk[5]`
+  mean when a record overrides their 20/10 defaults.
 - Whether `treppe.bin` is live at all: no lookup site was found by
   member-offset search, and `sacredserver` has no `treppe` string.
 - `vectoren.bin` section 2's two enums at `+0x104` `{0,15,28,53}` and `+0x108`
