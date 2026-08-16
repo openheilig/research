@@ -107,6 +107,43 @@ Read twice, in two builds: `sacred_orig` at `0x0826de28` and
 `sacred-1.0.02-final` at `0x0826cf35`, whose `.rodata` sits `0x6ca0` lower. The
 two disassemble instruction-for-instruction alike.
 
+## What quest logic actually uses — 21 opcodes, 98%
+
+The 141-entry dispatch table is the format's size; it is not the size of the
+job. Walking every hook of every quest in the `gladiator` tree — 603 quests,
+five hook slots each, resolved through `vectoren.bin` section 1 into
+`funkcode.bin` — gives **475,345 bytes over 14,017 records**, and those records
+use **53 distinct opcodes, of which 21 cover 98.1%**:
+
+| | | |
+|---|---|---|
+| 53 (26.3%) | 67 (12.0%) | 63 (11.0%) |
+| 3 (8.2%) | 23 (6.3%) | 76 (5.0%) |
+| 1 (3.9%) | 86 (3.5%) | 58 (3.3%) |
+| 22 (3.2%) | 59 (3.2%) | 66 (2.1%) |
+| 132 (1.5%) | 62 (1.5%) | 5 (1.4%) |
+| 46 (1.3%) | 68 (1.2%) | 64 (1.1%) |
+| 4 (0.9%) | 75 (0.8%) | 8 (0.4%) |
+
+Nine already carry handler-derived names — `CreateNPC` 1, `CreateOBJ` 8,
+`Teleport` 46, `IsNotVarBit` 58, `QuestkompassPos` 63, `QuestkompassOBJ` 64,
+`atmo_rg` 67/75/76 — and opcode 23 is the named-position declaration already
+read by `engine/formats/startcode.gd`.
+
+**The tail is safe to ignore, and that is a property of retail rather than a
+concession.** The dispatcher's default case is `mov ecx,1; ret`: an opcode with
+no case is skipped by its length field and does nothing. An interpreter that
+implements the head of this distribution and length-skips the rest behaves the
+way the shipped engine behaves on its own unhandled opcodes.
+
+Quest 1101, the one every shipped `questcode.bin` seeds, walks out as 19
+records of `OnEnter` (ten `CreateNPC` priests at `pos_Priester1..10`, a ritual
+object, a victim at `pos_Steinkreis`, compass to `Res:17112`, three log lines,
+a timer, a flag), 3 of `OnExit` and 1 of `OnLose`, with a zero-byte `Trigger`
+— so entry is driven from outside the quest. Every operand is either a literal
+string in the record or a `res:` id resolving through `global.res`; none of it
+is fitted. See findings log rows 936–937.
+
 ## Open
 
 The FORMAT is closed; the SEMANTICS are not. **96** opcodes have no verified
