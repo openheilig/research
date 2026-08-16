@@ -95,7 +95,7 @@ reached through the name hash at `sub_80ACC3E`.
 | player mesh, armour, weapons | **done** | refuses rather than approximating |
 | **player animation** | **done** | 5 of 7 bodies, each playing its own IDLE (rows 957, 963) |
 | NPC / creature animation | **opt-in flags only** | not on in a default run |
-| facing / heading | **built and unused** | `set_yaw` is called with `0.0` everywhere |
+| facing / heading | **done (row 965)** | derived per model; the hero turns to its last heading |
 | idle vs walk vs attack | **selection done, switching not** | `Rigs` resolves a clip per ACTION (row 963); nothing changes clip at runtime yet |
 | **HUD** | **done (row 962)** | retail's own rects and coordinates; gauges still open |
 | sound, particles, water, weather | **none** | no screenshot impact |
@@ -104,14 +104,13 @@ reached through the name hash at `sub_80ACC3E`.
 
 ## What is actually left for a 1:1 small-scale MVP
 
-Seven items were listed here on 2026-08-16. **Five are closed** (rows 954–963),
-one is a capture decision rather than a gap, and **one — facing — stays open
-with both of its routes now measured** (row 964).
+Seven items were listed here on 2026-08-16. **Six are closed** (rows 954–965)
+and the seventh is a capture-runbook decision rather than a research gap.
 
 | # | Item | State |
 |---|---|---|
 | 1 | HUD | **Closed.** The layout is a static 1887-entry sub-rect table at `0x880DC68` placed by `cUI_Taskbar2` onto a fixed 1024×768 canvas. `view/hud.gd` draws the console, wings, buttons, combat-art arc and both slot wings from retail's own art. **Except the life/mana gauges** — see Open. |
-| 2 | Facing | **Open, with two routes measured and neither settling it** (row 964). See Open. |
+| 2 | Facing | **Closed** (row 965). The alignment bone is the net rotation above `Bip01`; `set_yaw` is wired and gated by `facing_check`. |
 | 3 | NPCs by default | **Decided, not open.** `--npcs` already places the scripted cast at real retail cells. It stays opt-in because `tools/parity/follow_parity.sh` and `loggia_sweep.sh` photograph the world and rely on the current default rather than passing a flag; flipping it would silently change frames they compare. Closing this properly means adding `--nonpcs` to those runbooks first, which is a capture decision and not a research gap. |
 | 4 | Quest text on screen | **Closed.** The console shows the quest's own line; quest 74 reads *"The Soul of the Demon"* / *"Kill the demon, after Shareefa has summoned it."* |
 | 5 | Composed keys in the VM | **Closed.** `QuestLog.resolve_with` substitutes from its own variables, and `SetVarBit` is now understood as a bit index, so the variables it reads are right. |
@@ -125,18 +124,13 @@ with both of its routes now measured** (row 964).
   no fraction or scissor rect. The orb-looking elements in `GUI_main_02` belong
   to the mercenary window. So the most recognisable part of the screen is
   deliberately not drawn rather than guessed.
-- **Character facing.** `set_yaw` and `rig_placement.yaw` are built and unused.
-  Two routes were measured (`probes/facing_probe.gd`) and neither settles it:
-  - **A walk clip's root translation** — *refuted*. Sacred's clips are **in
-    place**: `GLAD_WALK_BH`'s root has three position keys and nets to exactly
-    zero over the cycle, and the same holds for every class body's WALK and
-    RUN. The engine moves the body, the clip does not.
-  - **`Toe0 − Foot` in global rest** — sign-unambiguous by anatomy, but the
-    seven bodies **disagree** (worst pairwise dot 0.46) and split into two
-    families: four put forward in XZ, three in YZ. That is two authoring
-    frames, most likely the 90°-Z alignment bone `rigs.gd` names being in some
-    chains and not others. Resolving that per mesh is the next step; averaging
-    the two answers is not.
+- ~~**Character facing.**~~ **Closed 2026-08-16 (row 965).** The split was the
+  chain above `Bip01`, quantised to 0° or −90°: three bodies carry a `Root` bone
+  that cancels `Bip01`'s −90°, three do not. Measured in `Bip01`'s own frame all
+  seven agree (worst dot 0.9556), so the mesh-space angle is a sound per-model
+  constant — it already contains the alignment. `PlayerView.face()` derives the
+  target from the node's basis rather than the world displacement, because this
+  world is pre-projected and its depth axis vanishes under normalisation.
 - **The damage/resolution step** — how damage meets resistance, criticals, and
   what the weapon-slot flag selects. To-hit and both ratings are recovered;
   this is what is left of a fight.
