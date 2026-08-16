@@ -368,6 +368,43 @@ back to `Bip01 L Hand`. That is measured coincident with the socket (~1e-6) on
 the two NPC bodies carrying both — but **3.86 units away** on the DAEMONIA set,
 so the fallback is counted and reported, never treated as equivalent.
 
+### Wearing a garment: the join, and the control that nearly passed
+
+Armour is put on by remapping the garment's skin binds onto the wearer's
+skeleton **by bone name**, keeping bind order (which is what the mesh's
+`ARRAY_BONES` indexes) and keeping each bind's own pose (a fact about the
+garment's geometry, not the wearer's).
+
+The naming gap that looks fatal is not. Uriel's Legacy pieces carry 75-77 bones
+against `SERAPHIM.GRN`'s 72 — the extras are `Angel_armor_Breast`,
+`Bip01 Ponytail1`, `Bip01 Footsteps`, two `Spot*.Target` light aims — but every
+one is an **unweighted locator**. Bones that are weighted *and* absent from the
+body: **zero, across all seven pieces**.
+
+**The name test discriminates nothing, and only the control says so.** Offered
+those seven garments, `GLADIATOR.GRN` binds 5 and refuses 2 — *exactly*
+`SERAPHIM.GRN`'s own score. Every humanoid shares the `Bip01 *` biped names.
+This is the same degenerate comparison the weapon-socket instrument produced
+below, and it would have shipped as "armour composition works".
+
+What separates is **R1.4's local instrument**: the bind bone's own rest in the
+garment against the same-named bone's rest in the body, chain never composed.
+
+| wearer | HELMET01 | GLOVES01 | ARMOR01 | BELT01 | WINGS01 |
+|---|---|---|---|---|---|
+| `SERAPHIM` | 1/1 | 1/15 | 5/7 | 3/5 | 2/7 |
+| `GLADIATOR` | 0/1 | 0/15 | 0/7 | 0/5 | 0/7 |
+| `DWARF` | 0/1 | 0/13 | 0/7 | 0/5 | 0/7 |
+
+So admission is *at least one bind bone agrees* — weak-looking, totally
+separating on what has been measured. The own-rates are low and uneven because
+a garment poses fingers and extremities freely; a per-bone fit score would be a
+better rule and needs more than five pieces to set a cut on.
+
+This matters rather than being a nicety: `rust.bin` exists to say which mesh an
+armour *becomes* for a different wearer, so binding one to the wrong body is a
+real error.
+
 ### A weapon is a rigid prop, not a second garment
 
 Armour shares its wearer's skeleton (R1.4, `checks/equip_check.gd`). A weapon
@@ -395,6 +432,23 @@ built by appending `.TGA`); the port's stem index can. A five-entry divergence,
 recorded rather than fixed.
 
 Eight of the 3421 animation clips do not decode.
+
+**240 of the 971 weight-declaring meshes — 24.72% — fail the FormMeshBone
+pairing rule.** The weight stream itself parses and consumes its span exactly;
+what fails is the map from a mesh's local bone indices to global bones, which
+searches the `FormMeshBone` lists for one of length `highest + 1` and refuses
+unless exactly one matches. Both failure modes appear inside a single item set:
+`SERABOOTS01.GRN` finds 0 such lists, `SERASHOULDER01.GRN` finds 2. Failures
+concentrate in armour (`DAEMONIA_ARMOR01_BODY`, `_SHOES`, `_SHOULDER`,
+`DAEM_SA1_ARMS`, …), so a composed character is dressed in part of an outfit.
+The length search is a heuristic, not something read off the interpreter; the
+likely correct rule is **positional** — the *i*-th mesh pairs with the *i*-th
+list, which the code already half-assumes by consuming lists as it goes — but
+that needs evidence before replacing a rule that at least refuses loudly.
+
+Two of the seven class body meshes do not build at all: `DUNKELELVE.GRN` and
+`MAGICIAN.GRN`. Both are correctly *named*, so this is the decoder being short
+rather than the map being wrong.
 
 ~~One mesh disagrees on vertex count with an outside reading (279 against
 280).~~ **Closed 2026-08-15 against retail's own index array**, not against the
