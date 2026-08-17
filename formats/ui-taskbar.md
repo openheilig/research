@@ -114,3 +114,57 @@ Sacred logo in **gold** under BGRA and in blue under RGBA.
 ---
 Provenance: `sub_8501A40`, `sub_84FA548`, `sub_85E85EE`, `sub_85E3102`,
 `sub_85E3036`, `sub_85E306A` in `install/sacred`; findings log row 962.
+
+## The slot count is READ OFF A FRAME, not fixed at five
+
+Retail draws one skill and one spell slot at the Seraphim's spawn. The
+placement formula the port already transcribed makes the count recoverable
+from a screenshot:
+
+    skill slot i:  x = 394 + 66*(i - n)      spell slot i:  x = 640 + 66*i
+
+with `n` the visible slot count. Retail's capture puts the leftmost skill slot
+at **328**, and `394 - 66n = 328` gives `n = 1`. The spell side agrees from a
+different direction: `640 + 66*i` would put a second spell slot at 706, and
+retail draws bare wall there.
+
+The ornamental rails follow the slots rather than the screen. Each side butts
+the console (left edge 397, right edge 627) and tiles outward one piece per
+slot, which puts the right rail's end at `627 + 104 = 731` against retail's
+measured 732. Tiling them from a fixed `x 32` / `x 890` instead laid ten rail
+tiles and eight 63×63 rings over open terrain — together 13% of the frame
+delta in a two-engine compare.
+
+## Two pieces recovered by pixel match rather than from the table
+
+Matching retail's own frame against the decoded sheets resolves art the gfx
+table did not lead to. Both land at a mean per-channel error **under 1.0**,
+which is the art itself and not a resemblance:
+
+| element | sheet | rect | screen |
+|---|---|---|---|
+| portrait frame | `GUI_MAIN_02` | `(0, 0, 95, 107)` | `(932, 15)` |
+| empty potion flask | `GUI_MAIN_05` | `(195, 65, 31, 31)` | slots 2…5 |
+
+The portrait frame is exact including its clipping — 95 wide at x 932 runs
+three columns past 1024, and retail clips it the same way, so a gate that
+requires every piece to fit inside the canvas is wrong for this one.
+
+The potion belt is a **contents** table, not a slot table: column 129 of
+`GUI_MAIN_05` holds five *different* potions stacked vertically, and taking
+one per slot down that column draws the belt as a full rainbow. Retail's
+spawn frame carries one potion and shows a single shared empty flask in the
+other four.
+
+> **What is NOT in `GUI_MAIN_01`…`06`.** The two FILLED art-slot icons. The
+> same match against all six sheets returns nothing under an error of 56 for
+> retail's 63×63 slot content, where the pieces that are present match under
+> 1.0 — so the combat-art icons live somewhere else entirely.
+
+## The day/night dial is 56 px, and Godot will not let you say so
+
+`GUI_DAYNIGHTDISC` is a 128×128 texture drawn as a 56×56 quad. A
+`TextureRect`'s minimum size comes from its texture and the recalculation is
+*deferred*, so assigning `size = 56` is clamped straight back up to 128 —
+before `add_child` and after it alike. The dial painted a night-sky annulus
+across the whole console until the size was baked into the image instead.

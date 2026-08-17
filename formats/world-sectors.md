@@ -235,6 +235,38 @@ guess.
 > debug fill. Anything measured against this corpus has to exclude them or it
 > will report nonsense — an unfiltered pass gave a "tile id" of 543,162,368.
 
+## `mixed.pak` — the header anchor must NOT be applied
+
+A placement in `static.pak` stores the sprite's **top-left corner**, and the
+sprite's tiles carry `dst` rects in the sprite's own pixel frame. Those two
+are complete: the tiles go down at the stored position and nowhere else.
+
+The 16-byte `mixed.pak` header's `i16 dx, dy` at `+0x08` looks like a hotspot
+to add, and adding it is wrong. Measured across the corpus it is exactly the
+**negation of the sprite's minimum tile `dst` corner**:
+
+| sprite | header `dx,dy` | first tile `dst` |
+|---|---|---|
+| `Bench 2` | `(0, -7)` | starts at y **7** |
+| `Bench 1` | `(0, -36)` | starts at y **36** |
+| `MINI_BLUE_4` | `(-4, 0)` | starts at x **4** |
+| `KLOSTER_KAPELLE01_*`, `CW_Tree 34(B)` | `(0, 0)` | starts at **0,0** |
+
+So applying it *cancels* the offset the `dst` rects already encode, re-seating
+each sprite on its bounding box instead of on the frame it was authored in.
+Dropping it moved the port's whole-frame delta against a retail spawn capture
+from 23.97% to 14.24% — the largest single correction in that scene.
+
+> **Why it survived.** Every `KLOSTER_KAPELLE` structure piece has a zero
+> anchor, so the chapel's walls, floor and pillars lined up perfectly while
+> the benches sat 7 pixels high. The error was invisible exactly where it was
+> zero, and isolated high-contrast props on open floor were the only place it
+> could be seen at all. It also *masked* a second measurement: a sweep of the
+> object-sort width threshold showed a flat plateau before the fix and a clear
+> minimum after it.
+
+What `dx, dy` is for is unrecovered. Nothing needs it to place a sprite.
+
 ## `static.pak` — the chain link is pinned, not cited
 
 A cell's `+0x04` names only the head; the rest hang off `nextStaticId` at
