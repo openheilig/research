@@ -48,7 +48,7 @@ consumer in the interpreter rather than by statistics, that is said so.
 | `+0x18..1b` | signed per-corner second height, ×2.5, bilinearly sampled |
 | `+0x1c`, `+0x1d` | signed parent-object deltas |
 | `+0x1e` | bit 0 structure, bit 1 room interior, bit 2 door; bits 3–7 never set |
-| `+0x1f` | low nibble = class; high nibble = a 16-class ground-type tag |
+| `+0x1f` | low nibble = class; high nibble = a 16-class ground-type tag — values 9 and 10 mark **animated liquid** (see below) |
 
 Three of these are worth stating as negatives, because each cost a round of
 hypotheses:
@@ -71,6 +71,63 @@ hypotheses:
 colour overlay after statistics stalled on them. A bit whose meaning will not
 separate in a census often separates instantly when you can see where in the
 world it is set.
+
+## Animated liquid — the `+0x1f` high nibble, rows 669 / 1008
+
+High-nibble values **9** and **10** mark a cell as liquid. This is the same
+byte the engine's walkability path blocks movement on, and it forms connected
+regions, not speckle — 4096/4096 in the open-sea sectors, coast-shaped
+fringes elsewhere. On such a cell retail draws an animated liquid surface
+*over* the ordinary ground tile; on the open sea that ground tile is a single
+flat image (`ISO00`) repeated across the whole sector, so a port that skips
+the liquid pass shows a uniform grey-tan plane where the sea should be.
+
+The engine's material table has **14 records**, built by an unrolled
+initialiser (`sub_83A6572` in the Linux binary, `FUN_00417f00` in the
+Windows one — row 669). The Linux build's block order was read directly:
+block *k* stores its frame pointers to `base + 0x9118 + k·0xD8`, block 0
+landing at `0x9118` and block 13 at `0x9C10`, and `0x9C10 − 0x9118 = 13·0xD8`
+exactly, so block order **is** record order:
+
+| idx | material | idx | material |
+|---|---|---|---|
+| 0 | `B_WATER` | 7 | `D_LAVA` |
+| 1 | `C_WATER` | 8 | `E_WATER` |
+| 2 | `D_WATER` | 9 | `F_WATER` |
+| 3 | `A_LAVA` | 10 | `G_WATER` |
+| 4 | `B_LAVA` | 11 | `E_LAVA` |
+| 5 | `C_LAVA` | 12 | `B_WATER` |
+| 6 | `A_SCHWEFEL` | 13 | `B_WATER` |
+
+`B_WATER` fills three slots — it is the only format string with three xrefs
+into the initialiser, so 12 distinct stems cover 14 records. The frames live
+in `texture.pak` as `<stem>%02d.TGA` starting at 00: 50 frames per set
+except `C_LAVA` and `A_SCHWEFEL` at 20, all 128×128 opaque squares (terrain
+tiles are 256×256 diamonds), tiling in screen space. Each record carries two
+flag bytes at `+0xCC` and `+0xD4`; `+0xCC` is 1 for exactly idx
+0, 1, 2, 3, 10, 11 and gates a vertically-mirrored ambient-modulated
+reflection quad drawn before the surface itself (row 669's inference,
+"reflective", still the best reading). The two builds corroborate each
+other: the Windows disassembly yields the same six flagged indices.
+**Row 669's material *names* are shifted one slot against this table and
+must not be used; its flag indices are correct.**
+
+Which record a cell uses is **per sector**, not per cell. The consumer
+(`sub_80E3EB2`, Linux) is exact:
+
+```
+mov eax, [edi+17Ch]    ; sector -> a per-sector block
+mov cl,  [eax+0F7h]    ; material id used where nibble == 9
+mov bl,  [eax+0F8h]    ; material id used where nibble == 10
+```
+
+**Still open:** which *file* that per-sector block is loaded from. Two
+candidates were refused against a condition stated before looking:
+`sectors.keyx` `+0xF7/+0xF8` (the unclaimed gap between `csize` and `dsize`)
+is zero in all 6050 records, and the stream tail past the 4096-entry grid is
+the region table and yields values up to 209 against the table's 0..13
+range. The animation cadence (frame delay) is also unmeasured; it very
+likely sits in the untraced fields of the 0xD8-byte record.
 
 ## `floor.pak` — the overlay layer
 
