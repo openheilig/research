@@ -372,6 +372,60 @@ does not fit, holding 106 records against a maximum value of 170. Nothing in
 the retail port depends on it, which is why this is a curiosity rather than a
 blocker.
 
+### The overlay tile SELECTION, rows 1019–1020
+
+The largest single remaining difference between the port and retail at the
+Seraphim spawn — about 2% of the frame — is the cobblestone ground at the
+screen's bottom corners, and it is localised to **this** layer. The port draws
+overlays there, and draws the wrong ones.
+
+What is bracketed:
+
+| measurement | result |
+|---|---|
+| null `floor_pak` | repaints **91.7%** of that corner → the pixels ARE overlays |
+| `--noobjects` | moves **5.3%** of it → not object sprites |
+| `OVERLAY_MAX` 8 → 32 | no change → no chain is truncated |
+| overlays off entirely | whole-frame delta **unchanged** at 13.59% |
+
+That last row is the informative one: the port is not failing to draw overlays
+there, it is drawing overlays as wrong as drawing none.
+
+Three hypotheses are **refuted**, recorded so they are not retried:
+
+1. **Not the chain-walk restriction.** `_tile_stack` follows the chain only
+   while the next link is `self + 1`. Following any in-range link instead
+   changes the frame not at all — no chain in this sector jumps.
+2. **Not the composite order**, and the current order is right: reversing the
+   overlay pairs takes the corner from 74.4% differing to 92.2%, and its mean
+   absolute error from 34.2 to 43.4.
+3. **Not a placement offset**, however much it looks like one. Port and retail
+   draw visibly the same cobble texture with a large hexagonal stone in
+   different places, which reads as half a tile of shift. An edge correlation
+   over ±40 px in both axes returns `(0, 0)` as best at only **0.45** — no
+   shift improves it. The same measure sixty pixels away in the same sector
+   returns **0.9965**.
+
+Both corners are in sector 50,39 along with ground that matches retail at a
+mean absolute error of **0.00**, so it is not a boundary or streaming-margin
+effect either. What is left is the per-cell tile id; everything downstream of
+it is correct.
+
+### A sprite that CONTAINS other sprites cannot be painter-ordered, row 1016
+
+Object placements are sorted at the sprite's foot (see `mixed.pak`, above),
+gated on sprite width so that a room shell is not sorted in front of the
+furniture standing inside it. The gate leaves one case wrong: a candle
+standing on a wine rack's **shelf** is covered by the rack, because the rack's
+foot is on the floor and the candle's is up in the air.
+
+A single painter key cannot order a sprite that contains another. Retail draws
+building parts in an authored order — the part index in
+`<BUILDING>_<level>_<part>` is the obvious candidate — and that order has not
+been recovered. An aspect-ratio gate ("only give the height to something far
+taller than it is wide") was measured and **refuted** at every ratio from 1.5
+to 4.0; it loses more on squat furniture than it wins back on candles.
+
 Building construction and the interior/exterior swap are a separate matter and
 are deliberately not documented here; the reason is under Related, above.
 

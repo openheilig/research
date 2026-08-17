@@ -20,6 +20,7 @@ tables, no memory dumps. Those stay in a private workspace by design, and the
 | hero saves | [formats/pax-saves.md](formats/pax-saves.md) | Read |
 | script bytecode and opcodes | [formats/script-bytecode.md](formats/script-bytecode.md) | Read |
 | the rules and tunables | [formats/balance-bin.md](formats/balance-bin.md) | Read |
+| to draw the interface | [formats/ui-taskbar.md](formats/ui-taskbar.md) | Partial |
 | how combat resolves | [engine/combat-formulas.md](engine/combat-formulas.md) | Partial |
 | what the Linux port is built on | [engine/tech-stack.md](engine/tech-stack.md) | Solved |
 | whether RAD's own runtime can check our `.GRN` decode | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) | Blocked |

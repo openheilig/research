@@ -78,6 +78,38 @@ with confirmations, and this repository keeps retracted claims as footnotes
 rather than deleting them. Re-deriving a refutation costs more than storing
 it, and "do not retry this" is often the more useful half of a result.
 
+## A bug upstream can FLATTEN the signal you are sweeping for
+
+A constant was swept against a pixel metric and the curve came out flat — six
+values, identical scores, no minimum. The reading taken from that was "the
+scene does not constrain this constant", which was written down as a caveat
+and was wrong. A placement bug upstream was displacing every sprite with a
+non-zero anchor, and it was drowning the differences the sweep was trying to
+resolve. The same sweep after the fix has a clear minimum with a two-value
+floor.
+
+So: **a flat response is a claim about your instrument as much as about your
+parameter.** Before concluding that a knob does not matter, check that the
+thing it turns is otherwise correct. And re-measure every swept constant after
+anything that moves what it acts on — the number that was "insensitive" may
+simply have been measured through a fog.
+
+## The eye is not a correlator
+
+Three times in one session a side-by-side crop "obviously" showed a uniform
+offset — the whole right strip shifted, the benches shifted, the corner
+cobbles shifted half a tile — and each time the measurement disagreed. Twice
+the content was already aligned and the apparent shift was an artefact of
+reading a scaled composite; once the two really were misaligned but by a
+different amount and for a different reason than the eye proposed.
+
+Cross-correlate before believing a displacement, and correlate on EDGES when
+the region contains soft shadows or a missing layer, since a large dark blob
+drags a brightness-based match toward a false offset. When the correlation
+says `(0, 0)` is already the best alignment and the score is still poor, the
+two pictures are not the same picture — that is a content difference wearing
+an offset's clothes, and looking for the offset will burn an hour.
+
 ## Clean-room boundary
 
 `community/unpack-tools/` and outside projects such as Iris1 are

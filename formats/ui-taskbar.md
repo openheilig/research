@@ -85,13 +85,56 @@ deterministically instead, because a recorded run has to replay identically.
 All 46 functions of `cUI_Taskbar2` (`0x85E130C`…`0x85EB38F`) were enumerated.
 The class references gfx ids 6–12, 40, 41, 82, 88–95, 102–104, 135, 136, 141,
 142, 175–181 and the `GUI_spell*` icons, **and nothing else**. It contains no
-orb or fill-bar art and computes no fraction or scissor rect. The orb-looking
-95×107 elements in `GUI_main_02` (ids 42, 43) are used only by the mercenary
-window.
+orb or fill-bar art and computes no fraction or scissor rect.
 
-So where the gauges are drawn is unrecovered. They are the most recognisable
-part of a Sacred screenshot, which is exactly why the port leaves the gap
-visible rather than inventing a pair of orbs.
+So where the gauges are drawn is unrecovered, and they are the most
+recognisable part of a Sacred screenshot — which is why the port leaves the
+gap visible rather than inventing a pair of orbs.
+
+> **Correction, 2026-08-17 (row 1015).** This section used to add that the
+> orb-looking 95×107 elements of `GUI_main_02` (ids 42, 43) "are used only by
+> the mercenary window". That is wrong, and a pixel match says so: the 95×107
+> block at that sheet's own origin is the **player portrait frame**, and
+> retail's spawn capture draws it at (932, 15) — ring, horned finial and
+> leafwork exact, including the three columns it clips off the right edge of
+> the canvas. The port now draws it. The two adjacent 95×107 blocks are a RED
+> ring and a GREY ring, which is what ids 42/43 most likely are.
+>
+> This does not contradict the enumeration above; it *locates* what the
+> enumeration was missing. `cUI_Taskbar2` genuinely does not reference these
+> elements, because the portrait is a **different window**, and that window is
+> the thing to find. Two reasons to think the gauges are in it: `GUI_MAIN_02`
+> also carries three beaded SEGMENTED BARS (yellow, green, red) plus framed
+> variants of each, exactly the shape of a fill gauge; and retail draws one of
+> them, green, immediately under the portrait — its beads start at about
+> (942, 124) and run to the right edge of the canvas. That extent is an
+> eyeballed colour mask, not a pixel match, so treat it as a place to look
+> rather than a rect to transcribe. Neither bar is wired, and which
+> quantity the green one reads is unconfirmed.
+
+## Open — a filled art slot is a composite, not a blit
+
+Recorded because the obvious searches are already spent (row 1021).
+
+The two FILLED skill/spell slots are the last interface elements the port
+draws as empty rings. Their art is **not** in `GUI_MAIN_01`…`06`: matching
+retail's own 63×63 against all six sheets bottoms out at a mean per-channel
+error of 56, where a genuine find scores under 1.0.
+
+It lives one texture per art instead. `texture.pak` carries 440 `GUI_*`
+entries outside `GUI_MAIN_*`, named per art in German across four prefixes —
+`GUI_MOVE_ATTACKE`, `GUI_MOVES_KRIEGSSCHREI`, `GUI_SPELL_REIKI`,
+`GUI_SPELLS_HOELLENFEUER` — each a 256×256 whose picture occupies only the
+**top-left ~64×64**, the rest fully transparent.
+
+But the slot is a composite of at least three layers. `GUI_MOVE_ATTACKE` is
+crossed swords on a plain **dark greyscale** disc, while retail's spell slot
+shows those same swords in **blue over a green orb inside a gold ring**. So a
+backing colour and a frame are applied over the icon, and the backing is
+presumably the art's school. Shape correlation across all 440 candidates tops
+out at 0.40 with implausible winners and no separation, so identification by
+search is exhausted from both directions. What is missing is the compositing
+rule, not a better matcher.
 
 ## `GUI_HERO_*` is not a HUD portrait
 
@@ -110,10 +153,6 @@ the quest-book class portraits `GUI_QBP_*` (ids 1480–1487).
 exactly the ones an interface needs — every `GUI_CHAR_*`, `GUI_HERO_*` and
 `GUI_UW_*`. Channel order confirmed by eye: `GUI_MAIN_LOGO` reads as the
 Sacred logo in **gold** under BGRA and in blue under RGBA.
-
----
-Provenance: `sub_8501A40`, `sub_84FA548`, `sub_85E85EE`, `sub_85E3102`,
-`sub_85E3036`, `sub_85E306A` in `install/sacred`; findings log row 962.
 
 ## The slot count is READ OFF A FRAME, not fixed at five
 
@@ -168,3 +207,9 @@ other four.
 *deferred*, so assigning `size = 56` is clamped straight back up to 128 —
 before `add_child` and after it alike. The dial painted a night-sky annulus
 across the whole console until the size was baked into the image instead.
+
+---
+Provenance: `sub_8501A40`, `sub_84FA548`, `sub_85E85EE`, `sub_85E3102`,
+`sub_85E3036`, `sub_85E306A` in `install/sacred`; findings log rows 962, 1015,
+1021. The 2026-08-17 additions are measured against retail's own spawn capture
+rather than read out of the binary — see `tools/parity/sheet_match.py`.
