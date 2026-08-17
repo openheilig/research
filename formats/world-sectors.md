@@ -72,7 +72,7 @@ colour overlay after statistics stalled on them. A bit whose meaning will not
 separate in a census often separates instantly when you can see where in the
 world it is set.
 
-## Animated liquid — the `+0x1f` high nibble, rows 669 / 1008
+## Animated liquid — the `+0x1f` high nibble, rows 669 / 1008–1011
 
 High-nibble values **9** and **10** mark a cell as liquid. This is the same
 byte the engine's walkability path blocks movement on, and it forms connected
@@ -82,52 +82,70 @@ fringes elsewhere. On such a cell retail draws an animated liquid surface
 flat image (`ISO00`) repeated across the whole sector, so a port that skips
 the liquid pass shows a uniform grey-tan plane where the sea should be.
 
-The engine's material table has **14 records**, built by an unrolled
-initialiser (`sub_83A6572` in the Linux binary, `FUN_00417f00` in the
-Windows one — row 669). The Linux build's block order was read directly:
-block *k* stores its frame pointers to `base + 0x9118 + k·0xD8`, block 0
-landing at `0x9118` and block 13 at `0x9C10`, and `0x9C10 − 0x9118 = 13·0xD8`
-exactly, so block order **is** record order:
+The engine's material table has **14 records** of 0xD8 bytes each, built by
+an unrolled initialiser (`sub_83A6572` in the Linux binary, `FUN_00417f00`
+in the Windows one — row 669). Record layout: `+0x00..0xC7` fifty frame
+slots, `+0xC8` frame count, `+0xCC` reflective flag, `+0xD0` signed alpha
+multiplier, `+0xD4` "hot" flag. The record order is the initialiser's push
+order — **the sequence opens with two adjacent `B_WATER` blocks**, which a
+first reading (row 1008) missed, sliding every later name one slot; the
+frame counts pin the truth, because the pak's only 20-frame sets land on the
+records whose `+0xC8` says 20 only under this order (row 1011 retraction):
 
-| idx | material | idx | material |
-|---|---|---|---|
-| 0 | `B_WATER` | 7 | `D_LAVA` |
-| 1 | `C_WATER` | 8 | `E_WATER` |
-| 2 | `D_WATER` | 9 | `F_WATER` |
-| 3 | `A_LAVA` | 10 | `G_WATER` |
-| 4 | `B_LAVA` | 11 | `E_LAVA` |
-| 5 | `C_LAVA` | 12 | `B_WATER` |
-| 6 | `A_SCHWEFEL` | 13 | `B_WATER` |
+| idx | material | frames | reflective | alpha | hot |
+|---|---|---|---|---|---|
+| 0 | `B_WATER` | 50 | 1 | −12 | |
+| 1 | `B_WATER` | 50 | 1 | −12 | |
+| 2 | `C_WATER` | 50 | 1 | −12 | |
+| 3 | `D_WATER` | 50 | 1 | −12 | |
+| 4 | `A_LAVA` | 50 | | −255 | 1 |
+| 5 | `B_LAVA` | 50 | | −255 | 1 |
+| 6 | `C_LAVA` | **20** | | −255 | 1 |
+| 7 | `A_SCHWEFEL` | **20** | | −255 | 1 |
+| 8 | `D_LAVA` | 50 | | −255 | 1 |
+| 9 | `E_WATER` | 50 | | −255 | |
+| 10 | `F_WATER` | 50 | 1 | −24 | |
+| 11 | `G_WATER` | 50 | 1 | −12 | |
+| 12 | `E_LAVA` | 50 | | −255 | 1 |
+| 13 | `B_WATER` | 50 | | −12 | |
 
-`B_WATER` fills three slots — it is the only format string with three xrefs
-into the initialiser, so 12 distinct stems cover 14 records. The frames live
-in `texture.pak` as `<stem>%02d.TGA` starting at 00: 50 frames per set
-except `C_LAVA` and `A_SCHWEFEL` at 20, all 128×128 opaque squares (terrain
-tiles are 256×256 diamonds), tiling in screen space. Each record carries two
-flag bytes at `+0xCC` and `+0xD4`; `+0xCC` is 1 for exactly idx
-0, 1, 2, 3, 10, 11 and gates a vertically-mirrored ambient-modulated
-reflection quad drawn before the surface itself (row 669's inference,
-"reflective", still the best reading). The two builds corroborate each
-other: the Windows disassembly yields the same six flagged indices.
-**Row 669's material *names* are shifted one slot against this table and
-must not be used; its flag indices are correct.**
+This is **row 669's original name order restored** — its reflective set
+{0,1,2,3,10,11} = "all waters bar E_WATER(9) and B_WATER(13)" reads true
+verbatim under it. `B_WATER` fills three slots (0, 1, 13), matching its
+three xrefs into the initialiser. Frames live in `texture.pak` as
+`<stem>%02d.TGA` from 00, all 128×128 opaque squares, tiling in screen
+space.
 
-Which record a cell uses is **per sector**, not per cell. The consumer
-(`sub_80E3EB2`, Linux) is exact:
+**Cadence** (row 1011): the draw picks
+`frame = ((ms >> 1) & 0x3FF) · count / 1024` — the whole set loops once
+every **2048 ms** whatever its length (≈24.4 fps at 50 frames, ≈9.8 at 20).
+There is no per-record delay.
 
-```
-mov eax, [edi+17Ch]    ; sector -> a per-sector block
-mov cl,  [eax+0F7h]    ; material id used where nibble == 9
-mov bl,  [eax+0F8h]    ; material id used where nibble == 10
-```
+**Depth alpha** (row 1011): on liquid cells the signed corner bytes
+`+0x10..13` hold **depth**, not render height — the open sea sits at −20,
+shallows rise toward 0. Per corner, liquid alpha =
+`clamp(alpha_mult · depth, 0, 255)`: negative times negative reads opaque
+over deep water and fades to nothing at the shoreline; −255 is opaque at any
+depth. The water surface itself is drawn flat — the depth shapes the bed
+beneath it.
 
-**Still open:** which *file* that per-sector block is loaded from. Two
-candidates were refused against a condition stated before looking:
-`sectors.keyx` `+0xF7/+0xF8` (the unclaimed gap between `csize` and `dsize`)
-is zero in all 6050 records, and the stream tail past the 4096-entry grid is
-the region table and yields values up to 209 against the table's 0..13
-range. The animation cadence (frame delay) is also unmeasured; it very
-likely sits in the untraced fields of the 0xD8-byte record.
+**Reflection** (open): `+0xCC` gates a pass-1 vertically-mirrored untextured
+quad modulated by ambient·(−8·depth). Its geometry is read; its blend state
+goes through untraced render-state calls (`sub_83B41F2`), so the port does
+not draw it yet.
+
+Which record a cell uses is **per sector**, not per cell, and it lives in
+the **keyx record itself** (row 1010). The 768-byte-record loader
+(`sub_80EF4EE`) memcpy's record bytes `0x1E9..0x2E8` — a 0x100-byte
+"environment" block — into a per-sector arena slice hung off the runtime
+sector at `+0x17C`; the draw (`sub_80E3EB2`) then reads block `+0xF7` for
+nibble-9 cells and `+0xF8` for nibble-10 cells. So the two ids are keyx
+record bytes **736** and **737**. Measured over all 1360 liquid sectors:
+every value is in 0..13, the sea reads `B_WATER`, and 22 sectors carry two
+*different* liquids at once — which is why the format keeps two bytes. (An
+older 512-byte-record loader, `sub_80EF028`, keeps the same block out of
+line and seeks it by a stored file offset; the shipped `sectors.keyx` uses
+the embedded form.)
 
 ## `floor.pak` — the overlay layer
 

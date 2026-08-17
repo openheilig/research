@@ -374,23 +374,36 @@ so the fallback is counted and reported, never treated as equivalent.
 ### The FormMeshBone pairing rule
 
 A mesh's weight stream stores **local** bone indices; a `FormMeshBoneSection`
-turns them into global bone ids. Which section belongs to which mesh is not
-stated anywhere obvious, and two natural answers are both wrong:
+turns them into global bone ids. Which section belongs to which mesh **is
+stated in the file** (row 1009), though it took the one undecidable entry to
+find it: each `FormMeshBoneSection` (0xCA5E0C09) hangs under a `FormMesh`
+node (0xCA5E0C03), and the FormMesh's own payload int32 is the **1-based
+index of the Mesh node its bone list belongs to**, counted over *all* Mesh
+nodes in directory order — non-drawable ones included (six retail entries
+carry those, which is what fixed the index space). Validated corpus-wide
+before being trusted: on all 971 weight-declaring entries the payloads are
+unique, in range, and hand every drawable mesh a list satisfying
+`len(list) >= highest + 1`; everywhere the matching below decides on its
+own, the two agree by content — zero disagreements. The entry that forced
+the find: `DUNKELELVE.GRN` (402), whose two size-10 lists compete for the
+meshes needing 9 and 10, spatially inseparable, so no counting or distance
+rule could break the tie.
 
-- **Containment** — the sections are *not* children of the `Mesh` nodes. They
-  sit together near the end of the directory.
-- **Position** — section order is not mesh order. `DWARF_BLACK_BODY.GRN`'s
-  three meshes need 27, 3 and 12 bones while its sections run 12, 27, 3.
-  Measured over the corpus, plain positional pairing gains 171 entries and
-  **loses 87**.
+The earlier negatives stand, reframed:
 
-The constraint that *is* right is `len(list) >= highest + 1` — a mesh's local
-indices must fit inside its list. **Not equality**: a mesh may use a *prefix*,
-which is what `SERABOOTS01.GRN` does with two meshes needing 4 against two
-lists of 5, and what made an earlier equality search refuse it.
+- **Containment under `Mesh` nodes** — still false; the sections were never
+  children of the *Mesh*. They are children of the *FormMesh*, and the
+  FormMesh names the Mesh.
+- **Position** — still refuted as a rule. `DWARF_BLACK_BODY.GRN`'s three
+  meshes need 27, 3 and 12 bones while its sections run 12, 27, 3; the
+  FormMesh payloads are exactly the permutation that reorders them.
 
-So the pairing is solved as a **perfect matching** under that constraint,
-accepted only when every valid matching hands each mesh the same list.
+The constraint `len(list) >= highest + 1` — a mesh's local indices must fit
+inside its list, prefix use allowed (`SERABOOTS01.GRN`) — remains the
+validity check on the reference, and the **perfect matching** under it,
+accepted only when every valid matching hands each mesh the same list,
+survives as the fallback for a malformed reference, which no retail entry
+has.
 
 | rule | decodes |
 |---|---|
