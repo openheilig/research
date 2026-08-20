@@ -240,6 +240,72 @@ off the creature struct. The port can draw the track today; it cannot fill it
 until that is found.
 
 
+### The fill is symmetric, and the port now draws it (row 1041)
+
+**Correction.** Row 1039 called the red "an arc anchored at about +32° from
+bottom-centre whose far end sweeps away as health falls — only the far end
+moves, the anchor never does". That is wrong in both halves. Classifying every
+band pixel of retail's own frame as nearer the red art or the grey art puts the
+boundary at **row 54 on the left side and row 54 on the right side**: it is
+horizontal and mirrored about bottom-centre. Nothing is anchored off-centre and
+no single end moves — the two ends move together. The +32° figure came from
+eyeballing an annulus, and an annulus read by eye will always look like it
+starts somewhere.
+
+**The band is measurable, and it is the whole gauge.** Diffing `GUI_MAIN_02`'s
+(0,0,95,107) against (95,0,95,107) gives **3814 pixels that differ** against
+**236 identical** — the two blocks are one frame painted red and grey, and the
+differing set is the gauge. Its own vertical extent is rows **1…106**, not the
+block's 0…107: the top and bottom rows carry none of it, and a waterline run
+over the block instead of the band is one pixel wrong at each end.
+
+**Which fill LAW it is remains undetermined, and the data cannot settle it.**
+Red area is very nearly linear in the hit-point fraction, and both candidate
+laws reproduce the measured series to within 0.033:
+
+| hp | measured red | arc-proportional | height-proportional |
+|---|---|---|---|
+| 0.529 | 0.541 | 0.525 | 0.520 |
+| 0.345 | 0.371 | 0.339 | 0.366 |
+| 0.210 | 0.200 | 0.190 | 0.237 |
+| 0.042 | 0.000 | 0.033 | 0.009 |
+
+They cannot be separated because the band is near-uniform per angle — 526, 719,
+649, 642, 725, 553 pixels across six 30° bins — which makes arc length and
+height very nearly the same function. A **symmetric** sweep from bottom-centre
+also puts both endpoints at equal height, so the two laws draw the same
+*boundary shape* and differ only in where it sits. One frame cannot tell them
+apart; only a series with a much better red mask could.
+
+**The port takes the height slice**, because a slice is two rects and a sweep is
+a shader. Verified against retail's frame rather than against itself: at the
+best-fitting fraction (0.50, boundary row 53) the port's classification agrees
+with retail's on
+
+| region | agreement |
+|---|---|
+| below the waterline | **99.3 %** (1069/1077) |
+| above it | 81.4 % (673/827) |
+| the leafwork column, x ≥ 72 | 81.0 % (952/1176) |
+
+The red half is essentially exact. The residual is scattered single pixels in
+the grey half and in the leafwork, where the art is semi-transparent over the
+live portrait bust — the same failure mode this file's own matcher warns about,
+not a wrong model: a wrong model fails in a *shape*, and the disagreements have
+none.
+
+**At full health the port draws no grey at all.** Not an optimisation: the two
+slices are complementary, so a zero-height grey rect under the red would blend
+the red ring's soft edge against grey rather than against the world and move
+pixels in a frame the capture runbooks md5.
+
+**What is still missing is the number, not the gauge.** The port has no hero
+hit points to feed it — `world/encounter.gd` tracks only the hostile's — and
+inventing a maximum would be inventing balance data, since which table loads
+`+0x4CC` is still unidentified. `view/hud.gd` exposes `set_health(frac)` and
+defaults to full, which is what retail draws at spawn.
+
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).
