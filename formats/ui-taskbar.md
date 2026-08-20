@@ -141,13 +141,57 @@ error 64 and should be ignored: that rect contains the live portrait render
 inside it, which is exactly the case this file's own matcher warns is answered
 confidently and wrongly.
 
-**Still unconfirmed: which quantity the bar reads.** Three colours for one
-slot is the shape of a bar that recolours as it empties, which would make it
-health, but that is a reading and not a measurement. The experiment that
-settles it is one capture run: drive retail from the staged combat save with
-`tools/drive/session.sh` and count beads across the fight — nothing but health
-falls while the hero is being hit. One attempt timed out before the retail
-side captured; the frames, not the reasoning, are what is missing.
+### The bar is NOT health, and the gauge was never a bar (row 1039)
+
+The capture ran, and it refuted the natural reading. Driving retail from the
+staged combat save under gdb — breakpoint trace and `SACRED_SHOT` frames from
+the **same process**, so the numbers and the pixels cannot disagree about which
+run they came from:
+
+```
+WHO def=0xafdf0b0 type=1 lvl=1 hp=119/119   atk=0xb82c9f0 type=313 hp=42/42
+WHO def=0xafdf0b0 type=1 lvl=1 hp= 87/119   ...
+WHO def=0xafdf0b0 type=1 lvl=1 hp=  5/119   atk=0xb82c9f0 type=313 hp=42/42
+```
+
+`type = 1` is a playable class, so the creature being beaten from 119 to 5 is
+**the hero**; the attacker at type 313 never loses a point. Across those same
+frames the bar reads **72 of 72 beads lit, in every single one**. A gauge does
+not stay full while its owner is nearly killed, so **the green bar is not
+health.** What it does read is still unknown — but it is now excluded, which is
+the useful half.
+
+**The health gauge is the PORTRAIT RING.** Measured in the annulus over the
+same run, the red drains and the grey replaces it:
+
+| frame | ring red px | bar lit |
+|---|---|---|
+| 70000 | 454 | 72 |
+| 95000 | 311 | 72 |
+| 120000 | 168 | 72 |
+| 145000 | 0 | 72 |
+
+and a healthy frame gives 839. The red is an **arc anchored at about +32° from
+bottom-centre** whose far end sweeps away as health falls — only the far end
+moves, the anchor never does. Visual proof, full against nearly dead:
+`analysis/evidence/hp-gauge-2026-08-20/ring-full-vs-empty.png`.
+
+**This is why `cUI_Taskbar2` has no orb art and computes no fraction.** The
+gauge was never in the taskbar. It is the portrait window, and its art is the
+pair this file already identified: the 95×107 block at `GUI_MAIN_02` (0,0) is
+the **full** state and the one at (95,0) is the **empty** state. The port
+already draws the red one at (932,15) — what it lacks is the grey composited
+over it by fraction, not a new asset.
+
+> ⚠️ **Which HP slot the gauge reads is NOT settled, and one obvious test does
+> not work.** Pinning `+0x4C8` to 60 at every blow and watching the ring keep
+> draining looks like proof that it reads `+0x4D0` — it is not. Printing the
+> slot *before* overwriting shows the pin is gone by the next blow (set 60,
+> reads back 109, 79, 78, 76 …), so the write is being undone and the ring's
+> behaviour says nothing. The two slots do transiently differ, with `+0x4C8`
+> the lower of the pair before they re-converge, which reads like `+0x4C8`
+> authoritative and `+0x4D0` a display value easing toward it — a reading, not
+> a measurement.
 
 ## Open — a filled art slot is a composite, not a blit
 
