@@ -193,6 +193,53 @@ over it by fraction, not a new asset.
 > authoritative and `+0x4D0` a display value easing toward it — a reading, not
 > a measurement.
 
+### The green bar is the EXPERIENCE gauge — and row 1039 read it upside down (row 1040)
+
+**Correction first.** Row 1039 said the bar "reads 72 of 72 beads lit, in every
+single one". It does not, and it never did. Those beads are the **empty
+track**: muted green, about `(136,170,136)`, which a naive `g > r` mask counts
+as lit. The bar was reading **zero** in every frame of every run. The row's
+*conclusion* — that the bar is not health — is untouched and in fact
+strengthened, but its evidence was described backwards.
+
+**What it actually reads.** Four things were varied and moved it not at all:
+
+| varied | result |
+|---|---|
+| hero's health, 119 → 5 | no change |
+| walking (RMSE 13530 between frames) | no change |
+| eight right-click combat-art uses | no change |
+| the target monster's health, forced to 8/42 | no change |
+
+Then the hero was made to **kill** something — clicks driven onto the hostile,
+any struck monster forced to 1 hp — and the first bead turned from the track's
+`(119,153,119)` to a vivid `(85,255,0)`. More kills lit more beads: **0 → 1 →
+3**. Proof: `analysis/evidence/hp-gauge-2026-08-20/xp-bar-0-vs-3-beads.png`.
+
+A ten-segment gauge under the portrait that starts empty and advances on a kill
+is the **experience bar toward the next level**. Strictly, what is measured is
+"advances when the hero kills"; three beads from two forced kills means the
+increment is not one-per-kill, which is what an experience value does and a
+kill counter does not.
+
+**It is two elements, not one**, which is why it looked static:
+
+| | element | rect in `GUI_MAIN_02` | colour |
+|---|---|---|---|
+| empty track | **67** | (74,123)–(146,132) | muted, mean (104,117,85) |
+| fill | **68** | (0,119)–(73,125) | vivid, (51,170,0) |
+
+drawn at **(942,124)**, ten beads, 5 px on a 7 px pitch, filling left to right.
+The siblings are the same pair in other colours — 65/69 the yellow and red
+tracks, 66/70 their fills — so the sheet holds three complete gauges, not six
+loose bars.
+
+**Not located: the experience value itself.** Dumping the hero creature's
+`+0x420`…`+0x620` across a kill shows only two noise fields moving, so it lives
+off the creature struct. The port can draw the track today; it cannot fill it
+until that is found.
+
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).
