@@ -6,7 +6,8 @@ own call order, each link's file, and whether this port has it. Written because
 the project had eleven format documents and no map of how the formats meet.
 
 Provenance: the new-game trace through `install/sacred` (findings log rows
-954–963), plus the readers and gates named per row. Function addresses are
+954–963), plus the readers and gates named per row. Combat and regeneration
+were added from rows 1036–1051; the gap list is row 1052. Function addresses are
 virtual (`vaddr = 0x08048000 + file_offset`).
 
 ---
@@ -48,6 +49,14 @@ virtual (`vaddr = 0x08048000 + file_offset`).
           skill slots folds in through the curve at sub_81F55B0
           AT = base * mult * ProzAW[difficulty]        sub_81FA5AA / sub_81FA622
 
+          IT BUILDS EVERYTHING DERIVED, not just AT and PA (rows 1045/1046).
+          354 float stores land in the block at +0x5A..+0xF2, and among them:
+            +0xEE  regeneration rate for SPELLS      *= 1 + [+0x18]*0.01
+            +0xF2  regeneration rate for ARTS        *= 1 + [+0x16]*0.01
+          and it calls sub_82047D4 to rewrite every art's own clock.
+          So this is the function to read for any "where does stat X come
+          from" question -- MAX HIT POINTS included, which is still unfound.
+
  [9] sector CHANGE (not entry)              sub_80DB27C
           world/sectors.keyx env -> music id, climate, region
           -> cMSS::receive_event, then the chooser sub_84EADBA
@@ -80,7 +89,9 @@ reached through the name hash at `sub_80ACC3E`.
 | 7c | class pair → hostility | faction matrix | **yes** | `factions_check` |
 | 8 | attributes+skills → AT/PA | `sub_81FA5AA` / `sub_81FA622` | **yes** — base and multiplier | `combat_check` |
 | 8b | AT/PA → to-hit | `sub_428790` | **yes** | `combat_check` |
-| 8c | damage vs resistance | undecoded | **no** — deliberately no formula | — |
+| 8c | damage vs resistance | `sub_81FAC30` | **yes** (rows 1036/1037) — four channels through the same curve to-hit uses, `dmg = raw·(1 − 1/(raw/armour + 1)^k)·(100 − resist)/100`, with the LEVEL DIFFERENCE as the exponent. `world/combat.gd`. Armour and resist go in as zero because nothing equips yet — see 3b. | `combat_check` |
+| 8d | attributes → regeneration | `sub_820E04C` → `sub_82047D4` | **yes** (rows 1043–1048). An art costs TIME, not mana: `total = base + level·step` from the table at `0x8793D00`, `rate = bonus·(1 + attribute/100)` per kind. `world/regen.gd`, `formats/combat_arts.gd`. | `regen_check` |
+| 8e | template → combat arts | PAX `0xC7` `+0x4CD` | **yes** (row 1049) — the saved records are the live 22-byte structs; `encounter.strike(rng, art_id)` spends one and refuses a cold art. | `regen_check` |
 | T | key → text | `global.res` | **yes** since row 954 | `resources_check` |
 | T2 | composed key → text | VM variable substitution | **yes** `QuestLog.resolve_with` | `quest_check` |
 
@@ -97,19 +108,22 @@ reached through the name hash at `sub_80ACC3E`.
 | NPC / creature animation | **opt-in flags only** | not on in a default run |
 | facing / heading | **done (row 965)** | derived per model; the hero turns to its last heading |
 | idle vs walk vs attack | **selection done, switching not** | `Rigs` resolves a clip per ACTION (row 963); nothing changes clip at runtime yet |
-| **HUD** | **done (row 962)** | retail's own rects and coordinates; gauges still open |
+| **HUD** | **done (row 962)** | retail's own rects and coordinates. The LIFE gauge is drawn too (rows 1039–1044): it is the PORTRAIT RING, `UI_CHR_HEALTH_01/02`, sliced at a waterline. There is no mana gauge because there is no mana (row 1042). Nothing drives the ring yet — the hero has no hit points. |
 | sound, particles, water, weather | **none** | no screenshot impact |
 
 ---
 
 ## What is actually left for a 1:1 small-scale MVP
 
-Seven items were listed here on 2026-08-16. **Six are closed** (rows 954–965)
-and the seventh is a capture-runbook decision rather than a research gap.
+Seven items were listed here on 2026-08-16. **All seven are now settled** —
+six closed by rows 954–965, the seventh a capture-runbook decision rather than
+a research gap — so this list no longer describes what is left.
+
+**The current gap list, re-ranked 2026-08-20 (row 1052)**, is below it.
 
 | # | Item | State |
 |---|---|---|
-| 1 | HUD | **Closed.** The layout is a static 1887-entry sub-rect table at `0x880DC68` placed by `cUI_Taskbar2` onto a fixed 1024×768 canvas. `view/hud.gd` draws the console, wings, buttons, combat-art arc and both slot wings from retail's own art. **Except the life/mana gauges** — see Open. |
+| 1 | HUD | **Closed.** The layout is a static 1887-entry sub-rect table at `0x880DC68` placed by `cUI_Taskbar2` onto a fixed 1024×768 canvas. `view/hud.gd` draws the console, wings, buttons, combat-art arc and both slot wings from retail's own art. **The life gauge is drawn too** (rows 1039–1044) — it is the portrait ring, not an orb, and there is no mana gauge to draw. See Open. |
 | 2 | Facing | **Closed** (row 965). The alignment bone is the net rotation above `Bip01`; `set_yaw` is wired and gated by `facing_check`. |
 | 3 | NPCs by default | **Decided, not open.** `--npcs` already places the scripted cast at real retail cells. It stays opt-in because `tools/parity/follow_parity.sh` and `loggia_sweep.sh` photograph the world and rely on the current default rather than passing a flag; flipping it would silently change frames they compare. Closing this properly means adding `--nonpcs` to those runbooks first, which is a capture decision and not a research gap. |
 | 4 | Quest text on screen | **Closed.** The console shows the quest's own line; quest 74 reads *"The Soul of the Demon"* / *"Kill the demon, after Shareefa has summoned it."* |
@@ -117,13 +131,45 @@ and the seventh is a capture-runbook decision rather than a research gap.
 | 6 | The AT/PA base | **Closed.** `0.5·(STR+DEX)` and `0.2·STR + 0.8·DEX`. The MVP fight is 31%, entirely derived. |
 | 7 | Clip selection | **Closed.** The action is readable from the clip name even though the character is not; all five buildable bodies now play their IDLE instead of whatever scored highest. |
 
+### The current gap list (row 1052)
+
+Ranked by effort, then by how much each unblocks. Each row cites what shows the
+gap is real, because the previous list stayed on this page for four days after
+it stopped being true.
+
+| # | Gap | Effort | Unblocks | What shows it |
+|---|---|---|---|---|
+| 1 | **Runtime clip switching** | High | The largest visible difference — the hero never changes animation | The render table above: *"selection done, switching not"*. `Rigs` resolves a clip per ACTION and nothing drives it. |
+| 2 | **The hero as a creature** — hit points, taking damage, a two-sided fight | Med-High | The ring gauge's driver, somewhere for experience to live, a fight that can be lost | `view/hud.gd::set_health` is called only by `hud_check`. The foe is a registry actor with `hp`; the hero is scalars on `Encounter`. Blocked on the max-HP derivation — likely inside `CalcResults`, which builds every other derived stat. |
+| 3 | **Equipment actually equipped** | Medium | Armour and resist for 8c, the `bonus` term for 8d, the weapon base for the recovery clock | Row 3b: *"ids only, not equipped"*. Three formulas currently take a placeholder: `Combat.damage` gets zero armour, `Regen.rates` gets bonus 1.0, `sub_81A8636` falls back to 20.0. **They are one gap, not three.** |
+| 4 | **What an art does to damage** | Med, uncertain | Makes a spent art matter | `+0x50`/`+0x54` are measured and read like a multiplier for attack moves, but the same field is a duration on a shapeshift art. Row 1036 notes the weapon-slot flag appears nowhere in `sub_81FAC30`. |
+| 5 | **The experience value** | Low-Med | Fills the XP bar that is already identified and drawable | Dumping the hero creature's `+0x420`…`+0x620` across a kill moved only two noise fields. |
+
+**Why #2 is not first.** It reads like the obvious next step and it is not the
+biggest one: clip switching is entirely unblocked, while hit points still need
+a derivation found. Ranking by what is *interesting* rather than by effort and
+blockage is how the old list survived being wrong.
+
 ## Open
 
-- **The life and mana gauges.** All 46 functions of `cUI_Taskbar2` were
-  enumerated: the class references no orb, globe or fill-bar art and computes
-  no fraction or scissor rect. The orb-looking elements in `GUI_main_02` belong
-  to the mercenary window. So the most recognisable part of the screen is
-  deliberately not drawn rather than guessed.
+- ~~**The life and mana gauges.**~~ **Closed 2026-08-20 (rows 1039–1042), and
+  this entry was WRONG about where to look.** It said the orb-looking elements
+  of `GUI_main_02` "belong to the mercenary window". They do not: they are
+  `UI_CHR_HEALTH_01` and `_02`, retail's own name for the **portrait ring**,
+  which is the life gauge. The enumeration above is still correct and was never
+  the problem — `cUI_Taskbar2` genuinely references no orb art, because the
+  gauge was never in the taskbar. It is the portrait window.
+
+  **And there is no mana gauge, because Sacred has no mana.** Its six
+  attributes are Strength, Endurance, Dexterity, Physical Regeneration, Mental
+  Regeneration and Charisma; not one of the 1446 named interface elements is a
+  mana anything; the mana potion types are dead; and the `+0x4C8` pool triple
+  is entirely hit points. What a combat art costs is TIME, shown per art on the
+  slot as `UI_ACTION_GRAYED` and a `_LOAD` state — see 8d.
+
+  `view/hud.gd` draws the ring and fills it. **What is missing is the number,
+  not the gauge:** nothing calls `set_health()` because the hero has no hit
+  points. See the MVP list below.
 - ~~**Character facing.**~~ **Closed 2026-08-16 (row 965).** The split was the
   chain above `Bip01`, quantised to 0° or −90°: three bodies carry a `Root` bone
   that cancels `Bip01`'s −90°, three do not. Measured in `Bip01`'s own frame all
