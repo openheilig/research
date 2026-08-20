@@ -51,6 +51,10 @@ hand** (`asm rsp` before most calls) — so arguments are pushed, and the author
 was expected to know it. And `-1` is a sentinel argument meaning "the thing
 just created", which is why so many calls read `(-1, -1)`.
 
+The compiler's API lookup is **case-insensitive**: the source writes
+`dialogMgr_Reset` where the table recovered from the binary's own strings
+holds `dialogMgr_reset`, and it still compiled to id 10.
+
 ## The container
 
 `SCRIPT.PAK` is magic **`ACS` version 2** — exactly the `chunk.type==
@@ -62,19 +66,27 @@ at `0x100`. 59 entries, one per script function.
 
 ```
 char[32]  function name, NUL-padded     // "init", "spTrigger5", "npcDialog008"
-u32       (not the code length -- spTrigger5 stores 44 in a 212-byte payload)
-u32[]     code, to the end of the payload
+u32       code length IN WORDS
+u32[n]    code
 ```
+
+The length word **is** the code length, in words — an earlier reading of this
+file said it was not. `payload_bytes == 4 * length` holds for all 59 entries
+and the reader now asserts it. That assertion also **pins the 32-byte name
+field**, which used to be read off a hex dump: the identity holds at NAMELEN
+32 and scores 0/59 at 24, 28, 36 and 40. The same number is what the debug
+build prints as `sid[N] func[…] size[N]` in its `DEBUG.LOG`.
 
 Entry 0 is `invalid_function`, the interpreter's own error stub — the same
 string the binary's `findScriptFunction` assert prints.
 
 ## The code
 
-A flat `u32` stream in which **`0xff` introduces a call** and the next word is
-the script API id, from the same table as
-[armalion-script-api.tsv](../builds/armalion-script-api.tsv). `spTrigger5`
-decodes line-for-line against its source:
+A flat `u32` stream.
+
+**`0xff` introduces a call** and the next word is the script API id, from the
+same table as [armalion-script-api.tsv](../builds/armalion-script-api.tsv).
+`spTrigger5` decodes line-for-line against its source:
 
 | bytes | id | source |
 |---|---|---|
@@ -86,52 +98,86 @@ decodes line-for-line against its source:
 | `ff 39 7f 02` | 57 | `trigger_setState(127, 2)` |
 | `ff 39 87 01` | 57 | `trigger_setState(135, 1)` |
 
-Words between calls are the VM's own operations — the branches of the two
-`if`s and the `asm` the source writes inline. They are **not decoded here**.
+**`33 0 0 0 <cond> <target>` is a six-word branch.** `target` is a word index
+into the same function; the function's own length means "jump to the end", and
+no target in the container points outside its function. `cond` is **16 to jump
+when the test was false** — a plain `if (x)` — and **17 to jump when it was
+true** — `if (!x)`. Nothing else appears. The twin functions `spTrigger20` and
+`spTrigger21`, whose sources differ only in two constants, isolate it exactly:
+
+```
+  0  ff 3b            CALL 59 trigger_chkState
+  2  134  1 / 2       its arguments
+  4  33 0 0 0 17 17   if (!…) -> jump-if-true to word 17 = end of function
+ 10  ff 3f            CALL 63 playSpeechResource
+ 12  1098 / 1099      its argument
+ 13  ff 39            CALL 57 trigger_setState
+ 15  134  1 / 2       its arguments
+```
+
+**Inline strings are NUL-terminated and padded to a word**, so the `u32` walk
+stays in phase across them — which is why the 23 string-carrying functions are
+now checkable at all. The field is the smallest multiple of 4 **strictly
+greater than length+1**, so there is always at least one NUL and always a
+partial or whole zero word at the end; that holds for all 118 inline strings.
+
+What `33`'s three zero operands select, and what `asm rsp`, `mov` and `movi`
+assemble to, are still undecoded.
 
 ## The check
 
-For every function present in both the container and the text, the ordered
-list of API ids from the bytes must contain the ordered list of API names from
-the source as a **suffix**. `armascript.py` reports:
+`armascript.py` compares, for every function present in both the container and
+the text, the ordered list of API ids from the bytes against the ordered list
+of call names in the source — as an **equality**, and separately the branch
+condition codes against the source's own `!`. It reports:
 
-> ACS v2, 59 functions; **26 of the 35 string-free functions match their source
-> call-for-call**, 9 do not; 23 embed a string and are not checkable without
-> the argument encoding, 1 has no source.
+> ACS v2, 59 functions; **58 match their source call-for-call**, 0 do not,
+> 1 has no source; branch condition codes match in **57** functions, disagree
+> in 0, 1 not comparable.
 
-Mutating the `0xff` marker drops the count to nothing. That pins the marker
-and the id space — and so **confirms `armalion-script-api.tsv`'s ids are
-right**, independently of however they were assigned.
+The one function without source is `invalid_function`. Every constant in the
+decoding is falsifiable and was falsified as a control:
 
-Ten of them are pinned *individually*, not just as a sequence: the id landed
-where the source names that same function, in a function whose whole call list
-aligned.
+| mutation | 58 call matches becomes | 57 branch matches becomes |
+|---|---|---|
+| `NAMELEN` 32 → 28 | the header assertion raises | — |
+| call marker `0xff` → `0xfe` | **7** | 57 |
+| branch opcode 33 → 34 | 58 | **17** |
+| `cond` 16/17 swapped | 58 | **17**, with 40 explicit disagreements |
+| `script03.txt` included | **55** | 55 |
+
+**There is no compiler preamble.** An earlier version of this document
+reported that every compiled function opens with one call no source line asks
+for, "usually id 77". That was an artefact of counting only source names the
+API table already knew: the table has gaps, so a real leading call to an
+untabled name looked like an unexplained extra. Counting every call in the
+source removes it, and the comparison is an equality rather than a suffix.
+
+**`script03.txt` is excluded**, and must be. It redefines `init`,
+`spTrigger40` and `spTrigger41` with different bodies, and the prerelease's
+own `DEBUG.LOG` shows the engine compiled `SCRIPT00`, `SCRIPT01`, `SCRIPT02`
+and `SCRIPT04` only. Including it makes those three appear to disagree with a
+bytecode that was never compiled from them — which is exactly what the older
+`spTrigger40`/`spTrigger41` "mismatch" was.
+
+## What the ids are
+
+**35 ids are pinned to exactly one name**, with no id mapping to two. 26 of
+them agree with `armalion-script-api.tsv`, which independently confirms that
+table; **9 fill gaps it does not cover**:
 
 | id | function | | id | function |
 |---|---|---|---|---|
-| 15 | `view_setLocked` | | 52 | `creature_setLevel` |
-| 35 | `creature_setFacing` | | 57 | `trigger_setState` |
-| 39 | `creature_setDialog` | | 58 | `trigger_resetState` |
-| 47 | `creature_setAlliance` | | 59 | `trigger_chkState` |
-| 51 | `creature_morph` | | 67 | `printTextResource` |
+| 8 | `console_getInput` | | 38 | `creature_setBehaviour` |
+| 12 | `engine_setMode` | | 63 | `playSpeechResource` |
+| 26 | `item_createOnPatch` | | 64 | `playMusic` |
+| 30 | `item_getLookup` | | 72 | `questSetFlag` |
+| | | | 77 | `questCheckFlagAnd` |
 
-No id maps to two names, which the tool checks and fails on. One id the table
-has **no** entry for — 63 — lands where the source writes `trigger_chkState`.
-That is a prediction from a gap, not a confirmation, and is reported
-separately for exactly that reason.
-
-Three honest limits:
-
-- The check is a **suffix**, not an equality, because every compiled function
-  opens with one call no source line asks for (usually id 77, sometimes 59,
-  63, 9, 12, 30, 72). What that call is has not been established, so it is
-  tolerated rather than explained.
-- **It does not pin the header layout.** A suffix comparison ignores leading
-  noise, so a 28-byte name field scores the same as 32. The 32-byte field is
-  read off the hex dump.
-- The 9 failures are all `npcDialog*`, which also exist as localized copies in
-  `Scripts/us/` and `Scripts/de/`; the compiled copy need not be the one whose
-  text is being compared.
+Id 63 corrects an earlier prediction in this document, which read it as
+`trigger_chkState`. That prediction came from the same suffix-alignment
+artefact: `playSpeechResource` was missing from the table, so dropping it from
+the source list shifted everything after it by one.
 
 ## What does not transfer
 
@@ -149,17 +195,25 @@ name one of them.
 
 ## Open
 
-- The argument encoding. A call with an inline string emits an extra word
-  before its arguments (`04` for a 4-argument `item_createOnPatch`, `03` for a
-  3-argument `playSfx`) where a call without one does not
-  (`trigger_setState(1,2)` is `ff 39 01 02` flat). "Argument count, emitted
-  only when the VM must be told where the inline string starts" fits all three
-  and has not been tested further.
-- The leading call every function carries.
-- The VM's own opcodes — the branch words between calls, and what `asm rsp`,
-  `mov` and `movi` assemble to.
+- **The argument encoding, narrowed but not closed.** When a string is the
+  call's **first** argument it is hoisted to the end and an extra word is
+  emitted first whose value is the **total argument count**: 30 calls fit,
+  e.g. `item_createOnPatch ("TYPE_FX_MAGICMARKER",4022,6173,0)` is
+  `ff 26 | 4 | 4022 6173 0 | "TYPE_FX_MAGICMARKER"`, and
+  `playSfx ("Baum2.mp3",1,0)` is `ff 3d | 3 | 1 0 | "Baum2.mp3"`. When the
+  string is **already last** there is still one extra word, but its value is
+  not the argument count and not a constant — `creature_setDialog (0, "…")`
+  emits `0 0`, while `creature_onDeath (0, "onDeathSkeleton01")` emits `0 1`.
+  Every string-last call in this container has all-zero scalar arguments
+  except that one, so there is not enough variation here to decide what the
+  word is. `creature_isItemEquiped (1,"OFFIZIERSRÜSTUNG")` in `script04.txt`
+  would discriminate, but its string is not present in `SCRIPT.PAK`.
+- The VM's own opcodes other than the branch: `33`'s three zero operands, and
+  what `asm rsp`, `mov` and `movi` assemble to.
 
 ---
-Provenance: `tools/formats/armascript.py`, whose ratchet fails below 26
-aligned functions; the container read by the unmodified `pak.py`;
-`spTrigger5` verified against its source by hand.
+Provenance: `tools/formats/armascript.py`, whose ratchets fail below 58
+aligned functions and 57 aligned branch sets, and whose header assertion
+raises on a wrong name-field size; the container read by the unmodified
+`pak.py`; the mutation controls tabled above; `spTrigger5`, `spTrigger20` and
+`spTrigger21` verified against their sources by hand.

@@ -56,9 +56,19 @@ hypotheses:
 > `+0x08` is empty in every cell of the retail world. It is **not** meaningless:
 > the Armalion prerelease populates the same slot in 73 cells, so it is a
 > layer the shipped game dropped rather than a field with nothing behind it.
-> What it indexes is still unidentified — the 73 values are distinct and run to
-> 170, while the prerelease's `World/NonStatic.PAK` (a file retail does not
-> ship at all) holds only 106 records, so they do not index it as an array.
+> What it indexes is still unidentified, but `World/NonStatic.PAK` is **back
+> on the list**: it was written off because the 73 distinct values run to 170
+> while that file's header count is 106, and that comparison was wrong.
+> `NonStatic.PAK` is a **blob** container, not a fixed one — entry 0 reads
+> `(flags 133, offset 1528, size 384)` and 1528 is exactly `0x100 + 12 × 106`,
+> so the 106 are 384-byte *payloads* covering 40,704 bytes, not 106 objects.
+> The debug build prints its own `sObjectNonstatic` as **53** bytes, and
+> 53 × 768 = 40,704 exactly, so an object space of 768 is consistent with a
+> maximum of 170. What makes the candidate worth retrying rather than merely
+> unrefuted is that the cell field, the object type and the container all
+> vanish together: neither retail tree — Linux LGP nor Windows GOG 2.28 —
+> ships a `NonStatic.PAK` at all. This is not settled: 73 links give the
+> fill-ratio argument that pinned the other three fields no power whatever.
 > See *The prerelease is not a second corpus* below for how the two records
 > line up.
 >
@@ -367,9 +377,15 @@ All 32 bytes of the retail cell are accounted for, and one of them has since
 become slightly more open rather than less. `+0x08` is empty in every retail
 cell and was written off as a runtime slot; the prerelease populates it in 73
 cells, so it is a **dropped layer** and the table those 73 distinct values
-index is unidentified — `NonStatic.PAK` is the obvious candidate by name and
-does not fit, holding 106 records against a maximum value of 170. Nothing in
-the retail port depends on it, which is why this is a curiosity rather than a
+index is unidentified. `NonStatic.PAK` is the obvious candidate by name, and
+the count that eliminated it was misread: it is a blob container of 106
+384-byte payloads, whose 40,704-byte payload area the debug build's own
+53-byte `sObjectNonstatic` divides into exactly 768, so a maximum of 170 is no
+obstacle. Neither retail tree ships the file at all, so cell field, object
+type and container were dropped together. It is still not proven — 73 links
+are far too few for the fill-ratio argument that pinned the other fields, and
+what would settle it is chain structure inside `NonStatic.PAK`. Nothing in the
+retail port depends on it, which is why this is a curiosity rather than a
 blocker.
 
 ### The overlay tile SELECTION, rows 1019–1020
