@@ -112,6 +112,43 @@ gap visible rather than inventing a pair of orbs.
 > rather than a rect to transcribe. Neither bar is wired, and which
 > quantity the green one reads is unconfirmed.
 
+### The bar is now a measurement, not a place to look (row 1038)
+
+The eyeballed extent above is superseded. Measured off a retail 1024×768
+frame and then pixel-matched:
+
+| | |
+|---|---|
+| art | `GUI_MAIN_02` rect **(76, 125, 72, 7)** — the FRAMED GREEN beaded bar |
+| drawn at | **(942, 124)** |
+| structure | **10 beads**, each 5 px wide on a **7 px pitch**; rows 125–129 are solid, 124 and 130 show the gaps |
+| frame | the tan surround runs about (937, 121) to (1016, 133) |
+| match | mean per-channel error **0.44** — under the ~1.0 "this IS the art" threshold |
+
+The runners-up corroborate it rather than competing: they are the same `y`
+offset by exactly 7, 14, 21 px — the bead pitch — which is what a tiling bar
+should produce and what a coincidental match should not.
+
+The sheet carries **six** bar variants, not three: yellow, green and red
+beaded bars in both an unframed and a framed form, plus gold and blue
+Ω-segment bars beside them. Retail draws the framed green one.
+
+**The portrait ring is confirmed, not contradicted.** Retail's frame shows a
+RED ring where one might expect silver; the 95×107 block at the sheet's own
+origin — the one the port already draws — **is** the red ring, and the grey
+one is the block beside it at (95, 0). Matching the ring rect directly returns
+error 64 and should be ignored: that rect contains the live portrait render
+inside it, which is exactly the case this file's own matcher warns is answered
+confidently and wrongly.
+
+**Still unconfirmed: which quantity the bar reads.** Three colours for one
+slot is the shape of a bar that recolours as it empties, which would make it
+health, but that is a reading and not a measurement. The experiment that
+settles it is one capture run: drive retail from the staged combat save with
+`tools/drive/session.sh` and count beads across the fight — nothing but health
+falls while the hero is being hit. One attempt timed out before the retail
+side captured; the frames, not the reasoning, are what is missing.
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).

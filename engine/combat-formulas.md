@@ -281,6 +281,70 @@ against observed 20.992071 and 23.030998.
 > confirmed; the resist-table layout is **structural** — from the indexing and
 > the 0x56 stride — and still wants a resistant target to close.
 
+## Hit points — where they live (row 1038)
+
+Not a table lookup: found by dumping the defender's struct at the damage
+breakpoint across a whole fight and asking which field falls. Twelve blows on
+one creature give one answer.
+
+```
++0x4C8  119 111 101 93 80 69 62 50 40 27 17  6     current
++0x4CC  119 119 119 119 ...                        MAXIMUM, constant
++0x4D0  119 111 101 93 80 69 62 50 40 27 17  7     also current-like
+```
+
+All three start equal to the maximum. `+0x4CC` never moves. **`+0x4C8` and
+`+0x4D0` are not the same quantity** — they track each other for eleven blows
+and then diverge, 6 against 7, which is the only reason we know there are two
+of them rather than one and a mirror. Which is authoritative is not settled;
+the rescale routine below reads `+0x4D0`.
+
+They are one array, not three fields: every accessor indexes
+`[creature + idx*4 + 0x4C8]`.
+
+**The shared accessor is `0x819AE44`**, `add(this, delta, idx)`:
+
+```c
+if (idx > 2) return;                       // THREE pools
+if (delta < 0 && -delta >= pool[idx]) pool[idx] = 0;   // floor
+else pool[idx] += delta;
+if (pool[idx] > this->[0x4CC]) pool[idx] = this->[0x4CC];   // ceiling
+```
+
+The ceiling is `+0x4CC` **unindexed**, so all three pools clamp to the same
+maximum. Its three callers are potion and regeneration sites, and it fired
+**zero** times across a fight — so **damage does not reach hit points through
+it**. Whatever applies damage writes the pool directly, and that write is not
+yet located.
+
+**Max HP is loaded, not derived.** `CalcResults` does not write it: the bulk
+copy at `0x80EF361`–`0x80EF3B5` moves `+0x4B0` … `+0x4CC` field by field out
+of a stack buffer into the creature. So the standing claim that "HP is in no
+table read so far" is better stated as *HP is in a table we have not yet
+identified* — it is a stored record field, not an attribute derivation.
+
+**The fraction exists, at `0x8188FB3`** — and it is a level-up routine, not a
+gauge:
+
+```asm
+fild  [edi+0x4d0]        ; current
+fild  [edi+0x4cc]        ; max
+fdivr                    ; -> current/max, kept on the stack
+lea   eax,[edi+0x3a8]    ; the combat block
+call  820e04c            ; CalcResults - recompute, max HP moves
+fild  [edi+0x4cc]        ; the NEW max
+fmul                     ; new_max * old_fraction, truncated back to int
+```
+
+That is "a stat change preserves your percentage of health", and it
+**independently re-confirms `a1 = &creature[0x3A8]`** from an unrelated call
+site.
+
+**`ProzHP` is dead.** The key parses into the float array at `0x8B89B48`
+exactly as `ProzAW` does, and the address occurs **once** in the whole binary —
+the write. Nothing reads it. It is one of the 28 parsed-and-unused balance
+keys, so do not model an HP difficulty scaler on it.
+
 ## Where AT and PA come from — skills, not attributes
 
 **No base attribute becomes either rating.** Both accumulate from **skill
