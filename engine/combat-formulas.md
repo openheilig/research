@@ -121,8 +121,29 @@ roll   = (rand() % 1001) * 0.001          uniform 0.000 .. 1.000
 ```
 
 A live sample from that site, 26 identical swings: `a2 = 19.5, a3 = 26.4`
-→ **42.5%**. (Which branch of the `jne` is the hit is not yet read; only the
-comparison is.)
+→ **42.5%**.
+
+**Which branch is the hit — settled (row 1037).** `fcomp` sets `C0` when
+`st(0) < operand`, so the `jne` is taken on **`roll < chance`**, and its target
+`0x81fc99d` is where the damage step continues. Breakpointing the comparison,
+the jump target and the fall-through together resolves it without inference:
+
+| roll | branch | reached `0x81fc99d` |
+|---|---|---|
+| 0.142, 0.345, 0.322, 0.366, 0.320, 0.396, 0.261, 0.074, 0.024, 0.072, 0.055 | taken | **yes**, 11 of 11 |
+| 0.939, 0.785, 0.516, 0.531, 0.554, 0.446, 0.676 | not taken | **no**, 7 of 7 |
+
+with `chance = 0.424837` throughout, which is `19.5/(19.5+26.4)` to six
+places. So `roll < chance` **hits** and the comparison is **strict**; a miss
+leaves through the fall-through, which builds a `std::string` and never
+reaches the damage step.
+
+One thing on that fall-through is worth recording so it is not re-investigated:
+between it and `0x81fc99d` sits a block at `0x81fc945`–`0x81fc99d` that scales
+all four damages by `(x + 10·c) · 0.01` for the difficulty constant `c`. It
+looks like it belongs to the miss path and does not — it was reached **zero**
+times in this session, so it has another predecessor. Do not read the roll as
+gating a damage bonus.
 
 **Why the getters never fire.** `sub_81FA5AA` and `sub_81FA622` were not hit
 once during combat. The combat path **inlines** the same `base × skill-product`
