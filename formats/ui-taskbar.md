@@ -464,6 +464,81 @@ the mana result is a search over the *name list*, which is complete whatever
 the offsets are.
 
 
+### The per-art record, and where its two numbers come from (row 1044)
+
+The 22-byte record the slot reads is now mapped, from the accessors around it:
+
+| off | type | field |
+|---|---|---|
+| `+0x04` | u16 | **art id** — how `sub_8219C44` finds the entry |
+| `+0x06` | u8 | **level**, permanent (runes) |
+| `+0x07` | u8 | **level**, temporary (items) |
+| `+0x08` | u16 | flags; bit 0 = known. High byte = the **bound slot**, stored as `slot − 270` |
+| `+0x0A` | f32 | **total** regeneration time |
+| `+0x12` | f32 | **remaining** |
+
+`sub_8218774` is retail's own "is this art ready": `remaining <= 0.01`. Not
+`== 0` — worth transcribing exactly, because a float countdown that decrements
+by a frame delta will not land on zero.
+
+**Where the total is written.** Gaining or levelling an art runs
+`sub_8219FCE`, which bumps the level byte and then calls **`sub_820E04C`** —
+a full recompute over the creature. The interesting part is what it does
+around that call:
+
+```
+before = total
+sub_820E04C(...)                 // may change total
+if (before < total)
+    remaining += total − before  // keep the ABSOLUTE progress, not the ratio
+```
+
+So levelling an art up *lengthens* its regeneration and pushes the countdown
+out by exactly the difference, rather than rescaling it. A partly-recharged
+art does not jump backwards to the same *fraction* — it keeps the seconds it
+had already served.
+
+> Not read: the formula inside `sub_820E04C`. It is 22 KB and recomputes the
+> whole creature, so the regeneration total's dependence on Mental and Physical
+> Regeneration is still unrecovered. This is the remaining gap.
+
+### `+0x4E0` / `+0x4E4` is the RECOVERY timer, and its formula is recovered
+
+Row 1043 recorded these as an unknown pair used when mounted. They are written
+in one place (`sub_816C244` at `0x817205f`), together, from one value:
+
+```
+t = sub_81A8636(item, creature)
+creature[0x4E4] = t          // total
+creature[0x4E0] = t          // countdown, started full
+combat[0x138] = combat[0x13C] = t     // the same pair inside creature+0x3A8
+```
+
+and `sub_81A8636` is short enough to transcribe whole:
+
+```
+regen = 20.0                                    // when there is no item
+      = base / (1 + 0.015 × modifier(22))       // otherwise
+```
+
+`base` is `+40` of the record reached through the item's property 13.
+`modifier(22)` is `sub_821A71C(creature + 936, 22)`, which scans **eight**
+modifier slots — a kind byte at `+36+i`, the value fetched by
+`sub_821A6CC` — and returns the one whose kind is 22. Kind 21 is the one the
+healer's price uses, so these eight slots are a general per-creature modifier
+table, not a regeneration-specific one.
+
+`0.015` per point, hyperbolic rather than linear, and the same shape as every
+other Sacred curve: a modifier divides rather than subtracts, so it can never
+take the time below zero.
+
+That it also lands in the combat block at `creature+0x3A8` — the block row 1036
+identified as the damage pipeline's `a1` — is what identifies it: this is the
+**attack recovery** clock (`Recovery Rate` / `Combat Recovery`, `global.res`
+1413/1414), not a mount-specific one. The mounted slot branch reuses it because
+a mounted hero's slots show the mount's attack rather than her own arts.
+
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).
