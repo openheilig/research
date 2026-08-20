@@ -253,11 +253,19 @@ eyeballing an annulus, and an annulus read by eye will always look like it
 starts somewhere.
 
 **The band is measurable, and it is the whole gauge.** Diffing `GUI_MAIN_02`'s
-(0,0,95,107) against (95,0,95,107) gives **3814 pixels that differ** against
-**236 identical** — the two blocks are one frame painted red and grey, and the
-differing set is the gauge. Its own vertical extent is rows **1…106**, not the
-block's 0…107: the top and bottom rows carry none of it, and a waterline run
-over the block instead of the band is one pixel wrong at each end.
+(0,0,95,107) against **(96,0,95,107)** gives **2580 pixels that differ** against
+**1618 identical** — the two blocks are one frame painted red and grey, and the
+differing set is the gauge. It spans rows **10…102 and columns 0…84 only**: the
+horned finial and the leafwork down the right side are IDENTICAL in both
+blocks, so they are frame, not gauge.
+
+> ⚠️ **The empty ring is at x 96, not 95, and the one pixel matters.** These
+> numbers are the corrected ones; the first version of this section used 95,
+> which shifts the two blocks against each other and invents a differing pixel
+> at every edge in the art. That inflated the band to 3814 px, dragged the
+> leafwork into it, and dropped agreement with retail's frame from **97.3 % to
+> 87.5 %**. The value comes from retail's own element table, not from a
+> guess — see the name table below.
 
 **Which fill LAW it is remains undetermined, and the data cannot settle it.**
 Red area is very nearly linear in the hit-point fraction, and both candidate
@@ -265,14 +273,15 @@ laws reproduce the measured series to within 0.033:
 
 | hp | measured red | arc-proportional | height-proportional |
 |---|---|---|---|
-| 0.529 | 0.541 | 0.525 | 0.520 |
-| 0.345 | 0.371 | 0.339 | 0.366 |
-| 0.210 | 0.200 | 0.190 | 0.237 |
-| 0.042 | 0.000 | 0.033 | 0.009 |
+| 0.529 | 0.541 | 0.523 | 0.517 |
+| 0.345 | 0.371 | 0.342 | 0.371 |
+| 0.210 | 0.200 | 0.214 | 0.253 |
+| 0.042 | 0.000 | 0.042 | 0.025 |
 
-They cannot be separated because the band is near-uniform per angle — 526, 719,
-649, 642, 725, 553 pixels across six 30° bins — which makes arc length and
-height very nearly the same function. A **symmetric** sweep from bottom-centre
+Mean error **0.026 for both**, to three places. They cannot be separated because
+the band is near-uniform per angle — 439, 415, 417, 443, 471, 395 pixels across
+six 30° bins — which makes arc length and height very nearly the same
+function. A **symmetric** sweep from bottom-centre
 also puts both endpoints at equal height, so the two laws draw the same
 *boundary shape* and differ only in where it sits. One frame cannot tell them
 apart; only a series with a much better red mask could.
@@ -282,17 +291,10 @@ a shader. Verified against retail's frame rather than against itself: at the
 best-fitting fraction (0.50, boundary row 53) the port's classification agrees
 with retail's on
 
-| region | agreement |
-|---|---|
-| below the waterline | **99.3 %** (1069/1077) |
-| above it | 81.4 % (673/827) |
-| the leafwork column, x ≥ 72 | 81.0 % (952/1176) |
-
-The red half is essentially exact. The residual is scattered single pixels in
-the grey half and in the leafwork, where the art is semi-transparent over the
-live portrait bust — the same failure mode this file's own matcher warns about,
-not a wrong model: a wrong model fails in a *shape*, and the disagreements have
-none.
+agrees with retail's own on **97.3 %** of the 2119 band pixels it can classify
+(98.2 % once the band extent is taken from the corrected rect too). The
+residual is scattered single pixels with no shape, which is what noise looks
+like and not what a wrong model looks like — a wrong model fails in a *shape*.
 
 **At full health the port draws no grey at all.** Not an optimisation: the two
 slices are complementary, so a zero-height grey rect under the red would blend
@@ -304,6 +306,82 @@ hit points to feed it — `world/encounter.gd` tracks only the hostile's — and
 inventing a maximum would be inventing balance data, since which table loads
 `+0x4CC` is still unidentified. `view/hud.gd` exposes `set_health(frac)` and
 defaults to full, which is what retail draws at spawn.
+
+
+## Every element has retail's own NAME — and there is no mana (row 1042)
+
+The identification method this file has used throughout — match a rect against
+a sheet, reason about what it looks like — was never necessary. **The names
+were in the binary the whole time**, and getting them wrong twice (the ring
+assigned to the mercenary window, the potion belt called the combat-art slots)
+was the cost of not finding them.
+
+`tools/formats/uinames.py` reads them. A packed NUL-separated blob of 1452
+strings at file offset `0x6CF9FD`, with
+
+    gfx id = blob index − 5
+
+**Nothing points into that blob** — no pointer to any of its strings exists
+anywhere in the image, and no instruction takes one as an immediate. It is
+walked, not indexed, which is exactly why every xref search for it came back
+empty.
+
+**The anchor is self-identifying**, which makes the offset a measurement:
+blob index 6 is `UI_INVALID`, and gfx id 1 is the one entry whose *sheet-name*
+field literally reads `INVALID`. Three shape checks agree independently, and
+every entry in the named range carries its own id field equal to the derived
+id — 1446 for 1446.
+
+Coverage is partial and the end is ragged: the blob opens with four attribute
+names (`control`, `type`, `tooltipFade`, `tooltipDelay`) and closes
+`UI_MAX`, `UI_STATIC`, `UI_LISTBOX`. Names cover ids 1…1444 against a table of
+1886, so `GUI_HERO_*` (1488…1511) is unnamed. An id the tool cannot name is
+not an error.
+
+### What it settles immediately
+
+| id | retail's name | what this file had said |
+|---|---|---|
+| 42 / 43 | **`UI_CHR_HEALTH_01` / `_02`** | "most likely a RED ring and a GREY ring" — now named, and named *health* |
+| 65…70 | `UI_BAR_YELLOW/GREEN/RED_EMPTY` and `_FULL` | "three beaded gauges" — confirmed, and the names carry no meaning, so the green bar's XP role stays an empirical result |
+| 76…81 | `UI_HORSE_VHP_*`, `UI_HORSE_HHP_*`, `UI_HORSE_SHOE_*` | unidentified — they are the HORSE's gauges, vertical and horizontal |
+| 103 / 104 / 175 | `UI_ACTION` / `UI_ACTION_BRIGHT` / **`UI_ACTION_GRAYED`** | unidentified |
+| 176…181 | `UI_POTION_EMPTY/RED/BLUE/GREEN/PURPLE/YELLOW` | called "combat-art slots 177…181" in the table above — **wrong**, they are the potion belt, which the port already draws correctly for a different reason |
+| 351…353 | `UI_PORTRAIT_MP` / `_MP_H` / `_MP_E` | — the one trap: **MP is MULTIPLAYER**, a 127×189 frame between `UI_NET_*` and `UI_HORSEMERC`, not mana points |
+
+### There is no mana gauge, because there is no mana
+
+Searching all 1446 names for `MANA`, `_MP_`, `ENERG`, `STAMIN` or `AUSDAUER`
+returns **only the multiplayer portrait trio**. That is not an absence of art;
+it is an absence of the mechanic, and four independent lines say so:
+
+1. **The attribute list has no mana.** Retail's own character sheet, from
+   `global.res` slots 1401…1406, reads Strength, Endurance, Dexterity,
+   **Physical Regeneration**, **Mental Regeneration**, Charisma. The whole
+   23 123-entry text tree contains no `Mana` stat label at all.
+2. **What a spell costs is TIME.** Slots 1459/1460 are `Regeneration Spells`
+   and `Regeneration Special Move`; 6970 reads *"Accelerates the regeneration
+   of spells."*
+3. **The mana potions are dead types.** `TYPE_OBJECT_POTION_MANA_MINOR/MAJOR/
+   FULL` (ids 5060…5062) exist in the type table beside `_HEALTH_` and
+   `_STAMINA_`, and the item-description function `sub_815DDA2` **returns 0 for
+   every one of them** while the live coloured potions (5137…5172) all get
+   text. The live blue one is a `Potion of Concentration`, not a mana potion.
+4. **The pool triple is entirely hit points.** `sub_819AE44` indexes
+   `creature + 0x4C8` by 0…2 but ceilings all three against the *fixed*
+   `+0x4CC`, and the healer at `sub_85667FC` writes `get(1)` into **both**
+   index 0 and index 2 on a full heal. So `+0x4CC` is max HP and the other two
+   are current-HP-like. There is no mana slot in it.
+
+**The resource is per-art regeneration, and it shows on the combat-art slots** —
+which is where a mana bar would have been. `UI_ACTION_GRAYED` is the slot while
+its art regenerates, against `UI_ACTION` / `UI_ACTION_BRIGHT` when it is ready,
+and the element table carries a full `UI_SPELL_nn_EMPTY / _LOAD / _FULL` set
+for 105 arts — a **`_LOAD`** state per art, which is a timer per art and not a
+pool shared between them.
+
+> Not yet read: what fraction drives `_LOAD`, and where the per-art timer lives
+> in the creature. The *mechanic* is settled; its field is not.
 
 
 ## Open — a filled art slot is a composite, not a blit
