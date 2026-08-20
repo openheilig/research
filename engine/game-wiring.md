@@ -107,7 +107,7 @@ reached through the name hash at `sub_80ACC3E`.
 | **player animation** | **done** | 5 of 7 bodies, each playing its own IDLE (rows 957, 963) |
 | NPC / creature animation | **opt-in flags only** | not on in a default run |
 | facing / heading | **done (row 965)** | derived per model; the hero turns to its last heading |
-| idle vs walk vs attack | **selection done, switching not** | `Rigs` resolves a clip per ACTION (row 963); nothing changes clip at runtime yet |
+| idle vs walk vs attack | **done 2026-08-20 (row 1053), one body short** | `Rigs` resolves a clip per ACTION (row 963) and `PlayerView.play_action` now switches between them, driven per frame from whether the hero's cell moved. WALK and IDLE only — one measured walk speed means no threshold to switch RUN on. SERAPHIM.GRN resolves no WALK, so the default hero still does not switch. |
 | **HUD** | **done (row 962)** | retail's own rects and coordinates. The LIFE gauge is drawn too (rows 1039–1044): it is the PORTRAIT RING, `UI_CHR_HEALTH_01/02`, sliced at a waterline. There is no mana gauge because there is no mana (row 1042). Nothing drives the ring yet — the hero has no hit points. |
 | sound, particles, water, weather | **none** | no screenshot impact |
 
@@ -139,16 +139,21 @@ it stopped being true.
 
 | # | Gap | Effort | Unblocks | What shows it |
 |---|---|---|---|---|
-| 1 | **Runtime clip switching** | High | The largest visible difference — the hero never changes animation | The render table above: *"selection done, switching not"*. `Rigs` resolves a clip per ACTION and nothing drives it. |
+| ~~1~~ | ~~**Runtime clip switching**~~ **Landed 2026-08-20 (row 1053), with one body left out.** `PlayerView.play_action` switches a body to its clip for a named ACTION; `main.gd::_drive_hero_action` picks WALK or IDLE once per frame from whether the cell actually moved — the only movement signal the sim has, since `heading` is never written by click-to-move and `facing` is held. WALK and IDLE only: the port has one measured walk speed (row 1013), so there is no threshold to switch RUN on. **But SERAPHIM.GRN resolves no WALK**, and she is who a retail start spawns — see the new #1 below. | — | — | `checks/hero_anim_check.gd` switches a body, switches it back, and refuses an action it has no clip for. |
+| 1 | **The Seraphim's clips are on two skeletons** | Med, uncertain | Clip switching for the DEFAULT hero — everything else about it is already done | `probes/action_gap_probe.gd`: her scores split 0.891–0.915 against 0.255–0.273 with nothing between, and the low group shares 55 of her 72 bone names where the high group shares 68–71. `SERA_WALK_1H.GRN` is hers by name and scores 0.255. Lowering `MIN_SCORE` is the wrong fix — 0.5 is separating two real regimes. |
 | 2 | **The hero as a creature** — hit points, taking damage, a two-sided fight | Med-High | The ring gauge's driver, somewhere for experience to live, a fight that can be lost | `view/hud.gd::set_health` is called only by `hud_check`. The foe is a registry actor with `hp`; the hero is scalars on `Encounter`. Blocked on the max-HP derivation — likely inside `CalcResults`, which builds every other derived stat. |
 | 3 | **Equipment actually equipped** | Medium | Armour and resist for 8c, the `bonus` term for 8d, the weapon base for the recovery clock | Row 3b: *"ids only, not equipped"*. Three formulas currently take a placeholder: `Combat.damage` gets zero armour, `Regen.rates` gets bonus 1.0, `sub_81A8636` falls back to 20.0. **They are one gap, not three.** |
 | 4 | **What an art does to damage** | Med, uncertain | Makes a spent art matter | `+0x50`/`+0x54` are measured and read like a multiplier for attack moves, but the same field is a duration on a shapeshift art. Row 1036 notes the weapon-slot flag appears nowhere in `sub_81FAC30`. |
 | 5 | **The experience value** | Low-Med | Fills the XP bar that is already identified and drawable | Dumping the hero creature's `+0x420`…`+0x620` across a kill moved only two noise fields. |
 
 **Why #2 is not first.** It reads like the obvious next step and it is not the
-biggest one: clip switching is entirely unblocked, while hit points still need
-a derivation found. Ranking by what is *interesting* rather than by effort and
-blockage is how the old list survived being wrong.
+biggest one. The list is ordered by effort and by what each unblocks, never by
+what is interesting — ranking by interest is how the old list survived four days
+after it stopped being true. #1 stays at the top on a technicality worth being
+explicit about: the *work* of clip switching is done and gated, and what is left
+is one body's rig, which is cheap to finish and finishes a visible feature for
+the only character a default run actually spawns. Hit points still need a
+derivation found before any of #2 can start.
 
 ## Open
 
