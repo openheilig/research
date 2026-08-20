@@ -90,14 +90,52 @@ hit% = 100 · AT/(AT + PA)
 the prerelease's `clamp(200·…·…, 5, 95)`, and consistent with retail having no
 `cmp …, 95`.
 
-**What is still open.** `sub_83A37CA` is reached only from `sub_83A38D0` and
-`sub_854AF5E`, both of which look like UI, so this is confirmed as the
-**displayed** chance; whether combat resolution calls the same curve with the
-same `(1.0, 0.5)` is not yet shown. `tools/live/tohit_bp.sh` breakpoints all
-four sites and prints their arguments under the autopilot, and it runs — but
-none of them fires during world load, idle standing, or a sweep of ten
-candidate character-screen keys, so the discriminating observation needs the
-retail hero actually in a fight.
+### Confirmed live, in combat (row 1035)
+
+Loaded from a save standing next to a hostile and watched under
+`tools/live/tohit_bp.sh`. 55 breakpoint hits, **every one of them on the
+curve**, and `a4 = 1.0, a5 = 0.5` on every single call — so `k = 1` always and
+the curve is always the plain ratio.
+
+The roll sits immediately after the combat call site at `0x81fc6fc`:
+
+```asm
+call  815d44c                  ; the curve; its fraction lands in [ebp-0x1f0]
+fstp  st(0)                    ; discard the return value (a2 * out)
+mov   ebx, 0
+call  rand@plt
+...                            ; edx = rand % (1000 - 0 + 1) + 0   -> 0..1000
+fild  [esp]
+fmul  ds:0x86e6ba8             ; = 0.001 exactly, so roll is 0.000..1.000
+fcomp [ebp-0x1f0]              ; roll against the chance
+fnstsw ax
+test  ah, 45h
+jne   81fc99d
+```
+
+So retail resolves a swing as
+
+```
+chance = AT / (AT + PA)
+roll   = (rand() % 1001) * 0.001          uniform 0.000 .. 1.000
+```
+
+A live sample from that site, 26 identical swings: `a2 = 19.5, a3 = 26.4`
+→ **42.5%**. (Which branch of the `jne` is the hit is not yet read; only the
+comparison is.)
+
+**Why the getters never fire.** `sub_81FA5AA` and `sub_81FA622` were not hit
+once during combat. The combat path **inlines** the same `base × skill-product`
+multiply — `fld [ebp-0x248]; fmul [ebp-0x48]` right before the push — instead
+of calling them. The getters serve the character sheet; the fight computes its
+own.
+
+**And the resolution step has an address now.** The other live curve sites are
+`0x81fd0d7`, `0x81fd127`, `0x81fd177`, `0x81fd1c7` — four blocks spaced 0x50
+apart inside `sub_81FAC30`, which is the **four damage channels** running
+through the same ratio curve. One shows `a2` falling swing by swing (23.553,
+23.526, 23.499, 22.689, …) against a constant `a3 = 2.2414`. That is the step
+this document calls undecoded.
 
 ```c
 int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
