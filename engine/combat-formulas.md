@@ -834,3 +834,76 @@ ways, once as a float index and once as a byte offset. So one structure carries
 the damage pipeline's inputs, the art list at `+250` (stride 22), the spell
 list at `+262` (stride 38), the eight modifier slots at `+36`, and the recovery
 pair at `+0x138`/`+0x13C`.
+
+
+## The per-frame delta — and this is where the two Regeneration attributes are (row 1046)
+
+Row 1045 left the countdown's `delta` as the whole remaining question. It is in
+`sub_81F118A`, and it is two instructions:
+
+```
+if art[+0x00] == 1 or art[+0x04] == 1019:      // kind 1 = SPELLS
+    remaining −= dt × art[+0x0E] × block[+0xEE]
+else:                                           // kind 2 = combat arts
+    remaining −= dt × art[+0x0E] × block[+0xF2]
+```
+
+**Two creature-level rates, picked by the art's kind.** That is the shape a
+mana pool never had and Sacred never needed.
+
+`art[+0x0E]` is the per-art multiplier `sub_82047D4` resets to `1.0f` on every
+recompute — the hook an effect can bend without touching the total.
+
+### The rates are built, then scaled by the attribute
+
+`sub_820E04C` — the function row 1045 cleared of writing the total — turns out
+to build these two instead, in three stages:
+
+1. **Accumulate** bonuses. A switch over modifier kinds adds into both
+   (`case 11`, "to all regeneration") or into one; item properties `case 813`
+   and `case 814` add `value × 0.01` to `+0xEE` and `+0xF2` respectively.
+2. **Recompute the art totals** — `sub_82047D4`, called at `0x821248c`.
+3. **Scale each rate by its attribute**, immediately after:
+
+```
+block[+0xEE] ×= 1 + block[+0x18] × 0.01
+block[+0xF2] ×= 1 + block[+0x16] × 0.01
+```
+
+`0.01` is `flt_86E7454`, read from the image. So an attribute point is **one
+percent faster regeneration**, multiplicative on the accumulated rate — the
+same divide-don't-subtract discipline as every other Sacred curve, and it can
+never reach zero or flip sign.
+
+### Which attribute is which — two checks agree
+
+`+0x16` and `+0x18` are adjacent u16s. Retail's own attribute order
+(`global.res` 1401…1406) is Strength, Endurance, Dexterity, **Physical
+Regeneration**, **Mental Regeneration**, Charisma — so a contiguous block of
+six starting at `+0x10` puts Physical at `+0x16` and Mental at `+0x18`.
+
+The tick then says the same thing from the other side: **kind 1 is spells**
+(`sub_81ADA76` adds an art with kind 1 when it resolves through the spell
+table, kind 2 through the combat-art table), and kind 1 reads `+0xEE`, the rate
+scaled by `+0x18`.
+
+| rate | scaled by | drives | retail's label |
+|---|---|---|---|
+| `+0xEE` | `+0x18` = **Mental Regeneration** | kind 1 — spells | `Regeneration Spells` (1459) |
+| `+0xF2` | `+0x16` = **Physical Regeneration** | kind 2 — combat arts | `Regeneration Special Move` (1460) |
+
+Mental speeds spells, Physical speeds combat arts. Two independent readings
+land on it, which is what makes it an identification rather than a guess.
+
+### The whole chain, end to end
+
+```
+total     = base + level × step            per art, linear, attribute-free
+            (+ half the temporary level's extra)
+rate      = accumulated bonuses × (1 + attribute × 0.01)      per creature, per kind
+remaining = clamp(remaining − dt × art_mult × rate, 0, total)
+fraction  = 1 − remaining / total          what the slot draws as its waterline
+```
+
+A buff at `block+320` multiplies the delta by **0.8** for one kind before it
+lands — 20 % faster for one school.
