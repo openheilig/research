@@ -45,13 +45,59 @@ ratio, clamped to `[5, 95]`.
 > distinct pairings — the call-site model is **exact on 12 of 12**. The formula
 > as written above matches only the 4 that sit on a clamp boundary.
 >
-> **This says nothing about retail yet.** The "confirmed in two binaries" above
-> means `armalion.exe` and `armalion_us.exe`, both 2001 prerelease — **retail
-> has never been checked**. Retail's combat trace strings are stripped (verified
-> in both the Linux LGP `sacred` and Windows GOG 2.28 `Sacred.exe`), so there is
-> no log route there, and retail 2.28 contains no `cmp …, 95` at all, so its
-> to-hit is not this shape and has not yet been located. Until it is, treat this
-> section as **prerelease behaviour**, not as Sacred's.
+> **This is prerelease behaviour, not Sacred's.** The "confirmed in two
+> binaries" above means `armalion.exe` and `armalion_us.exe`, both 2001. See
+> *Retail's own shape* below — it is a different formula.
+
+## Retail's own shape — one ratio, no level term
+
+Located structurally in the Linux LGP `sacred` (row 1034), because retail
+strips the combat trace strings and contains no `cmp …, 95` anywhere.
+
+The anchors are the two rating getters — `sub_81FA5AA` reads attack at
+`creature+0xE6`, `sub_81FA622` reads defence at `+0xEA` — and exactly four
+functions call **both**:
+
+| function | size | what it is |
+|---|---|---|
+| `sub_80DC90C` | 0x1bbf | character-sheet **text** builder (`std::allocator<wchar_t>` throughout) |
+| `sub_816C244` | 0x14287 | the **attack construction**: reads AT/PA, applies buff/curse multipliers `flt_8B89CF0` / `flt_8B89CE8` / `flt_8B89CF4` gated on `+0x1F6` bit 8 and `+0xB1` bit 4, then assembles the four damage channels (`+0xD6/+0xDA/+0xDE/+0xE2` × `+0x66/+0x6A/+0x6E/+0x72`) |
+| `sub_83A37CA` | 0x106 | computes a **pair of hit percentages** |
+| `sub_854AF5E` | 0x32a9 | UI caller of the above |
+
+`sub_83A37CA` computes both directions and clamps each at 100:
+
+```c
+*a3 = 100 * curve(AT_self,      other[+30]);   if (*a3 > 100) *a3 = 100;
+*a4 = 100 * curve(other[+28],   PA_self);      if (*a4 > 100) *a4 = 100;
+```
+
+and the curve `sub_815D44C` is **parameterised**:
+
+```
+k   = -ln(1 - a5) / ln(a4 + 1)
+out = 1 - 1 / ((a2/a3 + 1)^k)          (returned in *a6; the return value is a2*out)
+```
+
+`sub_83A37CA` passes `a4 = 1.0, a5 = 0.5`, which makes `k = 1` exactly, and
+then
+
+```
+hit% = 100 · AT/(AT + PA)
+```
+
+**One ratio, clamped at 100, and no level term at all** — structurally unlike
+the prerelease's `clamp(200·…·…, 5, 95)`, and consistent with retail having no
+`cmp …, 95`.
+
+**What is still open.** `sub_83A37CA` is reached only from `sub_83A38D0` and
+`sub_854AF5E`, both of which look like UI, so this is confirmed as the
+**displayed** chance; whether combat resolution calls the same curve with the
+same `(1.0, 0.5)` is not yet shown. `tools/live/tohit_bp.sh` breakpoints all
+four sites and prints their arguments under the autopilot, and it runs — but
+none of them fires during world load, idle standing, or a sweep of ten
+candidate character-screen keys, so the discriminating observation needs the
+retail hero actually in a fight.
 
 ```c
 int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
