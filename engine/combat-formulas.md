@@ -5,10 +5,13 @@
 derived-stat kernel that feeds damage and resistance. The resolution step that
 consumes them is not decoded.
 
-Two things are recovered. **To-hit** is complete and confirmed in two binaries.
-The **derived-stat pass** -- how a creature's damage and resistance numbers are
-built from its attributes and the balance table -- is read off retail Linux and
-is confirmed only there.
+Two things are recovered. **To-hit** is read end to end in two binaries —
+`armalion.exe` and `armalion_us.exe`, **both 2001 prerelease**, so "two
+binaries" is not "two generations", and **retail has never been checked**.
+Its call site in the prerelease also drops one of the four inputs; see the
+warning under *To-hit*. The **derived-stat pass** -- how a creature's damage
+and resistance numbers are built from its attributes and the balance table --
+is read off retail Linux and is confirmed only there.
 
 ## To-hit
 
@@ -24,26 +27,31 @@ from the balance key table — see
 As the programmer wrote it: `2·AT/(AT+PA)` scaled to percent, times the level
 ratio, clamped to `[5, 95]`.
 
-> ⚠️ **The running engine disagrees with this, twice** (row 1032, 2026-08-20).
-> The Armalion prerelease now runs, and `cCreature::receive_event(DAMAGE)`
-> prints its own inputs and result. Two pairings, 147 samples:
+> ⚠️ **This is the function's body, and Armalion never calls it that way**
+> (rows 1032–1033, 2026-08-20). The decompilation above is correct —
+> `sub_428790`, reached through thunk `sub_40286F` — but the **call site drops
+> `AT`**. At `0x4221ef` the caller pushes
+> `(event+0x18, this+0x134, event+0x18, var_20)` = `(ALVL, DLVL, ALVL, PA)`.
+> The third argument repeats `ALVL`; `AT` lives at `event+0x1C` and is passed
+> to the trace `printf` but **never to the formula**. What the prerelease
+> actually computes is therefore
 >
-> | ALVL | DLVL | AT | PA | engine printed | this formula | n |
-> |---|---|---|---|---|---|---|
-> | 1 | 4 | 5 | 6 | **5** | 18 | 136 |
-> | 4 | 1 | 8 | 4 | **80** | 95 | 11 |
+> ```
+> hit% = clamp( 200·ALVL/(ALVL+DLVL) · ALVL/(ALVL+PA), 5, 95 )
+> ```
 >
-> This is **not** a build difference: rows 123 and 141 recovered the formula
-> from that same binary, `armalion_us.exe` `sub_421CF0`, reached from this very
-> trace string. So either the decompilation is misread, or the field the trace
-> prints as the percentage is not this function's output. Neither is settled.
-> The value is constant per pairing across all 147 samples, so it is computed
-> and not a roll.
+> Measured against a controlled sweep of the hero's level in the running game
+> — levels 2, 3, 5, 8, 12, 20, both attack directions, 214 samples in 12
+> distinct pairings — the call-site model is **exact on 12 of 12**. The formula
+> as written above matches only the 4 that sit on a clamp boundary.
 >
-> Do not cite the formula as confirmed until this is resolved. The cheap way
-> to resolve it is to sweep `ALVL`, which needs a working hero-level command —
-> the console's `setherolvl` does not take, in either the bare or the
-> parenthesised form.
+> **This says nothing about retail yet.** The "confirmed in two binaries" above
+> means `armalion.exe` and `armalion_us.exe`, both 2001 prerelease — **retail
+> has never been checked**. Retail's combat trace strings are stripped (verified
+> in both the Linux LGP `sacred` and Windows GOG 2.28 `Sacred.exe`), so there is
+> no log route there, and retail 2.28 contains no `cmp …, 95` at all, so its
+> to-hit is not this shape and has not yet been located. Until it is, treat this
+> section as **prerelease behaviour**, not as Sacred's.
 
 ```c
 int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
