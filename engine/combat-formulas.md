@@ -24,6 +24,27 @@ from the balance key table — see
 As the programmer wrote it: `2·AT/(AT+PA)` scaled to percent, times the level
 ratio, clamped to `[5, 95]`.
 
+> ⚠️ **The running engine disagrees with this, twice** (row 1032, 2026-08-20).
+> The Armalion prerelease now runs, and `cCreature::receive_event(DAMAGE)`
+> prints its own inputs and result. Two pairings, 147 samples:
+>
+> | ALVL | DLVL | AT | PA | engine printed | this formula | n |
+> |---|---|---|---|---|---|---|
+> | 1 | 4 | 5 | 6 | **5** | 18 | 136 |
+> | 4 | 1 | 8 | 4 | **80** | 95 | 11 |
+>
+> This is **not** a build difference: rows 123 and 141 recovered the formula
+> from that same binary, `armalion_us.exe` `sub_421CF0`, reached from this very
+> trace string. So either the decompilation is misread, or the field the trace
+> prints as the percentage is not this function's output. Neither is settled.
+> The value is constant per pairing across all 147 samples, so it is computed
+> and not a roll.
+>
+> Do not cite the formula as confirmed until this is resolved. The cheap way
+> to resolve it is to sweep `ALVL`, which needs a working hero-level command —
+> the console's `setherolvl` does not take, in either the bare or the
+> parenthesised form.
+
 ```c
 int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
 {
