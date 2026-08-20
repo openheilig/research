@@ -384,6 +384,86 @@ pool shared between them.
 > in the creature. The *mechanic* is settled; its field is not.
 
 
+## What drives `_LOAD`: it is a waterline, and the quantity is regeneration (row 1043)
+
+`sub_85E676A` is the combat-art slot renderer, and the slot turns out to use
+**the same idiom as the health ring** — two elements stacked, split at a
+waterline, no compositing rule at all.
+
+Per slot it obtains three element indices and one fraction `f`, then:
+
+```
+h    = control height − 1
+split = h × (1 − f)
+        top    ← element[0], rows 0 … split          (EMPTY)
+        bottom ← element[1], rows split … h          (LOAD)
+if f ≥ 1.0 and this slot is the SELECTED one:
+        whole  ← element[2]                          (FULL)
+```
+
+So `_LOAD` is not "loading" — it is **loaded**, and it fills the slot from the
+bottom as the art recharges. `_EMPTY` is the drained remainder above the line.
+`_FULL` is a distinct brighter art drawn only when the slot is both ready and
+selected. The UV is stepped by `split/256 + 1/512` — texel-to-UV with the usual
+half-texel — on the source rect's `v0`, which is what makes it a slice of the
+art rather than a scale of it.
+
+**This answers the older open question at the bottom of this file.** A filled
+slot is not a composite of icon + backing + frame; it is one of three whole
+64×64 arts named per combat art in the element table, chosen and sliced. The
+greyscale `GUI_MOVE_ATTACKE` that looked like an un-tinted icon is the EMPTY
+state.
+
+### Where the fraction comes from
+
+Two lists hang off `creature + 936`, and which one is read depends on the
+slot's kind (`sub_833EBBE` → 2, 3 or 4):
+
+| kind | list | stride | fraction |
+|---|---|---|---|
+| 2, 3 — combat arts | `+250` | **22 B** | `1 − remaining / total`, from the record's `+0x12` and `+0x0A` floats |
+| 4 — spells, ids ≥ 512 | `+262` | **38 B** | `min(elapsed / total, 1)`, from `+0x22` and `+0x1A` |
+
+The 22-byte record also carries the art id at `+0x04`, which is how
+`sub_8219C44` finds a slot's entry. **So the regeneration timer is per art, in
+a per-creature list — not a pool, and not one clock shared between arts.** That
+is the field row 1042 said was still missing.
+
+Two overrides sit on top:
+
+- If the art is unusable — wrong weapon in hand, checked against
+  `sub_819BA46` — all three elements are forced to `element[0]`, so the slot
+  shows EMPTY at every fraction. That is the greyed-out slot.
+- If the hero has a linked creature (`sub_81A3AD0`: flag `0x2` at `+20` and a
+  `cCreature` at `+0x1EC` — the mount), the triple is replaced wholesale and
+  the fraction comes from **`creature + 0x4E0` over `creature + 0x4E4`**
+  instead. A second timer, at creature scope rather than art scope.
+
+> Not read: which art each of the two lists is populated from, and what
+> `+0x4E0/+0x4E4` count while mounted.
+
+### ⚠️ The element-name offset is NOT constant — row 1042 was wrong about that
+
+Row 1042 gave `gfx id = blob index − 5` flat. It holds up to id **351** and
+fails above it: from id **443** on the offset is **− 3**, because two elements
+somewhere in 352…442 carry no name at all.
+
+**Retail's own data is what caught it.** The combat-art table at `0x8793D00`
+(stride 120) carries at `+48/+52/+56` the three element indices each art draws
+with, and those must be an EMPTY/LOAD/FULL triple. At offset − 5 they straddle
+triple boundaries; at − 3, **52 of 52 land clean**. The low end is pinned the
+other way: id 351 is `UI_PORTRAIT_MP` at 127×189, and the − 3 reading puts a
+60×25 arrow there.
+
+`uinames.py` now returns `None` for ids 352…442 rather than guessing, and its
+self-check asserts both the refusal and the 52 clean triples.
+
+**Nothing row 1042 concluded depends on this.** Every element it identified —
+42/43, 65…70, 76…81, 103/104/175, 176…181, 351 — is at or below the drift, and
+the mana result is a search over the *name list*, which is complete whatever
+the offsets are.
+
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).
