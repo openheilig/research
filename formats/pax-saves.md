@@ -55,6 +55,41 @@ Section types observed: `0xC3`, `0xC4`, `0xC7`, `0xC8`, `0xCA`, `0xCB`.
 Field widths, corrected 2026-08-16: the skill ids at `+0x3F9` and skill levels
 at `+0x401` are `u8` arrays, not `u32`, and the CA count at `+0x4CB` is a `u16`.
 
+### The combat-art LIST follows the count, and it is the live struct (row 1049)
+
+`+0x4CD` onward, `count` records of **22 bytes** — the same struct retail keeps
+in memory at the combat block's `+250` (row 1044), written out field for field.
+The template is not a compact description of a starting art; it is a **snapshot
+of the art already installed**.
+
+| off | type | field |
+|---|---|---|
+| `+0x00` | u32 | kind — 1 spell, 2 combat art |
+| `+0x04` | u16 | art id |
+| `+0x06` | u8 | permanent level (runes) |
+| `+0x07` | u8 | temporary level (items) |
+| `+0x08` | u16 | flags, bit 0 = known |
+| `+0x0A` | f32 | total regeneration, seconds |
+| `+0x0E` | f32 | the per-art multiplier — **1.0** in all nineteen |
+| `+0x12` | f32 | remaining — **0.0** in all nineteen: a new hero's arts are ready |
+
+The eight templates carry **19 arts** between them: two each, except two
+classes with three and four.
+
+**Thirteen of the nineteen agree with the coefficient table to the last bit**
+(`base + level*step`, row 1048); the other six are spells, whose curve lives in
+a different record, or one of five that read as the table's value divided by
+**exactly 1.12**.
+
+> ⚠️ **The 1.12 is per ART, not per hero, and is unexplained.** `hero07`
+> carries two arts that match and two that are off by it; `hero00`'s two are
+> both off; `hero06` has one of each. So it is not an attribute, a class or a
+> difficulty — those would move every art on a character together. The port
+> uses the **saved** number and asserts the ratio is exactly 1.12 wherever it
+> disagrees, so a misread record fails the gate instead of passing as another
+> instance of this.
+
+
 ## The `0xC8` ids are `items.pak` record indices
 
 Settled 2026-08-16 with the control arm `engine/probes/pax_c8.gd` was built
