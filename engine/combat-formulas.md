@@ -765,3 +765,72 @@ cross-checked against `balance_keymap.py`'s independently recovered file
 offsets. See
 [../method/naming-oracle.md](../method/naming-oracle.md) for the technique.
 
+
+
+## Combat-art regeneration — the total is linear, and no attribute enters it (row 1045)
+
+Row 1044 named `sub_820E04C` as the writer of the per-art regeneration total.
+That was an over-read, and reading the function says so: all **354** of its
+float stores land in a derived-stat block at offsets `0x5A`…`0xF2`, and not one
+touches the art record's `+0x0A`. It recomputes the creature, and a *callee*
+does the arts.
+
+**The writer is `sub_82047D4`**, and it is small enough to transcribe whole.
+For every entry in the art list:
+
+```
+record[+0x0E] = 1.0f
+perm = record[+0x06]                    permanent level (runes)
+tmp  = record[+0x07]                    temporary level (items)
+
+total = curve(def, perm)
+both  = curve(def, perm + tmp)
+if both > total:
+    total += (both − total) × 0.5       temporary levels count HALF
+record[+0x0A] = total
+```
+
+and the curve is a **straight line** in the level, with the two coefficients
+stored per art:
+
+| | lookup | base | per level |
+|---|---|---|---|
+| combat art | `sub_8306C6A` → table `0x8793D00`, stride 120 | `+64`, f32 | `+68`, f32 |
+| spell | `sub_830740E` | `+62`, u16 | `+64`, u16 |
+
+So regeneration **rises linearly** as an art is levelled — the cost of a
+stronger art is that it comes back more slowly — and a temporary level buys
+only half the increase a permanent one does.
+
+### No creature attribute is in it, and that relocates the question
+
+`sub_8306D8A` and `sub_83077BE` take `(definition, level)` and nothing else.
+The creature is not a parameter. **So Mental and Physical Regeneration do not
+shorten the total** — they cannot, they are not in scope.
+
+What they must scale is the **countdown**. `sub_81F0DA6` is the tick:
+
+```
+for each art whose kind matches:
+    remaining += delta                  delta is the CALLER's
+    clamp remaining to [0, total]
+```
+
+`delta` arrives from the caller, so the attributes act there. One caller is
+already legible — an item effect of kind 10 grants instant progress of
+`−magnitude × 4000 × k`, negative because it *reduces* the remaining — and a
+flag at `+320` bit 3 / bit 2 multiplies the delta by **0.8** for one art kind,
+which is a buff that regenerates one school 20 % faster.
+
+> Still unread: the per-frame delta itself, which is where Mental and Physical
+> Regeneration have to enter. That is now the whole remaining question.
+
+### The art list lives in the combat block
+
+Worth recording because it joins two threads: the object holding these lists is
+`creature + 0x3A8` — the *same* block row 1036 identified as `sub_81FAC30`'s
+`a1`. `creature + 936` and `creature + 0x3A8` are the same address written two
+ways, once as a float index and once as a byte offset. So one structure carries
+the damage pipeline's inputs, the art list at `+250` (stride 22), the spell
+list at `+262` (stride 38), the eight modifier slots at `+36`, and the recovery
+pair at `+0x138`/`+0x13C`.
