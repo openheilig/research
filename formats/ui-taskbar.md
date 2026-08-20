@@ -539,6 +539,17 @@ identified as the damage pipeline's `a1` — is what identifies it: this is the
 a mounted hero's slots show the mount's attack rather than her own arts.
 
 
+## ~~Open~~ CLOSED — a filled art slot is not a composite, and the table names it
+
+> **Struck 2026-08-20 (row 1050).** The combat-art record at `0x8793D00` carries
+> the art's own icon texture name at `+0x0C` — `GUI_MOVE_HARDHIT.TGA`,
+> `GUI_MOVE_ATTACKE.TGA`, `gui_moves_attacke_demon`. There is no compositing
+> rule to find, and there never was a search to win: the shape-correlation
+> sweep below topped out at 0.40 across 440 candidates because it was asking
+> the wrong question. The table says which texture each art uses, and row 1043
+> says the slot picks one of three whole per-art images and SLICES it at the
+> regeneration waterline. The section is kept for the negative results in it.
+
 ## Open — a filled art slot is a composite, not a blit
 
 Recorded because the obvious searches are already spent (row 1021).

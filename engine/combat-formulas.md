@@ -907,3 +907,47 @@ fraction  = 1 − remaining / total          what the slot draws as its waterlin
 
 A buff at `block+320` multiplies the delta by **0.8** for one kind before it
 lands — 20 % faster for one school.
+
+
+## The combat-art record, and what an art DOES (row 1050)
+
+The table at `0x8793D00` gave up two coefficients for regeneration (row 1048);
+its 120-byte record carries more, and two fields change what is legible:
+
+| off | type | field |
+|---|---|---|
+| `+0x00` | i16 | art id |
+| `+0x04` / `+0x08` | i32 | two id series, one per art — text resources, not read |
+| `+0x0C` | char[24] | **the art's own icon texture**, `GUI_MOVE_HARDHIT.TGA` |
+| `+0x30` | i32[3] | the EMPTY / LOAD / FULL element triple |
+| `+0x3C` | i32 | school |
+| `+0x40` / `+0x44` | f32 | regeneration base and per level |
+| `+0x50` / `+0x54` | f32 | **a second base/step pair** |
+
+**`+0x0C` closes an older question.** It names the per-art icon directly, which
+is what `ui-taskbar.md`'s "a filled art slot is a composite, not a blit" section
+was hunting through `texture.pak` for by shape correlation and never found. It
+was never a search problem — the table says which texture each art uses.
+
+### The second pair reads like a damage multiplier, and is not applied
+
+| art | icon | regen | `+0x50` / `+0x54` |
+|---|---|---|---|
+| 1002 | `GUI_MOVE_ATTACKE` | 10 + 6/lvl | **0.80 + 0.05** |
+| 1001 | `GUI_MOVE_HARDHIT` | 5 + 3/lvl | **1.80 + 0.20** |
+| 1000 | `GUI_MOVE_RUNDUM` | 5 + 3/lvl | 0.80 + 0.10 |
+| 1022 | `GUI_MOVE_CHANGELING_DAY` | 18 + 12/lvl | **24.00 + 6.00** |
+
+For the attack moves that is exactly the shape a damage multiplier should have,
+and the ordering is right: a hard hit lands at 1.8× where a quick swing lands
+at 0.75×. **But the same field on a shapeshift art reads 24 seconds**, which is
+a duration and not a multiplier at all.
+
+So the field is **polymorphic and its reading is not recovered.** The port
+exposes it — `CombatArts.effect()` — and *nothing applies it*. Deciding which
+arts multiply damage would be inventing balance, and the wrong guess would be
+invisible: every number involved is plausible.
+
+> The next question in this area is where `sub_81FAC30` takes an art into the
+> damage it computes. Row 1036 already noted that what the weapon-slot flag
+> selects appears nowhere in it.
