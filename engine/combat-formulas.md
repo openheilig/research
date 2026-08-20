@@ -1,9 +1,9 @@
 # Combat formulas
 
-**Status:** Partial — to-hit and both ratings recovered; the resolution step is not
-**Purpose:** The combat arithmetic recovered so far: to-hit end to end, and the
-derived-stat kernel that feeds damage and resistance. The resolution step that
-consumes them is not decoded.
+**Status:** To-hit, both ratings and the damage resolution recovered and
+confirmed live on retail; resistances and elemental channels still unexercised
+**Purpose:** The combat arithmetic: to-hit end to end, the derived-stat kernel
+that feeds damage and resistance, and the resolution step that consumes them.
 
 Two things are recovered. **To-hit** is read end to end in two binaries —
 `armalion.exe` and `armalion_us.exe`, **both 2001 prerelease**, so "two
@@ -133,9 +133,8 @@ own.
 **And the resolution step has an address now.** The other live curve sites are
 `0x81fd0d7`, `0x81fd127`, `0x81fd177`, `0x81fd1c7` — four blocks spaced 0x50
 apart inside `sub_81FAC30`, which is the **four damage channels** running
-through the same ratio curve. One shows `a2` falling swing by swing (23.553,
-23.526, 23.499, 22.689, …) against a constant `a3 = 2.2414`. That is the step
-this document calls undecoded.
+through the same ratio curve. That step is now decoded and confirmed live; see
+*Damage resolution* below.
 
 ```c
 int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
@@ -147,6 +146,119 @@ int __stdcall to_hit(uint16 AT, uint16 PA, uint16 ALVL, uint16 DLVL)
   return v5;
 }
 ```
+
+## Damage resolution — the same curve, four times (row 1036)
+
+`sub_81FAC30` resolves a landed swing into damage. It runs the **same curve**
+as to-hit, `0x815D44C`, once per channel, and the curve's full contract is:
+
+```c
+float curve(void *self, float a2, float a3, float a4, float a5, float *a6)
+{
+    a5 = clamp(a5, 0.0f, 0.99f);          // a5 >= 1.0 becomes 0.99
+    a4 = max(a4, -1.0f);
+    float k = -logf(1.0f - a5) / logf(a4 + 1.0f);
+    float r = fabsf(a3) > 0.001f ? a2 / a3 : 10000.0f;
+    float f = 1.0f - 1.0f / powf(r + 1.0f, k);
+    if (a6) *a6 = f;                      // the fraction, as an out-param
+    return a2 * f;                        // the fraction applied to a2
+}
+```
+
+**One function, two consumers, and that is why to-hit discarded the return.**
+To-hit passes `&[ebp-0x1f0]` as `a6` and rolls against the **fraction** `f`;
+damage passes `a6 = NULL` and keeps the **return** `a2 * f`. The `fstp st(0)`
+at `0x81fc701` is not a thrown-away result — the result it wanted came back
+through the pointer.
+
+All five call sites pass `a4 = 1.0` (three push the literal `0x3f800000`; the
+first synthesises it from the `fld1` left on the FPU stack, which reads like a
+leak and is not one). So `ln(a4+1) = ln 2` throughout, and
+
+```
+k = -log2(1 - a5)
+```
+
+Per channel `i` of four:
+
+```
+dmg[i] = a2[i] * (1 - 1 / (a2[i]/a3[i] + 1)^k) * (100 - resist[i]) / 100
+```
+
+`a2[i]` is raw damage, `a3[i]` is the target's armour in that channel. The
+`0.01` is the literal at `0x86e6b9c`; `100` is `0x86e6b98`.
+
+### The level term — it lives here, not in to-hit
+
+`a5 = 0.5 * [ebp-0x2c8]`, and `[ebp-0x2c8]` defaults to `1.0` (stored as an
+immediate at `0x81fcef2`). It is raised only at `0x81fcf0f`, when the attacker
+`cCreature` passes a type gate (`[atk+0x0c] > 0x10`) **and** outranks the
+target:
+
+```
+Δ         = max(0, attackerLevel - targetLevel)     // u16, one-sided
+[ebp-2c8] = 1 + 0.01 * Δ
+a5        = 0.5 * (1 + 0.01 * Δ)
+k         = 1 - log2(1 - Δ/100)
+```
+
+Δ = 0 gives `k = 1`, which collapses the curve to `a2²/(a2+a3)`. Δ = 50 gives
+`k = 2`. The `a5 >= 1.0 → 0.99` clamp inside the curve means the bonus
+**saturates at Δ = 98** (`k = 6.64`) instead of going undefined — so the
+obvious `ln(0)` bug is guarded, deliberately.
+
+So **level asymmetry is a damage effect, not an accuracy effect.** To-hit has
+no level term (see above) and this is where the level difference actually went.
+
+### Difficulty and resistance
+
+`ds:0x8906cd0` holds the difficulty, `0..4`, and does two things.
+
+It is scaled into `esi` and used to index the target's **resistance table**:
+the resist byte for channel `i` is read at `[info + esi + 0x42 + 5*i]`, so the
+table is **4 channels × 5 difficulties of `uint8` percent**, occupying
+`+0x42 .. +0x55` of the creature-info record. The record stride is **0x56**,
+measured live off the record array, so the table is exactly the record's last
+20 bytes — the arithmetic closes.
+
+Separately, when `[atk+0x4eb] & 8`, channel 0's armour is scaled by
+`max(0, 1 - 0.4*c)` with `c` selected by difficulty — `1.0, 1.34, 1.67, 2.0,
+2.34` at `0x86e6b50/b70/b74/b54/b78`, giving multipliers `0.6, 0.464, 0.332,
+0.2, 0.064`. Armour matters less as difficulty rises.
+
+Two smaller adjustments precede the channels: a modifier search for id `0x38`
+in the attacker's list at `[atk+0x4ba]` scales channel 0's armour by
+`100/[mod+0x14]`, and a target of type `0x47` bypasses the whole step, its
+four raw damages copied straight out at `0x81fcf67`.
+
+### `a1` is not the creature — it is the creature's combat block
+
+`a1` and the attacker use different level offsets (`a1+0x56` against
+`atk+0x3fe`), which looks like two structs until the live pointers land:
+`0xafd9a68 - 0xafd96c0 = 0x3a8`, the same `add edx,0x3a8` the code performs,
+and `0x3a8 + 0x56 = 0x3fe`. **`a1 = &creature[0x3A8]`**, and the two level
+reads are one field. The attacker is recovered by
+`__dynamic_cast(..., "7cObject", "9cCreature")` at `0x81fae61` and is NULL for
+a non-creature source.
+
+### Confirmed live
+
+Breakpoints at `0x81FD08D` (all inputs) and `0x81FD1F5` (all four results),
+against the staged combat save — `tools/live/bp-damage.gdb`.
+
+**64 of 64 channels exact**, over 16 swings and four distinct attacker/target
+pairings in both directions. The level term fired on its own: a level-2
+attacker against a level-1 target printed `lvlterm = 1.010000` and `k =
+1.0145`, and the same pair reversed printed `1.0` — the one-sided gate,
+live. Forcing `[ebp-0x2c8]` to `1.5` (`k = 2`) predicted 20.9921 and 23.0310
+against observed 20.992071 and 23.030998.
+
+> ⚠️ **Not exercised: resistances, elemental channels, difficulty.** Every
+> sample was a level-1 hero with a plain weapon at difficulty 0, so only
+> channel 0 ever carried damage, every resist byte read 0, and the
+> `|a3| <= 0.001 → r = 10000` guard never ran. The channel formula is
+> confirmed; the resist-table layout is **structural** — from the indexing and
+> the 0x56 stride — and still wants a resistant target to close.
 
 ## Where AT and PA come from — skills, not attributes
 
@@ -536,15 +648,18 @@ entirely base.
 ## Open
 
 
-- **The resolution step is still undecoded.** This section is how a creature's
-  damage and resistance *numbers* are built. What consumes them at the moment
-  of a hit -- how damage is reduced by resistance, criticals, and the
-  `param_3` flag that selects between the `+0x4a` and `+0x4e` weapon terms --
-  is not read. It is probably not one function: the Armalion source tree shows
+- ~~**The resolution step is still undecoded.**~~ **Closed** — it is
+  `sub_81FAC30`, four channels through the to-hit curve; see *Damage
+  resolution*. Two parts of it remain unexercised and are called out in the
+  warning there: **no sample had a nonzero resistance byte or a nonzero
+  elemental channel**, so the resist term and the `|a3| <= 0.001` guard are
+  structural only. Wanted: a target with resistances, and an elemental damage
+  source. What still is not read is which flag selects between the `+0x4a` and
+  `+0x4e` weapon terms, and where criticals enter — neither appears in
+  `sub_81FAC30`, which is consistent with the Armalion source tree showing
   combat as a **state machine split across two files**, `state_Attacking` in
-  `creature_fighting.cpp` and `state_Fighting` in `creature_collision.cpp`, so
-  the resolution is a transition rather than an expression. See
-  [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
+  `creature_fighting.cpp` and `state_Fighting` in `creature_collision.cpp`.
+  See [../builds/armalion-source-tree.md](../builds/armalion-source-tree.md).
 - **The struct offsets are offsets, not names.** Which attribute lives at
   `+0x56`, and which weapon slot at `+0x4a` against `+0x4e`, is not
   established. `FUN_081f686a` turned out to be the level curve rather than the
