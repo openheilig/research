@@ -72,6 +72,33 @@ independent route to the dataset with no decompilation involved.
 The Linux port does **not** carry it — `sacred.xls`, `defaults.h`,
 `BALANCING:` and `CTRL+K` are all absent. The facility is Windows-only.
 
+## The balance headers are generated from `sacred.xls`, 2026-08-25
+
+Unpacking Sacred Plus's `Sacred.exe` — a repack whose code section is on disk
+where retail's StarForce-wrapped one is not — exposes the build pipeline's own
+strings. They are present in every Windows build we hold (`gold228-rus`, the
+Windows disc, Sacred Plus) and in **none** of the Linux `sacred`, which dropped
+the exporter:
+
+    BALANCING: Getting active Excel object..     BALANCING: No Excel is running!
+    BALANCING: Writing defaults.h..
+    BALANCING: Writing xls_magictypes.h..
+    BALANCING: Writing xls_sheroconst.h..
+    BALANCING: Writing xls_smovetypes.h..
+    // generated from sacred.xls - do not edit manually!
+
+So the game drives a live Excel instance over a workbook called **`sacred.xls`**
+and writes four C headers from it. Two of the three `xls_*` names line up with
+the spreadsheets recovered from VK and verified in row 1079 —
+`SpellType.xls` is a **magic-type** table and `xls_magictypes.h` a magic-type
+header; `SpellMove.xls` is a **move** table and `xls_smovetypes.h` a move-type
+header.
+
+> That correspondence is naming plus the 145-of-145 `global.res` resolution
+> those sheets already passed. It is **not** proof that the VK files are sheets
+> of Ascaron's `sacred.xls`; nobody has seen that workbook. `xls_sheroconst.h`
+> has no counterpart among the recovered files.
+
 ## Open
 
 Nothing open on the layout or the key names. What the individual tunables

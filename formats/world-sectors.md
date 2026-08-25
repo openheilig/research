@@ -210,6 +210,39 @@ the bit packing inside a field.**
 Drawing this layer is what moved the port's load-path invariant from 28,672
 quads to 35,340.
 
+#### A third corpus settles it: the split follows the tile count, 2026-08-25
+
+`Sacred Plus Internacional 1.8` (a 2023 Raven Rock repack, installed from
+`builds/windows-disc/sacred-plus/`) carries a complete **pre-Underworld
+`World/`** — 3,982 sectors against retail's 6,050, `(3058432 − 256) / 768`
+exactly — and a `tiles.pak` of **47,099** tiles against retail's 90,132. Run
+the fill test on all three:
+
+| corpus | tiles.pak | 16/16 max low | 17/15 max low | verdict |
+|---|---|---|---|---|
+| Armalion 2001 | 13,402 | 13,400 | 67,071 — impossible | **16/16** |
+| **Sacred Plus** | **47,099** | **47,098 = the last tile** | 67,071, and 1,628,732 records exceed the table | **16/16** |
+| retail | 90,132 | 65,420, leaves 24,711 unused | **90,131 = the last tile** | **17/15** |
+
+Each build's winning read lands on its final tile and stops. So the split is
+**not** an era or a version marker: it tracks the tile table crossing 2^16,
+which happened when Underworld grew it from 47k to 90k. A reader must take the
+split from `tiles.pak`'s count, not from the file version — all three are
+`OBJ` v1 with the same 16-byte record.
+
+> `checks/floor_check.gd` hardcodes `LOW17` and `TILE_COUNT := 90132`. That is
+> correct for the install this project targets and wrong for any pre-Underworld
+> data; it is a pinned assumption, not a general reader.
+
+#### `+0x08` was empty before Underworld too
+
+The same scan over Sacred Plus reads **0 non-zero `+0x08` in all 16,310,272
+cells**, matching retail's 0 in 24,780,800. With the Armalion prerelease's 73
+populated cells, that dates the drop: the layer was gone by the shipped game
+and did not come back. Two further readings hold unchanged on the new corpus —
+`+0x1e` never sets a bit above 2 (values 0–7 only), and `+0x1f`'s high nibble
+uses all 16 classes. All 3,982 sectors inflate to their declared size, 0 bad.
+
 ## The prerelease is not a second corpus for this record
 
 `OBJ v1` is frozen, so the Armalion `Floor.PAK` and `Static.PAK` records are

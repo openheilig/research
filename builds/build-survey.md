@@ -67,6 +67,17 @@ Meanwhile `cWorld` more than halved, `cSector` nearly quadrupled and
 FORMAT only for the classes in the frozen group; for the rest it is evidence
 about a build.
 
+**A fourth build, from Sacred Plus, 2026-08-25.** Its `DEBUG.LOG` prints a
+fourth distinct table: `cWorld` **1023592**, `cMutex` **28** where the VK log
+has `cCritical` 24, and an `Evaluierung 124124` line no other build prints. Its
+`cSector` 1452, `cObjectShared` 128, `cGrnMdlChunk` 1194 and `cEvent_creature`
+68 are **identical to the VK addon-era log**, so the two are close siblings.
+Every member of the frozen group above is unchanged again — `sObjectStatic` 64,
+`cTrigger` 16, `cPatchIso` 32, `cPatchSharedIso` 64, `cSectorChunk` 512,
+`cGrnMtnChunk` 256, `cSoundChunk` 128, `cTimerListener` 12,
+`cSectorEnvironment` 256, `granny_transform_state` 220 — now across **four**
+builds and roughly five years. `cWorld` has taken four different values.
+
 `cCritical` (24) appears in no earlier build, and `sObjectNonstatic` /
 `sObjectNonstatic3D` are printed by both Armalion builds and by neither the VK
 log — the print list itself changed, so absence here is not absence from the
