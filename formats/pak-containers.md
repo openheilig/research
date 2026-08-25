@@ -111,6 +111,49 @@ zero exceptions: `0x20` ↔ `RIFF` (3194), `0x21` ↔ `OggS` (3404). Naming and
 the `sndprofiles` slot enum live in the executable, not on disk — see
 [install-inventory.md](install-inventory.md).
 
+## There is no `DLC/` override in retail — it is a mod's code patch, 2026-08-25
+
+The Raven Rock 1.3b patch ships 990 loose files in a `DLC/` directory, two
+thirds of which already exist inside `models.pak` and `texture.pak`. That looks
+like an engine load-order rule the port would have to reproduce. **It is not.**
+
+`srr.dll` (704,563 bytes, 2021-01-28) is a **runtime code patcher**, and it says
+so in its own data:
+
+- **34 byte-pattern signature strings** — `8A 44 24 0F 8B D0`, `8D BC CD 0C 71 09 00`,
+  `3D FF 1F 00 00` — the shape `make_signature` emits, i.e. code to find.
+- Payload patterns beside them: `90 90 90 90` NOP sleds, `90 E9 AC 00 00 00` a
+  jump, `B8 44 00 00 00 90` a `mov eax,0x44`.
+- `VirtualProtect` imported, and a source filename `winsig.c` left in the binary.
+- `EUpdatePatch::Open` / `EUpdatePatch::Read`.
+- The literal `2.29` — the game version it targets.
+- A table of directory-name slots at `0x7b204`: seven `DLC`, eighteen `hero`,
+  then forty more `DLC`, one per patched call site.
+
+So the mod locates Sacred 2.29's file-open code by signature, makes it writable,
+and rewrites it to consult a directory name from that table. **Retail has no
+such precedence, and the port needs none to be faithful.** The whole
+`DLC/` mechanism belongs to `srr.dll`.
+
+> This is recorded as a NEGATIVE result on purpose: an override layer is a
+> plausible thing for a 2004 engine to have, and reproducing one that does not
+> exist would have been silent, permanent divergence.
+
+### What is actually in that directory
+
+| | count | what |
+|---|---|---|
+| replacements | **606** | `.tga` names already in retail's `texture.pak` |
+| recovered | **31** | present in the **Armalion 2001 prerelease** and not in retail |
+| new art | **278** | in neither — fan-made |
+| models | 68 of 68 | every `.grn` is already in retail's `models.pak` |
+
+The 31 recovered are the Das Schwarze Auge hero line
+[`global-res.md`](global-res.md) records as cut — `AMAZONE_BODY`,
+`BORON_PRIEST_BODY`, `BORON_PRIESTESS_BODY`, `ELVE_SORCERESS_BODY`,
+`MAGICIAN_BODY` — art the Seraphim and Gladiator replaced. The mod puts it back
+from the prerelease.
+
 ## Three corrections worth keeping
 
 > **`weapon.pak` is not a 322-byte record.** 322 divides the body exactly
