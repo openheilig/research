@@ -86,6 +86,22 @@ These are settled decisions, not gaps, and re-raising them costs time:
 - **What the individual balance tunables do to play** is not a format
   question. It needs the engine to consume them first.
 
+## Named in retail, written up nowhere — opened 2026-08-25
+
+Four strings that are in `install/sacred_orig` right now, that no document in
+this repository mentions, and that bear directly on open items. They surfaced as
+leads from a community mod and were then confirmed first-hand in our own binary.
+
+| String in the retail binary | Why it matters |
+|---|---|
+| `cWorld::remapTrigger_load(%s) ok` / `fopen failed!` | The engine loads an **external trigger remap file**. `triggers.pak` is decoded and unwired (see integration debt below); this names a second half nobody has looked for. |
+| `capture\world_spawn.txt`, `capture\world_spawn_num.txt` | A **built-in developer dump of the spawn map** to text. If it can be triggered, it is retail's own ground truth for spawn placement — worth more than any inference. |
+| `DungeonRespawn` | Phase 7.1 is respawn and is not started. |
+| `TRIGGER_INSERT_SPAWNRENEW`, `TRIGGER_INSERT_ATTRACTOR` | Named trigger kinds; the multiplayer packet vocabulary exposes the single-player taxonomy. |
+
+None of these is a finding yet — they are four confirmed strings and no traced
+behaviour. The first two are the ones to spend on.
+
 ## Not questions — integration debt
 
 Decoded, written up, and simply not wired into the engine yet. Named here so

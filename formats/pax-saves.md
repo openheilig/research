@@ -40,6 +40,39 @@ followed by standard zlib — or stored raw when it is not compressed.
 
 Section types observed: `0xC3`, `0xC4`, `0xC7`, `0xC8`, `0xCA`, `0xCB`.
 
+## `AMS` — the WORLD save, same framing, a different type namespace
+
+**Added 2026-08-25.** `GAME<nn>.PAK` is not a `.pak` container at all: it is a
+save with magic **`AMS`**, version word `0x40`, and *exactly* the allocation
+table and payload framing above. It shares the `.pak` extension and nothing
+else — `tools/formats/pak.py` used to read one as
+`magic='AMS' v27 entries=64 layout=blob` and print convincing nonsense (it
+decodes the save's own title string, which is what made it convincing); it now
+refuses the `AMS`/`AMH` family outright.
+
+**Eighteen section types, none of them in the hero namespace:**
+
+`0x80` `0x81` `0x82` `0x83` `0x8B` `0x8D` `0x92` `0x93` `0x94` `0x95` `0x99`
+`0x9A` `0x9B` `0x9C` `0x9D` `0xA0` `0xA1` `0xA2`
+
+The hero types are `0xC3`–`0xCE`; the world types are `0x80`–`0xA2`. They do not
+overlap, so `DataType` alone says which kind of save you are in.
+
+Measured over nine independent `GAME*.PAK` from the VK corpus: **27 compressed
+sections, 27 of 27 inflate to exactly their declared `UnpackedSize`** under the
+framing above. `0xA0` inflates to 1.5–7.8 MB and `0xA2` to 0.1–7.3 MB — the two
+large blocks, presumably world and object state.
+
+⚠️ **This was reachable from our own install the whole time.** Retail's
+`install/save/game01.pak` is `AMS` `0x40` and carries **the same eighteen
+types**; the VK saves only corroborate it across nine files. The reason it went
+unnoticed is that the document said "hero saves" and nobody opened the file
+whose extension said `pak`.
+
+**Open: what any of the eighteen sections CONTAIN.** The framing is read and the
+decompression is proved; not one section's semantics is established. `0xA0` and
+`0xA2` are the ones worth opening first.
+
 ## The `0xC7` character stream (Underworld offsets)
 
 | Offset | Field |

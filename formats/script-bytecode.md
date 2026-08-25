@@ -270,6 +270,55 @@ a timer, a flag), 3 of `OnExit` and 1 of `OnLose`, with a zero-byte `Trigger`
 string in the record or a `res:` id resolving through `global.res`; none of it
 is fitted. See findings log rows 936–937.
 
+## A retail-vs-mod bytecode pair, and what it says about spawns, 2026-08-25
+
+An English forum post credited the OverLookers team with **altering Sacred's
+spawn triggers**, method never published; that claim is what sent this project
+into the Russian communities at all. It is now answered, and the answer is that
+they did not touch the engine.
+
+`ReBorn HD installer v4.6.exe` is Inno Setup 6.1.0 and its payload extracts. It
+ships `SRB\`, a complete loose copy of retail's `bin/` script tree. Matching
+every retail `bin/**/*.bin` against that set **by size and hash rather than by
+name** — the installer names its files by location index, so a name mapping
+would beg the question — gives a clean split:
+
+| Script bin | matched | byte-identical | differs |
+|---|---|---|---|
+| `startcode.bin` | 20 | 0 | **20** |
+| `funkcode.bin` | 11 | 1 | **10** |
+| `defpos.bin` | 15 | **14** | 1 |
+| `questcode.bin` | 20 | 20 | 0 |
+| `questpoolcode.bin` | 20 | 20 | 0 |
+| `vectoren.bin` | 20 | 20 | 0 |
+| `world.bin`, `world2.bin`, `wpmod.bin`, `treppe.bin`, `merc.bin`, `wea.bin`, `rust.bin`, `multistart.bin`, `static10_18.bin` | 2–3 each | all | 0 |
+
+**Every behavioural change is recompiled script bytecode.** `StartCode` (per-NPC-type
+init) and `FunkCode` (function code) are rewritten wholesale; the quest tree,
+the hook-index table and every balance-adjacent `.bin` except `balance.bin` and
+`sets.bin` are byte-identical. So spawn behaviour in Sacred is **data**, and it
+is data in the two files this document describes.
+
+⚠️ **`defpos.bin` is ALMOST untouched, not untouched** — 14 of 15 identical and
+**one differs**. It is worth naming precisely because the tidy version of this
+finding ("the position table is untouched") is wrong, and because that one file
+is the most interesting of the fifteen.
+
+⚠️ Method caveat: matching by size buckets can pair two same-sized files that
+are not counterparts, so the per-row counts are approximate. The pattern —
+`StartCode`/`FunkCode` wholly rewritten, `QuestCode`/`Vectoren` wholly
+untouched — is far larger than that error term.
+
+**Why this is the highest-yield experiment available.** A retail/modified pair
+of the same bytecode, where the author has told us what he changed
+(spawn behaviour), is a labelled before-and-after — the one thing that can turn
+`## Open`'s "a name is not a behaviour" into a behaviour, for the opcodes that
+actually differ. Both halves are on disk.
+
+⚠️ Clean-room: `SRB\*.bin` are modified Ascaron assets. The *observation* above
+is a fact about which files differ and is safe to record; their contents are not
+ours to redistribute, and the extracted copies live only in `tmp/`.
+
 ## Two operand vocabularies, recovered 2026-08-25
 
 `## Open` below says a name is not a behaviour, and that what an opcode's
