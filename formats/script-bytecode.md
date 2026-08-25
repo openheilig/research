@@ -309,6 +309,52 @@ are not counterparts, so the per-row counts are approximate. The pattern —
 `StartCode`/`FunkCode` wholly rewritten, `QuestCode`/`Vectoren` wholly
 untouched — is far larger than that error term.
 
+### The diff, run 2026-08-25 — `FillSector` (51) is the spawn instruction
+
+Pairing was the hard part and is anchored, not guessed: `locNNN.bin` is the
+installer's file list in directory order, each script folder a 6-file group in
+alphabetical order (`defpos, funkcode, questcode, questpoolcode, startcode,
+vectoren`), and **60+ byte-identical MD5 anchors** to retail files fix every
+group's base index — e.g. `loc121` ≡ `type_npc_daemonin/vectoren.bin`. Every
+paired file is the same size as its retail counterpart and parses to the
+**identical record count**; `startcode.py` consumed 100% of both sides with no
+parse failures. 20 `startcode` + 10 `funkcode` pairs.
+
+**No opcode count changed. No record was inserted or deleted. No opcode appears
+in the mod that is absent from retail.** Every edit is an in-place argument
+overwrite, which is why the sizes are preserved exactly — `darkelve/startcode`
+is 575,839 bytes on both sides with different hashes.
+
+| opcode | name | records changed | operand tag | direction |
+|---|---|---|---|---|
+| **51** | **`FillSector`** | **90** | `0x19` (12-byte, three u32) | 163 down / 127 up |
+| 51 | `FillSector` | same | `0x34` (8-byte) | 3 down |
+| 67 | `SetVar` | 40 | `0x0b` (u32) | **40 of 40 down** |
+| 8 | `CreateObj` | 14 | tag stream re-frames | see below |
+
+**`FillSector` is where spawning lives.** It carries 90 of the 104 changed
+records, its name says it populates a sector, and the author's public claim is
+that he altered spawns. Its `0x19` operand moved in *both* directions, which
+reads as re-tuning per-sector density or level bands rather than one global
+scale. That is a **behaviour for a named opcode**, which is what this document's
+`## Open` asks for — arrived at from a labelled before/after rather than a guess.
+
+The changes do **not** cluster per class: all 8 playable-class folders carry the
+same 5 funkcode + 2 startcode changed records, and the bulk sits in the shared
+`netscript` bodies (21, 22, 21). One shared script body was edited and
+propagated into each class build.
+
+⚠️ **Three limits.** `SetVar`'s uniform downward move across all 40 instances
+reads as one global knob lowered — plausibly an interval or cap — but that is
+inferred from direction alone. `CreateObj`'s 14 records are probably NOT a
+structural edit: tag `0x3c` is a VARIANT, so a changed u32 re-frames everything
+after it, and a value edit misreads as a restructure. And the nine largest
+retail `funkcode` bodies (non-addon, ~3.96 MB each) **are absent from the
+extraction**, so the heaviest script bodies were not diffed at all.
+
+**No naming opportunity:** all three changed opcodes are already named, and not
+one of the 21 unnamed opcodes participates in the diff.
+
 **Why this is the highest-yield experiment available.** A retail/modified pair
 of the same bytecode, where the author has told us what he changed
 (spawn behaviour), is a labelled before-and-after — the one thing that can turn
