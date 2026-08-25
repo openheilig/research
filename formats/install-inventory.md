@@ -722,6 +722,82 @@ which question: [../builds/build-survey.md](../builds/build-survey.md).
 game data. `mssds3d.m3d` and `mssmp3.asi` are Windows **PE32** DLLs (Miles
 Sound System) inert in a Linux install.
 
+## `Settings.cfg` — the key set, from three sources, 2026-08-25
+
+Documented nowhere here until now. The union across our install, three VK
+copies and the Sacred NL distribution is **156 keys**; our own `Settings.cfg`
+carries 46.
+
+**Sixteen keys are named by retail's binary and absent from our config file**,
+so they are engine-recognised and merely unset here: `ACCEPT_LICENSE`,
+`COMBINE_SLOTS`, `FIRST_LOGIN`, `FONT`, `LADDER_EXPORT`, `NETWORK_CDKEY`,
+`NETWORK_CDKEY2`, `NETWORK_LOBBYLOGIN`, `NETWORK_PASSWORD`, `NETWORK_PLAYER`,
+`NETWORK_SESSION`, `SCREEN_QUAKE`, `SHOWEXTRO`, `SHOWEXTRO_UW`,
+`SHOW_HEROINFO`, `WAITRETRACE`.
+
+`FONT` is the one with structure: it repeats, and takes three arguments —
+`FONT : 5, "AntiquaSSK", 16` — so the seven UI font slots are configurable by
+face and size, which bears on [ui-taskbar.md](ui-taskbar.md).
+
+The remaining 94 unmatched keys are **mod namespaces, not engine keys**: 90
+`NL_*` (Sacred NL — GUI zoom, object lists, keyboard layout, resolution) and
+`SR_*` / `WINDOW_*` (the Sacred Resolution mod). None appears in retail's
+binary, which is the expected result and is what makes the 16 above credible.
+
+> Presence in the binary is a filter, not a proof — the test is that an
+> all-caps token appears both in a real `Settings.cfg` and in the executable.
+> It does not establish what any key does.
+
+## Two external tables that check out against our own install, 2026-08-25
+
+Both came out of the VK file set. Neither is first-party; both are verified
+against data we already hold, and both are checked into
+[`generated/`](generated/).
+
+### `combat-art-ids.tsv` — 152 combat arts across nine class sheets
+
+Joins the engine's combat-art id to its symbol, its four `global.res` string
+ids and its three UI texture ids.
+
+| Check | Result |
+|---|---|
+| `nameID` resolves in our `global.res` | **145 / 145** |
+| `descShortID` resolves | **145 / 145** |
+| `descLongID` resolves | **145 / 145** |
+| symbol present in retail's binary | **150 / 152** |
+
+The two symbol misses are the sheet's own `ECM_RESERVED1` / `ECM_RESERVED2`
+placeholders for empty slots. **Match the symbol case-insensitively** — the
+table uppercases, the binary does not (`ECS_HoelleDisk`, `ECS_Tod`,
+`ECS_Tentakel`), and some binary entries carry a trailing comma. The binary
+holds 172 `EC[SM]_` symbols in total, so the table covers 150 of them and 22
+are uncovered.
+
+Worked row: art 21 `ECS_CRUSADERSTRENGTH`, Heavenly Magic, `nameID` 818 →
+"Strength of Faith", `descShortID` 9849 → "Aura which increases the attacking
+capabilities of the Seraphim and her comrades.", `uitex` 561/562/563.
+
+### `dialogue-functions.tsv` — 1026 dialogue entry points
+
+Maps a script function name to its function id, its in-head portrait index,
+an object id and a quest. **1022 of 1025 names (99.7%) are present in our own
+`vectoren.bin`**, taken across all script trees.
+
+Two traps, both of which cost me a wrong answer first:
+
+- `vectoren.bin` stores these **prefixed** — `Dialog:wegweiser_MPStart2` — and
+  also carries an `F_` sibling (`wegweiserF_MPStart2`). An exact-match join on
+  the bare name returns 3 of 1025 and reads as a total mismatch.
+- The three genuine misses are **cp1251 mojibake in the spreadsheet**, not
+  missing functions: `DlgBrьckenwдchter51` is `DlgBrückenwächter51`.
+
+The four columns beside the name — `funcID`, `inHeadImage`, `objID`, `quest` —
+are not derivable from anything we hold, and are unverified. The same
+workbook's first sheet, an `eInHeadImage` enum of `HI_nnn_NPC_DIALOG_nn`
+names with texture ids, resolves against **neither** the binary nor
+`global.res`; treat that sheet as the author's own naming until something
+confirms it.
+
 ## Open
 
 - What `wpmod.bin`'s magnitudes are *denominated* in. The structure is closed —
