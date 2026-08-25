@@ -397,5 +397,46 @@ derivation found before any of #2 can start.
   **nothing fires quest 1's OnEnter when a new game starts**, and that is the
   integration gap.
 
+- **Quest 1's OnEnter is WIRED, and drawing her made the metric WORSE.**
+  Implemented 2026-08-25 (row 1107): `world/script.gd` gained `SetVar`,
+  `CreateNPC`, `NPC_Goto` and `QuestKompassObj`, `world/quest_cast.gd` collects
+  the cast as data, and `main.gd` runs quest 1 on a new game (`--noquests` opts
+  out). The hook executes all 10 records and builds `NOVIZIN02.GRN` at cell
+  **3237,2514** — exactly where the script says.
+
+  | | world band | MAE | the NPC window |
+  |---|---|---|---|
+  | before, she is absent | 10.95% | 5.05 | 5,639 px / 0.918pp / MAE 56.8 |
+  | after, she is drawn | **11.11%** | 5.23 | **6,598 px / 1.074pp / MAE 65.3** |
+
+  **Drawing her costs 0.16pp more than not drawing her**, stable across two
+  runs. This is the same shape as row 1100's result for the hero — retail draws
+  the figure either way, so a port figure in nearly the right place does not
+  remove the disagreement, it doubles it.
+
+  **What is right:** the model, the cell, and the horizontal placement —
+  centroid x **416.9** against retail's **416.5**, agreeing to under half a
+  pixel, which is what confirms the whole projection and the handle-matching.
+
+  **What is wrong, in the order it costs:**
+  1. **Scale and vertical anchor.** Her mask runs y 330–448; retail's body runs
+     y ~360–460 (rows 300–330 are the `?!`, rows 465–495 her drop shadow). So
+     the port draws her roughly **10–19% too tall** and about **12 px too
+     high**. `view/player_view.gd` uses ONE global scale, `RETAIL_HUMANOID_PX /
+     REF_HEIGHT` = 133/73, and its own doc already calls that "a relative
+     calibration, not an absolute one… no retail measurement pins the on-screen
+     size of any single model". **This is a second model's worth of evidence for
+     exactly that gap** — the first independent one since the Seraphim
+     calibration. The range is 10–19% rather than a number because both heights
+     come from threshold masks and her robe is white on pale stone.
+  2. **Facing.** Retail has her turned away from the camera; the port's
+     `set_yaw(0.0)` faces it. Nothing in the hook says which way she looks.
+  3. **No drop shadow** (rows 465–495 in retail, ~30 px of solid difference).
+  4. **No `?!` marker** — deliberate, the art is unidentified.
+
+  The same run independently re-confirms the 1:1 world-to-pixel scale of row
+  1106: `player_view.gd`'s own calibration block states "ortho size 768 over a
+  768-px viewport", reached from a different direction entirely.
+
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
