@@ -99,6 +99,55 @@ header.
 > of Ascaron's `sacred.xls`; nobody has seen that workbook. `xls_sheroconst.h`
 > has no counterpart among the recovered files.
 
+## Starting equipment — two tables, a text format, and no data, 2026-08-25
+
+`cEngine::initGame` names the step in its own trace: `cEngine::cEngine() equipe`,
+at `0x80b7692` in the Linux binary, right after `initHero(e)`. It fills the new
+hero from **two arrays**, and the indexing is read off the code, not guessed:
+
+    dword_8B89740[class * 20 + slot]   worn      — 8 classes x 20 slots, slots 0..18 used
+    dword_8B899C0[class *  8 + i]      carried   — 8 classes x 8 entries
+
+Each entry is an item id; **an entry of 0 is skipped**, so a zeroed table equips
+nothing. Class index comes from the hero id with `8` and `9` folded down by one.
+
+**Exactly one function writes either array**, and it is a **text parser** — the
+same one that reads `BalanceDmg`, `BalanceRes`, `regionkill` and 390 other keys.
+The two keys are `equip` and `inventory`, and the grammar falls out of the
+`strchr('=')` / `strchr(',')` / `strtol` sequence:
+
+    equip=<CLASS>,<slot>,<itemid>
+    inventory=<CLASS>,<itemid>
+
+`<CLASS>` is matched with `strncasecmp(...,4)` against a fixed list:
+
+| SERA | GLAD | MAGE | DELF | WELF | VAMP | DWAR | DAEM |
+|---|---|---|---|---|---|---|---|
+| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+
+### No shipped file carries such a line
+
+Searched: the whole retail install, `bin/balance.bin` itself, the Armalion
+prerelease, Sacred Plus, every community mod and tool, and the 88,914-item VK
+corpus. **Zero occurrences of `equip=`.** `balance.bin` contains none of the
+strings `equip`, `inventory` or `SERA`.
+
+> **The reading this supports, with its risk stated.** On a stock install both
+> tables stay zero, every slot is skipped, and **retail equips a new hero with
+> nothing** — what the start capture shows is her base rig and its own texture,
+> not worn items. What is PROVEN is the layout, the grammar, the class map, the
+> zero-skip and the absence of any input. What is NOT proven is that no other
+> path fills them: the parser is reached through a pointer rather than a direct
+> call, so its call site was not traced, and a file we do not hold cannot be
+> ruled out by searching the ones we do.
+
+**Consequence for the port.** `engine/main.gd` dresses the Seraphim from
+`sets.bin` **set 6**, which [install-inventory.md](install-inventory.md#setsbin-fully-read)
+records as *the seven Seraphim pieces* — a magic item SET like "Uriel's Legacy",
+not a starting kit. `main.gd:47` already says so: *"a full starting kit is not
+what a new retail character has."* It costs 0.34pp of the world band in surface
+disagreement (row 1100).
+
 ## Open
 
 Nothing open on the layout or the key names. What the individual tunables
