@@ -94,8 +94,8 @@ leads from a community mod and were then confirmed first-hand in our own binary.
 
 | String in the retail binary | Why it matters |
 |---|---|
-| `cWorld::remapTrigger_load(%s) ok` / `fopen failed!` | The engine loads an **external trigger remap file**. `triggers.pak` is decoded and unwired (see integration debt below); this names a second half nobody has looked for. |
-| `capture\world_spawn.txt`, `capture\world_spawn_num.txt` | A **built-in developer dump of the spawn map** to text. If it can be triggered, it is retail's own ground truth for spawn placement — worth more than any inference. |
+| ~~`cWorld::remapTrigger_load`~~ | **STRUCK 2026-08-25, and it should never have been listed.** `formats/install-inventory.md:144` already documented it — *"`static10_18.bin`, generated remap, magic `map` v0, 2 574 × 16 B; consumed by `cWorld::remapTrigger_load`"*. A grep that missed a prose doc put it here. **Chased anyway and it is a dead end for us:** it reads `bin\static10_18.bin` (verified: 41 440 B, magic `map\0`, count 2574, `(41440−256)/16 = 2574` exactly), and its one caller is the savegame **"Triggers"** block, gated on `stream_version ≤ 0x11` — a trigger-ID renumbering table for saves written by pre-release builds. **Not the missing half of `triggers.pak`.** |
+| ~~`capture\world_spawn.txt` / `_num.txt`~~ | **STRUCK 2026-08-25 — dead code.** The writer is `0x082d790c` in `sacred_orig` and it does dump exactly what we wanted: per region 0…49, one line of `Lv / creature name / Sector:X-Y`, plus a 500-slot per-region census. But it has **zero call sites** — no `call`, no `jmp`, no function-pointer table entry anywhere in `.text`. There is no Settings.cfg key, console command or keypress that reaches it. Retained by the linker, unreachable at runtime. Unchecked: whether the Windows build reaches it. |
 | `DungeonRespawn` | Phase 7.1 is respawn and is not started. |
 | `TRIGGER_INSERT_SPAWNRENEW`, `TRIGGER_INSERT_ATTRACTOR` | Named trigger kinds; the multiplayer packet vocabulary exposes the single-player taxonomy. |
 
