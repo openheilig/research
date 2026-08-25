@@ -279,6 +279,41 @@ Auge* to the bone: `AMAZON`, `MAGE`, `ELF`, `WITCH`, `BORON PRIESTESS`,
 `PHEX PRIESTESS`, `WARRIOR`, `DRUID`, `BORON PRIEST`, `PHEX THIEF` — Boron and
 Phex being DSA deities. Retail's Seraphim and Gladiator replaced all of them.
 
+## The TXT source format, from `SacredFilesRes`, 2026-08-25
+
+A third-party `.res` ↔ `.txt` converter recovered from VK. Its executable
+names the conversion in **three stages** and an entry-type enum, neither of
+which we had:
+
+    Stage 1. Hash order:      Stage 2. Tabulators:      Stage 3. Text lines:
+
+    CET_SECTION  CET_PARAM
+    CET_LISTNAME  CET_LISTDATA  CET_LIST_LIST  CET_LIST_WORD
+    CET_WORDNAME  CET_WORDDATA  CET_WORD_WORD  CET_WORD_LIST
+
+Errors it raises: `ERROR_EQUALS_SIGN`, `ERROR_MAX_LENGTH`, `ERROR_TAG_UNKNOWN`,
+`ERROR_INCORRECT_NAME`, `ERROR_INCORRECT_ENTRY_TYPE`, `ERROR_NULL_POINTER`.
+It refuses any source not in **UTF-16 LE** — "Should be: CP-1200 (UTF-16 LE)" —
+which matches the payload encoding recorded under [Layout](#layout).
+
+**Stage 1 being "hash order" is an independent confirmation** that the index is
+ordered by the name hash rather than by id or by insertion — arrived at here
+by reading the file, and by a different author from a different direction.
+
+> The tool is third-party and its names are its author's reading of the format,
+> not Ascaron's. Nothing above was tested by round-tripping a file through it.
+
+### 50 symbolic names recovered
+
+Its `hash-0.txt` is a name list, and **all 50 resolve against our own
+`global.res`** — checked in with their hashes and text as
+[`generated/global-res-symbolic-names.tsv`](generated/global-res-symbolic-names.tsv).
+They are one quest chain, `E3Q01`, with `cptHawkwood`, `groomJohn`,
+`brideSarah`, `wPriest`, `wHighPriest` and `ranger`, plus `E3_Teleporter`
+("...the beautiful city of Mascarell"). Retail's file keeps only the hash, so
+these are vocabulary that cannot be enumerated from the container — every
+symbolic name recovered has to come from outside it.
+
 ## Open
 
 **Not every `res:` operand is numeric, and some resolve to nothing.** Of the
