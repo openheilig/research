@@ -407,7 +407,8 @@ derivation found before any of #2 can start.
   | | world band | MAE | the NPC window |
   |---|---|---|---|
   | before, she is absent | 10.95% | 5.05 | 5,639 px / 0.918pp / MAE 56.8 |
-  | after, she is drawn | **11.11%** | 5.23 | **6,598 px / 1.074pp / MAE 65.3** |
+  | drawn, walking on the spot at a cell corner | 11.11% | 5.23 | 6,598 px / 1.074pp |
+  | **drawn, idling at the cell centre** (row 1110) | **11.01%** | 5.17 | **6,006 px / 0.978pp** |
 
   **Drawing her costs 0.16pp more than not drawing her**, stable across two
   runs. This is the same shape as row 1100's result for the hero — retail draws
@@ -451,8 +452,21 @@ derivation found before any of #2 can start.
      built by thresholding one image against another carries everything that
      differs, not the thing being measured — segment the subject on its own
      properties instead.
-  2. **Facing.** Retail has her turned away from the camera; the port's
-     `set_yaw(0.0)` faces it. Nothing in the hook says which way she looks.
+  2. **Facing — still open and NOT fittable.** Retail has her turned away from
+     the camera; the port's `set_yaw(0.0)` faces it. Nothing in the hook says
+     which way she looks, and her real facing is presumably her arrival
+     direction from a walk the port does not simulate. Picking a yaw that
+     matches one capture would be fitting, not transcribing.
+
+  2b. **Two defects that WERE fixable were fixed (row 1110).** The clip: all
+     three NPC builders called `Rigs.clip_for()`, the best geometric score,
+     where `view/player_view.gd` has always called `rest_clip()` for the hero —
+     so she was playing `PRSS_WALK_BH`, walking on the spot. `clip_for` gives
+     the Seraphim herself `SERA_SPECIAL_MULTI_2WAFFEN`, which is why the hero
+     path already avoided it. The placement: `cell_to_world` maps an integer
+     cell to its CORNER, right for a spawned hero (feet y=385 in both engines)
+     and wrong for an NPC that WALKED here, because `NPC_Goto` converges on the
+     cell's middle — feet corner 456, centre 480, retail 483.
   3. **No drop shadow** (rows 465–495 in retail, ~30 px of solid difference).
   4. **No `?!` marker** — deliberate, the art is unidentified.
 
