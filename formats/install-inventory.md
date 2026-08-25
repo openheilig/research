@@ -77,6 +77,29 @@ size (`+24` = 434 401 916), and its `0x100` preamble is a section table whose
 `280` and `1 879 636 = 280 + 1574*1194` are the mesh and motion record starts.
 Both are removable.
 
+### `03` is slot 3 of a sixteen-slot overlay array, 2026-08-25
+
+The content is a beer advertisement (below). **The mechanism is not.** Retail's
+binary — the Linux `sacred` this project runs, and every Windows build — carries
+a numbered-overlay vocabulary that no document here had:
+
+    PAK\ITEMS%.2d.PAK     .\PAK\MODELS%.2d.PAK     PAK\TEXTURE%.2d.PAK
+    Pak\Items00.pak .. Pak\Items15.pak     (all sixteen, spelled out)
+    PAK\Mod1.pak
+
+So `items03.pak`, `models03.pak` and `texture03.pak` are **slot 3** of a
+sixteen-slot array the engine already indexes by number, not a one-off promo
+naming. Only slot 3 ships. `Mod1.pak` is a separate, singular slot and no file
+answers it in any install we hold.
+
+This surfaced from the other direction: Raven Rock's `srr.dll` patches the
+sixteen `Pak\ItemsNN.pak` strings in place, at a 16-byte stride, which is what
+sent the search back into retail's own binary.
+
+> **Not established:** the load ORDER and override semantics between slots, and
+> whether a higher slot masks a lower one or merely adds. Sixteen strings in a
+> table are a capability, not a rule.
+
 ### The `03` files are a beer advertisement
 
 The `03` suffix is not a version, a patch or the Underworld expansion. The

@@ -152,11 +152,26 @@ slots.
 So the mod does not add a lookup path. It **rewrites Sacred's own hardcoded path
 strings in memory**. **Retail has no `DLC/` precedence, and the port needs none.**
 
-> **What is NOT established:** which string each of the 67 addresses overwrites.
-> That needs a **2.29** binary and we have none — the Windows disc exe, `gold228`,
-> pureHD (2.28) and the unfinished 2.30 are all other versions, and reading those
-> addresses in the disc exe lands on unrelated data (motion names, quest-editor
-> keys). The structure above is measured; the targets are not.
+**All 67 targets read, 2026-08-25 (row 1096).** The mod's own `srrp.exe` is the
+2.29 binary — unpacked, base `0x400000`, and every target falls inside `.data`'s
+raw range. The patches redirect exactly **three directory prefixes**:
+
+| written | over | sites | examples |
+|---|---|---|---|
+| `DLC` | `PAK\` | 42 | `PAK\MODELS.PAK`, `PAK\TEXTURE.PAK`, `PAK\SOUND.PAK`, `PAK\TILES.PAK`, `Pak\Texture.TMP`, `PAK\SAVEGAME.BMP`, `Pak\Items00.pak`…`Items15.pak` |
+| `DLC` | `Bin\` | 7 | `Bin\Balance.bin`, `Bin\World.bin`, `Bin\World2.bin`, `Bin\wpmod.bin`, `Bin\NetScript%s` |
+| `hero` | `Save` / `SAVE` | 18 | `SAVE/GAME%.2d.PAK`, `SAVE\*.PAK`, `Save\Hero%.2d.pax`, `Save\Hero00.ptx` |
+
+Three and four characters written over three- and four-character prefixes, no
+NUL — the rest of each path survives untouched. `Bin\Balance.bin` becomes
+`DLC\Balance.bin`, `Save\Hero00.ptx` becomes `hero\Hero00.ptx`. That is the
+whole mechanism, and it matches the installed tree, which ships a `DLC/`
+directory and an empty `hero/`.
+
+The 16-byte-stride run resolves to retail's own `Pak\Items00.pak` …
+`Pak\Items15.pak` array — see
+[install-inventory.md](install-inventory.md#03-is-slot-3-of-a-sixteen-slot-overlay-array-2026-08-25),
+which that discovery opened.
 
 > This is recorded as a NEGATIVE result on purpose: an override layer is a
 > plausible thing for a 2004 engine to have, and reproducing one that does not
