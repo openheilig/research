@@ -419,16 +419,38 @@ derivation found before any of #2 can start.
   pixel, which is what confirms the whole projection and the handle-matching.
 
   **What is wrong, in the order it costs:**
-  1. **Scale and vertical anchor.** Her mask runs y 330–448; retail's body runs
-     y ~360–460 (rows 300–330 are the `?!`, rows 465–495 her drop shadow). So
-     the port draws her roughly **10–19% too tall** and about **12 px too
-     high**. `view/player_view.gd` uses ONE global scale, `RETAIL_HUMANOID_PX /
-     REF_HEIGHT` = 133/73, and its own doc already calls that "a relative
-     calibration, not an absolute one… no retail measurement pins the on-screen
-     size of any single model". **This is a second model's worth of evidence for
-     exactly that gap** — the first independent one since the Seraphim
-     calibration. The range is 10–19% rather than a number because both heights
-     come from threshold masks and her robe is white on pale stone.
+  1. ~~**Scale and vertical anchor** — 10–19% too tall.~~ **WRONG, and
+     retracted the same day (row 1108). The scale is right and the character
+     scale needs no fix.** That figure came from comparing the port's exact
+     silhouette against a retail mask that had swallowed the `?!` marker above
+     her and her drop shadow below. Segmenting her instead on brightness inside
+     her own column — a white robe on a mid-grey floor, which excludes a marker
+     that is not in the column and a shadow that is darker rather than brighter
+     — gives **retail 122 px against the port's 125**. That is **2.4%**, inside
+     the 6% the original two-landmark calibration already disagrees with itself
+     by. `RETAIL_HUMANOID_PX / REF_HEIGHT` = 133/73 survives its first
+     independent second-model test.
+
+     **Nor is there a per-model rig-origin offset.** Drawing this NPC at the
+     hero's own cell as a one-off diagnostic lands her feet at **exactly y=385,
+     the hero's own foot row**, and in the hero's own x range. Two different
+     models ground identically.
+
+     **What the remaining vertical difference actually is: animation phase.**
+     The same rig at the same scale measures **y 330–454, 125 px tall** at cell
+     3237,2514 and **y 234–385, 152 px tall** at cell 3236,2511 — a 22% swing in
+     drawn extent from nothing but the clip's phase, because `main.gd` seeks
+     each NPC by a hash of its cell so a capture is reproducible. So her pose,
+     not her size, is what is off, and it is off by a deliberate arbitrary
+     amount. Retail's own nun is animating too (row 1104's 1.31% run-to-run
+     variance is largely her and the hero).
+
+     **The lesson is the one already in this file twice.** Row 1099 called the
+     hero's cost a shading difference from an eyeball impression and row 1100
+     had to retract it; this retracts a height from a contaminated mask. A mask
+     built by thresholding one image against another carries everything that
+     differs, not the thing being measured — segment the subject on its own
+     properties instead.
   2. **Facing.** Retail has her turned away from the camera; the port's
      `set_yaw(0.0)` faces it. Nothing in the hook says which way she looks.
   3. **No drop shadow** (rows 465–495 in retail, ~30 px of solid difference).
