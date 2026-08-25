@@ -741,8 +741,17 @@ face and size, which bears on [ui-taskbar.md](ui-taskbar.md).
 
 The remaining 94 unmatched keys are **mod namespaces, not engine keys**: 90
 `NL_*` (Sacred NL — GUI zoom, object lists, keyboard layout, resolution) and
-`SR_*` / `WINDOW_*` (the Sacred Resolution mod). None appears in retail's
-binary, which is the expected result and is what makes the 16 above credible.
+`SR_*` / `WINDOW_*` / `SLOTINFO`. None appears in retail's binary, which is the
+expected result and is what makes the 16 above credible.
+
+**Attributed 2026-08-25.** `WINDOW_WIDTH` and `WINDOW_HEIGHT` are read by
+**two independent mods** — pureHD's `pHD.dll` and Raven Rock's `srr.dll` — which
+have no other code in common, so the pair is the community's de-facto name for
+a resolution override rather than one mod's invention. `srr.dll` also names
+`SLOTINFO`, and otherwise reads only five real engine keys (`COMPAT_VIDEO`,
+`GFX32`, `LANGUAGE`, `NETWORK_SPEEDSETTINGS`, and the two above). Raven Rock's
+own shipped `Settings.cfg` carries 59 keys and **every one is already in the
+156** — it adds nothing.
 
 > Presence in the binary is a filter, not a proof — the test is that an
 > all-caps token appears both in a real `Settings.cfg` and in the executable.
