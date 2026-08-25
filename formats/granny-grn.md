@@ -109,6 +109,48 @@ directory shape above is documented by neither of them and was measured here.
 Iris1's reading of `0x0C02..0x0C05` as a start/end bracket is a misread —
 they are distinct node types.
 
+## Two apparent defects that are not defects
+
+Both were reported by me from renders and both are refuted by measurement.
+Recorded because the renders are genuinely misleading and a later reader will
+see the same two things.
+
+**The dwarf is not distorted.** `DWARF.GRN` at the figure viewer's default yaw
+of 270 reads as a formless blob — he is simply very broad seen edge-on; at
+yaw 0 he is a dwarf with arms, legs, feet and a beard. His *skeleton* view is a
+starburst of spokes from the waist, which looks like a broken parent chain and
+is not: they are eight 4-bone chains named `Bone01`, `Bone05` … `Bone29`,
+authored beard-braid/cloth bones, 32 of his 117 bones against `GLADIATOR`'s 68.
+The one odd link — `Bip01 L/R Thigh` parented to **`Bip01 Spine`**, not
+`Bip01 Pelvis` — is shared by `GLADIATOR` and `SERAPHIM`, both of which render
+correctly, so it is how Sacred's rigs are authored. Retail's character-select
+screen draws the dwarf large and his proportions and stance match the port's.
+
+**The muddy texture regions are authored.** `Sera_legs.tga`'s lower ~60% and a
+panel of `Gladiator_body.tga` are mottled dark brown against clean art
+elsewhere, and they look like decode corruption. They are not — the decode
+asserts an exact inflate to `w*h*2`, retail's own GL uploads correlate **1.000**
+with our decode of both images, and the UV box matches retail's own
+`glTexCoordPointer` array. The direct test: retail equips a new Seraphim with
+**nothing** (row 1101), so the start-scene capture shows her bare, and retail's
+own frame draws the same dark brown thighs between a skin-toned midriff and
+white knee boots that the port draws. They look unfinished because they are the
+parts equipment covers — retail's character-select Gladiator hides exactly that
+midriff and thigh band behind a belt and kilt.
+
+**Capturing retail's character select**, which is the right ground truth for
+character rendering and much better than the 125 px start-scene hero:
+
+```sh
+sh analysis/tools/drive/shot.sh charsel "6000 click 512 287" 10000 16
+```
+
+That fires only the Ancaria Campaign click from `menu.sh`'s `new` route and
+captures while the hero picker is still up — every playable hero as a live
+Granny model, several hundred pixels each, no world load. The figures are
+**equipped** there, so it settles proportion, stance and silhouette but not
+base-rig skin; the unequipped start-scene Seraphim is the frame for that.
+
 ## Ground truth
 
 `tools/granny_oracle/` checks our decode against the vendor's own. That is the
