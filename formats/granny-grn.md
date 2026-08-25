@@ -510,12 +510,39 @@ broken skin reads as a prop.
 
 ## Open
 
-Five of `texture.pak`'s 25535 names are malformed — `TEX\x03\xbfC`,
-`AMAZONE_ARMOUR_KURZKHEMD_CELAL.T`, `PHEX_SHE_THIEF_HELMET_LEATHER.TG@`,
-`INSTRUMENT_HARFE_128X128_ALPHA.T\x80`, `GIGANT_SPIDER_HAIR_RED_DEMON.TGA@` —
-and none has a correctly-named sibling. Retail can never reach them (its key is
-built by appending `.TGA`); the port's stem index can. A five-entry divergence,
-recorded rather than fixed.
+~~Five of `texture.pak`'s 25535 names are malformed.~~ **STRUCK 2026-08-25,
+row 1090. They are not malformed — the name field is 32 bytes and they fill
+it.**
+
+`SHADOWDOT.TGA` is 13 characters, then NUL padding to byte 32, then the u16
+pair `w=64 h=64`. So the field is **32 bytes, NUL-padded**, and a name that is
+exactly 32 characters long carries no terminator at all. A reader that scans
+for a NUL then runs straight into the width field, which is where every
+"malformed" byte came from:
+
+| name (32 chars) | next u16 pair | the stray byte |
+|---|---|---|
+| `AMAZONE_ARMOUR_KURZKHEMD_CELAL.T` | 256 × 256 | — the `\x00` is the low byte of 256 |
+| `GIGANT_SPIDER_HAIR_RED_DEMON.TGA` | 64 × 16 | `@` = 0x40 = 64 |
+| `INSTRUMENT_HARFE_128X128_ALPHA.T` | **128 × 128** | `\x80` = 128 |
+| `PHEX_SHE_THIEF_HELMET_LEATHER.TG` | 64 × 64 | `@` = 0x40 = 64 |
+
+`INSTRUMENT_HARFE_128X128_ALPHA` self-confirms: the name says 128X128 and the
+bytes read 128 × 128.
+
+**Seven, not five.** Scanning all 25,535 entries, 25,528 are NUL-terminated and
+**7** fill the field: the four above plus `ELVE_SORVERESS_LEDERHARNISCH.TGA`,
+`HORSE_BRIDLE_LEATHER_METAL01.TGA` and `HORSE_BRIDLE_LEATHER_METAL02.TGA` —
+those three are exactly 32 characters *with `.TGA` intact*, so they read
+correctly by luck and were never flagged. The previously-listed fifth entry
+`TEX\x03\xbfC` does **not** reproduce as a literal byte search and is
+unaccounted for.
+
+Two of the four have a truncated extension (`.T`, `.TG`) because the full name
+would exceed 32 characters. Retail cannot reach those two — its key is built by
+appending `.TGA` to a stem, and the stored name is already cut — so that half
+of the original observation stands. The other two are reachable and were only
+ever a decoder artefact.
 
 Eight of the 3421 animation clips do not decode.
 
