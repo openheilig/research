@@ -117,23 +117,46 @@ The Raven Rock 1.3b patch ships 990 loose files in a `DLC/` directory, two
 thirds of which already exist inside `models.pak` and `texture.pak`. That looks
 like an engine load-order rule the port would have to reproduce. **It is not.**
 
-`srr.dll` (704,563 bytes, 2021-01-28) is a **runtime code patcher**, and it says
-so in its own data:
+`srr.dll` (704,563 bytes, 2021-01-28) is a **runtime code patcher**. Disassembled
+2026-08-25 (row 1095); the patch table is one function, `sub_100033EA`, and it is
+a flat list of 80 writes.
 
-- **34 byte-pattern signature strings** — `8A 44 24 0F 8B D0`, `8D BC CD 0C 71 09 00`,
-  `3D FF 1F 00 00` — the shape `make_signature` emits, i.e. code to find.
-- Payload patterns beside them: `90 90 90 90` NOP sleds, `90 E9 AC 00 00 00` a
-  jump, `B8 44 00 00 00 90` a `mov eax,0x44`.
-- `VirtualProtect` imported, and a source filename `winsig.c` left in the binary.
-- `EUpdatePatch::Open` / `EUpdatePatch::Read`.
-- The literal `2.29` — the game version it targets.
-- A table of directory-name slots at `0x7b204`: seven `DLC`, eighteen `hero`,
-  then forty more `DLC`, one per patched call site.
+> **There is no signature scanning.** Row 1091 called the 34 hex strings "code to
+> find, the shape `make_signature` emits". **They are payloads, not patterns.**
+> `sub_10002722` walks such a string with `strtoul(s, &s, 16)` and writes each
+> byte into the target. Every patch address is a hardcoded constant, rebased as
+> `hLibModule − <default base> + K`, which is exactly why the DLL is locked to
+> one game version and says `2.29` in its data.
 
-So the mod locates Sacred 2.29's file-open code by signature, makes it writable,
-and rewrites it to consult a directory name from that table. **Retail has no
-such precedence, and the port needs none to be faithful.** The whole
-`DLC/` mechanism belongs to `srr.dll`.
+Six write primitives, all one-line wrappers over a byte-poker that
+`IsBadWritePtr`-checks and advances:
+
+| call in the table | effect |
+|---|---|
+| `sub_10001019(p, n)` | write `n` × `0x90` — **NOP out n bytes** |
+| `sub_10001208(p, b, n)` | write byte `b`, `n` times |
+| `sub_100013A7(p, "8A 44 …")` | parse the hex string, **write those bytes** |
+| `sub_1000139D(p, "DLC", 0)` | write the string's bytes in place, no NUL |
+| `sub_10001401(p, fn, n)` | write `0xE8` + `fn − p − 4` — **install a CALL detour** — then `n` NOPs |
+| `sub_100011AE(p, w)` | write a WORD |
+
+**80 sites, and the split is the finding.** Thirteen are code patches in `.text`
+(VA `0x616593`–`0x75AD60`), including two detours to `sub_100014DD` and
+`sub_10001492` and one 126-byte NOP sled. The other **67 are in-place string
+overwrites in the data section** (VA `0x8E9A8E`–`0xA1C880`) — 49 writing `DLC`
+and 18 writing `hero` over whatever three or four bytes were already there. They
+land in fixed-stride runs: eighteen at a **16-byte** stride across
+`0xA1AF18`–`0xA1B028`, six at a **20-byte** stride — arrays of fixed-size string
+slots.
+
+So the mod does not add a lookup path. It **rewrites Sacred's own hardcoded path
+strings in memory**. **Retail has no `DLC/` precedence, and the port needs none.**
+
+> **What is NOT established:** which string each of the 67 addresses overwrites.
+> That needs a **2.29** binary and we have none — the Windows disc exe, `gold228`,
+> pureHD (2.28) and the unfinished 2.30 are all other versions, and reading those
+> addresses in the disc exe lands on unrelated data (motion names, quest-editor
+> keys). The structure above is measured; the targets are not.
 
 > This is recorded as a NEGATIVE result on purpose: an override layer is a
 > plausible thing for a 2004 engine to have, and reproducing one that does not
