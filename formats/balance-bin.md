@@ -141,12 +141,32 @@ strings `equip`, `inventory` or `SERA`.
 > call, so its call site was not traced, and a file we do not hold cannot be
 > ruled out by searching the ones we do.
 
-**Consequence for the port.** `engine/main.gd` dresses the Seraphim from
-`sets.bin` **set 6**, which [install-inventory.md](install-inventory.md#setsbin-fully-read)
-records as *the seven Seraphim pieces* — a magic item SET like "Uriel's Legacy",
-not a starting kit. `main.gd:47` already says so: *"a full starting kit is not
-what a new retail character has."* It costs 0.34pp of the world band in surface
-disagreement (row 1100).
+**Consequence for the port, MEASURED 2026-08-25 (row 1102).** `engine/main.gd`
+dresses the Seraphim from `sets.bin` **set 6**, which
+[install-inventory.md](install-inventory.md#setsbin-fully-read) records as *the
+seven Seraphim pieces* — a magic item SET like "Uriel's Legacy", not a starting
+kit. `main.gd:47` already said so. A `--nodress` flag was added to test it:
+
+| port config | world band | hero box |
+|---|---|---|
+| dressed, `START_SET` 6 | 10.95% | 31.10% |
+| **bare rig, `--nodress`** | **10.92%** | 29.94% |
+| mesh hidden, `--hideplayer` | **10.88%** | 28.81% |
+
+**Undressing her recovers 0.03pp of her 0.78pp — about 4% of her cost — and
+hiding her entirely is still better than either.** The two port renders differ
+from each other by 2,324 px, so the outfit is not a no-op on screen; it simply
+does not move the score.
+
+**So the port's Seraphim is wrong in a way equipment cannot fix.** The remaining
+~96% is the base rig itself — mesh, texture, pose or scale — and that is where
+the 0.34pp surface gap of row 1100 actually lives. Dropping set 6 is correct on
+the evidence of this document, but it is worth 0.03pp and not a fix.
+
+> **Not changed:** `START_SET` is still the default. Retail equipping nothing
+> argues for making `--nodress` the default, but `main.gd:47` keeps set 6 so the
+> composition path is exercised by the default run, and that trade is a human
+> call rather than a measurement.
 
 ## Open
 
