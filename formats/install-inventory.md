@@ -96,9 +96,53 @@ This surfaced from the other direction: Raven Rock's `srr.dll` patches the
 sixteen `Pak\ItemsNN.pak` strings in place, at a 16-byte stride, which is what
 sent the search back into retail's own binary.
 
-> **Not established:** the load ORDER and override semantics between slots, and
-> whether a higher slot masks a lower one or merely adds. Sixteen strings in a
-> table are a capability, not a rule.
+#### The load order and the override rule, read from the code, 2026-08-25
+
+`sub_8139520` in the Linux binary is `TypeManager::loadItemTypes()` — it names
+itself in a warning string. `sub_8139814` holds the loop, and the disassembly at
+`0x8139e5b` is unambiguous:
+
+```
+ebx = 0
+loop:  sprintf(s, "PAK\ITEMS%.2d.PAK", ebx)   ; name uses ebx
+       inc ebx                                 ; slot ordinal = ebx+1
+       sub_8139520(a1, s, ebx)                 ; a3 = ordinal, always >= 1
+       cmp ebx, 0Fh ; jle loop
+```
+
+So the order is **`PAK\ITEMS.PAK` first, then `ITEMS00` … `ITEMS15` ascending**,
+and the base is the one loaded with `a3 = 0` by the two `TypeManager` callers
+(`sub_8134FA4`, `sub_81355E2`), which print `loadItemTypes...` for the base and
+`loadItemTypesCustom...` before the numbered loop.
+
+The rule inside the loader, per 128-byte record:
+
+| `a3` | where the record lands |
+|---|---|
+| `0` (base) | index **`i`** — its sequential position in the file |
+| `≥ 1` (slot) | index **read from the record itself**, at record offset 118 |
+
+An add-on record therefore names its own target id and **overwrites whatever is
+there**. If the target already holds a populated record — the byte at record
+offset 62 is set — the engine logs
+
+    TypeManager::loadItemTypes() - WARNING!!! Overwrite of base itemType [%d] because of add-on [%s]!
+
+**and overwrites anyway.** So higher slots mask lower ones: **last loaded wins,
+ascending**. A missing file is skipped silently — the loader `fopen`s and returns
+0 without a message.
+
+For `a3 ≥ 1` it also adds a per-slot delta, accumulated over `j = 0 … a3−1` from
+a table, to two fields of the record (`+24` and `+118`) — an id-space shift per
+preceding slot.
+
+This matches the recovered `DEBUG.LOG` line for line: `loadItemTypes...` /
+`PAK\ITEMS.PAK V5 #32768` / `loadItemTypesCustom...` / `PAK\ITEMS03.PAK V5 #32768`
+— only slot 3 appears because only slot 3 ships.
+
+> **Still not established:** the same question for `MODELS%.2d` and
+> `TEXTURE%.2d`, which have their own loaders, and what `Mod1.pak` is loaded by.
+> Only the item path was traced.
 
 ### The `03` files are a beer advertisement
 
