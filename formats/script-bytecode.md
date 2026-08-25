@@ -124,26 +124,66 @@ plus four `CreateObj` of id 886, `FX_FIRE_L`. Novice nuns, poultry and fires —
 a cathedral courtyard, authored one procedure per sector.
 
 **None of those six is on screen at the start**, and that is arithmetic rather
-than a guess: the camera is orthographic at `size = 768 / 2.0`, so the
-world-to-pixel scale is exactly **2.0**, and with `HW=48`/`HH=24` the visible
-half-width is 512/(48·2) ≈ **5.3 cells of `x−y`**. Everything above is 16–40
-cells away. The same arithmetic clears `--npcs` of a defect it appeared to
-have: it reports `built=5` and changes no pixel outside the hero, because its
-five `startcode.bin` thieves are all ≥20 cells out and legitimately off-camera.
+than a guess. The camera is orthographic; `main.gd:734` selects zoom step 1 of
+Sacred's three, so `size = 768 / 1.0` and the **world-to-pixel scale is exactly
+1.0**. With `HW=48`/`HH=24` the visible half-extent is **512/48 ≈ 10.7 cells of
+`x−y`** and **384/24 = 16 cells of `x+y`**; the six above are 14–27 cells out
+along `x−y` alone. The same arithmetic clears `--npcs` of a defect it appeared
+to have: it reports `built=5` and changes no pixel outside the hero because all
+five of its `startcode.bin` thieves fall outside that box, not because it
+failed to draw them.
 
-**What IS on screen is not accounted for by any of this.** A robed figure with
-a `?!` quest marker stands beside the player and is worth **0.918pp of the
-world band at MAE 56.8** — more than the entire hero. Inverting the projection
-from her measured screen offset of (−95.1, +98.0) px gives `d(x−y) = −0.99` and
-`d(x+y) = +2.04`, i.e. **cell 3236.5, 2512.5 — one and a half cells from the
-player**; feeding the rounded integers back predicts (−96, +96) px, so the
-localisation is good to about two pixels. A scan of **all 23,494 procedures**
-for a `CreateNPC`/`CreateObj` with a literal cell within ±8 of the player
-returns **zero**, and all 319 `startcode.bin` NPC records carry a cell with the
-nearest at 20.4. **So she is placed by neither file's literal-coordinate path**,
-and where she does come from is open — a trigger, a quest hook, or a `CreateNPC`
-whose position argument is one of the tag-`0x2b`/`0x30`/`0x42` variants that
-appear in arg 3 and decode to no value.
+*(Corrected 2026-08-25, row 1106. Row 1105 stated this scale as 2.0, taken from
+`iso_camera.gd`'s declared default `zoom_index := 0` instead of the step
+`main.gd` actually sets. No conclusion changed — every placement above is off
+screen at either scale — but the cell it inferred for the on-screen figure was
+wrong by a factor of two, and the script below gives her true cell.)*
+
+## The start NPC is placed by a QUEST HOOK, not by a sector script, 2026-08-25
+
+The robed figure with the `?!` marker beside the Seraphim — **0.918pp of the
+world band, more than the entire hero** — is created and positioned by
+`QIS_OnEnter1`, the `OnEnter` hook of **quest 1, titled `Tutorial`**. 311 bytes,
+read here through the same `vectoren.bin` the port already parses:
+
+| opcode | | args |
+|---|---|---|
+| 67 | `SetVar` | `PoolDLG`, 0 |
+| 53 | `QuestBook` | 1, 0, `res:BOOK_HQstart_sera01` |
+| 53 | `QuestBook` | 1, 1, `res:SERA_WAS_TUN_TUTORIAL` |
+| 53 | `QuestBook` | 1, 1, `res:BOOK_HQstart_sera02` |
+| 53 | `QuestBook` | 1, 1, `res:BOOK_HQstart_sera03` |
+| **1** | **`CreateNPC`** | **`res:17095`, 679, `novizin1`, `auftrag10`, 1, `ECS_HEALING`** |
+| **72** | **`NPC_Goto`** | **`Res:17095` → cell (3237, 2514)** |
+| 64 | `QuestKompassObj` | `res:17095` |
+| 67 | `SetVar` | `atmos10`, 1 |
+| 68 | `SetVarBit` | `10`, 1 |
+
+**This is why no coordinate scan could find her.** `CreateNPC` here carries
+**no position at all** — its argument tags are `0x1 0x2 0x4 0x9 0x6b 0x67`,
+naming a handle, a creature id, a script name, a task and a combat art. The
+position arrives one record later from a separate `NPC_Goto` against the
+handle. A search for a `CreateNPC` near a cell is looking for something the
+format does not put there.
+
+Creature **679 is `NOVIZIN02.GRN`** — the sector script's four nuns are 677,
+`NOVIZIN.GRN`, so she is a distinct model, not one of them. `QuestKompassObj`
+on her handle is what draws the `?!`.
+
+Cell (3237, 2514) predicts a screen offset from the player of exactly
+**(−96, +96) px**; her measured centroid offset is **(−95.1, +98.0)**. That
+two-pixel agreement is what fixes both the placement and the 1.0 scale above.
+
+The handle persists across quests: `QIS_OnEnter9` (`Das brennende
+Schwesternhaus`) walks the same `res:17095` on with `NPC_Goto` (3237,2519),
+`Teleport` (3237,2520), `NPC_Goto` (3237,2524), then `SetNPCState auftrag09`
+and a voice line — so `res:` handles are stable NPC identities across the
+script corpus, not per-procedure temporaries.
+
+**The port already holds every piece of this.** `Sacred.Vectoren` reads quest 1
+and resolves `QIS_OnEnter1` to offset 1702864 length 311; `world/quest_log.gd`
+and `world/encounter.gd` already run hooks through `H_ON_ENTER`. What is absent
+is any caller that fires quest 1's OnEnter when a new game starts.
 
 ## The opcode table
 

@@ -389,8 +389,13 @@ derivation found before any of #2 can start.
   `Sector50039Enter` alone creates four `NOVIZIN.GRN`, a `CHICKEN`, a `RABBIT`
   and four `FX_FIRE_L`. See
   [../formats/script-bytecode.md](../formats/script-bytecode.md) for the
-  decode, the projection arithmetic that puts the on-screen figure at cell
-  3236.5,2512.5, and the open question of which record actually places her.
+  decode. **Her own source is now known (row 1106):** she is not from a sector
+  script at all but from `QIS_OnEnter1`, the OnEnter hook of quest 1
+  (`Tutorial`), which does `CreateNPC res:17095, 679, novizin1, ...` and then
+  `NPC_Goto res:17095 -> cell (3237,2514)`. The port's `Sacred.Vectoren`
+  already resolves that hook and `world/quest_log.gd` can already run one —
+  **nothing fires quest 1's OnEnter when a new game starts**, and that is the
+  integration gap.
 
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
