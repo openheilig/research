@@ -237,11 +237,18 @@ derivation found before any of #2 can start.
   `SHADOWDOT.TGA`, `FX_SHADOWDOT01.TGA` and `SHADOW_TREE00.TGA`. None of these
   seven strings is named anywhere in `research/`, `engine/` or `AGENTS.md`.
 
-  **What this does NOT settle, and must still not be assumed.** The pixel cost is
-  still unmeasured. What `renderShadow` computes, what distinguishes it from
-  `renderShadowFake`, what `NOSHADOW` is actually set on, and which mode
-  `FORCE_BLACK_SHADOW` forces are all untraced — four string names are a map, not
-  a mechanism.
+  **`FORCE_BLACK_SHADOW` is answered, 2026-08-25.** `sacredtools 3.3`'s bundled
+  help documents it on the Graphics tab as *"disables shadow transparency, giving
+  less realistic black shadows; affects performance"* — so **retail's shadows are
+  alpha-blended by default** and the key forces them opaque. A port that draws a
+  solid black blob would be reproducing the non-default setting. The gloss is a
+  third-party tool author's, not Ascaron's, but it is specific and it is testable
+  against a capture with the key flipped.
+
+  **What this still does NOT settle.** The pixel cost is still unmeasured. What
+  `renderShadow` computes, what distinguishes it from `renderShadowFake`, and what
+  `NOSHADOW` is actually set on are all untraced — string names are a map, not a
+  mechanism.
 
   **The cheap first step is still a measurement, not an implementation:** crop the
   hero's footing in the existing retail/port pair and take the delta. The second

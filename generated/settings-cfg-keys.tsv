@@ -1,0 +1,57 @@
+key	tab	source	gloss
+DETAILLEVEL	Graphics	sacredtools	graphics quality / world detail; affects performance
+EXPLOREMAP	Graphics	sacredtools	fog of war on the minimap, revealed as the character advances; affects performance
+VIOLENCE	Graphics	sacredtools	enables/disables gore effects
+FSAA_FILTER	Graphics	sacredtools	full-screen antialiasing
+GFX32	Graphics	sacredtools	32-bit colour (True Color); default is 16-bit High Color
+GFX_LIMIT128	Graphics	sacredtools	restricts use of video memory above 128 MB
+FULLSCREEN	Graphics	sacredtools	fullscreen vs windowed
+SHOWMOVIE	Graphics	sacredtools	play intro/cutscene movies
+FONTAA	Graphics	sacredtools	font antialiasing; affects performance
+FONTFILTER	Graphics	sacredtools	ClearType-style font filtering; only effective when FONTAA is off
+FORCE_BLACK_SHADOW	Graphics	sacredtools	turns OFF shadow transparency, giving solid black (less realistic) shadows; affects performance
+MINIMAP_ALPHA	Graphics	sacredtools	minimap transparency
+PICKUPAUTO	Graphics	sacredtools	automatic pickup of items from the ground
+PICKUPANIM	Graphics	sacredtools	extra character animation played on automatic pickup
+NIGHT_DARKNESS	Graphics	sacredtools	night-time darkening; lower value means a lighter night
+SOUNDQUALITY	Sound	sacredtools	sound quality
+SOUND	Sound	sacredtools	master enable for all game sound
+SOUND3D	Sound	sacredtools	hardware 3D positional audio
+SFXVOLUME	Sound	sacredtools	sound-effects volume
+VOICEVOLUME	Sound	sacredtools	speech volume
+MUSICVOLUME	Sound	sacredtools	music volume
+AUTOSAVE	Gameplay	sacredtools	periodic autosave
+AUTOSAVEDELAY	Gameplay	sacredtools	autosave interval
+WARNING_LEVEL	Gameplay	sacredtools	health level at which the game warns the player (red flash)
+LANGUAGE	Gameplay	sacredtools	text language; an unsupported value makes ALL text vanish -- check scripts/ first
+AUTOTRACKENEMY	Gameplay	sacredtools	mouse cursor follows the enemy
+COMBINE_SLOTS	Gameplay	sacredtools	selecting a weapon slot also selects the matching combat-art slot
+SHOWPOTIONS	Gameplay	sacredtools	show the potion belt during play
+SHOW_ENEMYINFO	Gameplay	sacredtools	show enemy info without holding Alt
+SHOW_HEROINFO	Gameplay	sacredtools	show the character name without holding Alt
+UNIQUE_COLOR	Gameplay	sacredtools	alternative item colouring
+SHOWEXTRO	Gameplay	sacredtools	allow viewing the final movie
+LOG	Gameplay	sacredtools	write debug information to a log file
+NETLOG	Network	sacredtools	network-game log file
+NETWORK_CDKEY	Network	sacredtools	CD key, checked by the server
+NETWORK_CDKEY_HIDE	Network	sacredtools	mask the CD key on screen with asterisks
+NETWORK_SESSION	Network	sacredtools	network game (server) name
+NETWORK_PLAYER	Network	sacredtools	player name in a network game
+NETWORK_LOBBY	Network	sacredtools	lobby address
+NETWORK_LOBBYPORT	Network	sacredtools	lobby port
+NETWORK_LOBBYLOGIN	Network	sacredtools	lobby user name
+NETWORK_IP_ADDRESS	Network	sacredtools	IP address to connect to
+NETWORK_PORT_LISTEN	Network	sacredtools	listening port
+NETWORK_SPEEDSETTINGS	Network	sacredtools	connection type, selects the data-transfer scheme
+LADDER_EXPORT	Network	sacredtools	list the multiplayer character on the ladder
+CHAT_DELAY	Chat	sacredtools	how long a chat message stays on screen
+CHAT_LINES	Chat	sacredtools	number of chat lines shown at once
+CHAT_ALPHA	Chat	sacredtools	chat text transparency
+FONT	Fonts	sacredtools	repeats; slot, face name, size -- seven UI font slots
+DEFAULT_SKILLS	Underworld	sacredtools	auto-pick the two starting skills for a new character
+TASKBAR_ICONS	Underworld	sacredtools	show damage-type icons for the weapon in the active slot
+SCREEN_QUAKE	Underworld	sacredtools	earthquake effect for some magic (e.g. meteor)
+FIRST_LOGIN	Underworld	sacredtools	UNKNOWN -- the tool's own help says "action not established"
+COMPAT_VIDEO	Underworld	sacredtools	video compatibility mode
+WAITRETRACE	Underworld	sacredtools	wait for CRT vertical retrace before presenting a frame
+ACCEPT_LICENSE	Underworld	sacredtools	licence accepted flag

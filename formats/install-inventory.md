@@ -746,7 +746,45 @@ binary, which is the expected result and is what makes the 16 above credible.
 
 > Presence in the binary is a filter, not a proof — the test is that an
 > all-caps token appears both in a real `Settings.cfg` and in the executable.
-> It does not establish what any key does.
+
+### What the keys mean — from `sacredtools 3.3`
+
+The config editor `sacredtools.exe` carries an alphabetical Delphi string
+table of **56 key names**, and its Delphi control names sit beside them in
+form order, so each key can be placed on the tab that edits it. Its bundled
+CHM then describes what that tab's controls do. Together they give the first
+semantic account of the key set — checked in as
+[`generated/settings-cfg-keys.tsv`](generated/settings-cfg-keys.tsv).
+
+| Tab | Keys |
+|---|---|
+| Graphics | 15, incl. `DETAILLEVEL`, `FSAA_FILTER`, `GFX32`, `NIGHT_DARKNESS`, `FORCE_BLACK_SHADOW` |
+| Sound | 6 |
+| Gameplay | 12, incl. `WARNING_LEVEL`, `COMBINE_SLOTS`, `UNIQUE_COLOR` |
+| Network | 12 |
+| Chat | 3 |
+| Fonts | `FONT` |
+| Underworld | 7 — addon-only: `DEFAULT_SKILLS`, `TASKBAR_ICONS`, `SCREEN_QUAKE`, `FIRST_LOGIN`, `COMPAT_VIDEO`, `WAITRETRACE`, `ACCEPT_LICENSE` |
+
+Three that bear on work in this repository:
+
+- **`FORCE_BLACK_SHADOW` — "disables shadow transparency, giving less
+  realistic black shadows; affects performance."** So retail's shadows are
+  **alpha-blended by default**, and this key forces them opaque. That answers
+  the last of the three questions row 1063 left open about the shadow path.
+  See [../engine/game-wiring.md](../engine/game-wiring.md).
+- **`TASKBAR_ICONS`** — "show damage-type icons for the weapon in the active
+  slot". An addon-era taskbar element; see [ui-taskbar.md](ui-taskbar.md).
+- **`LANGUAGE`** — an unsupported value makes **all** in-game text vanish, so
+  the value must match a directory under `scripts/`.
+
+`FIRST_LOGIN` is documented as unknown by the tool's own author — its help
+page says, verbatim, "Первый вход (Действие не выяснено)", *action not
+established*. It is not an omission on our side.
+
+> The tool is third-party and its glosses are its author's, not Ascaron's.
+> Only `SOUND3D` is new — every other key it names was already in a config
+> file we hold, which makes the 56 a corroboration and not a discovery.
 
 ## Two external tables that check out against our own install, 2026-08-25
 
