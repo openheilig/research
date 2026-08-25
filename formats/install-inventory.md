@@ -790,7 +790,8 @@ established*. It is not an omission on our side.
 
 Both came out of the VK file set. Neither is first-party; both are verified
 against data we already hold, and both are checked into
-[`generated/`](generated/).
+[`generated/combat-art-ids.tsv`](generated/combat-art-ids.tsv) and
+[`generated/dialogue-functions.tsv`](generated/dialogue-functions.tsv).
 
 ### `combat-art-ids.tsv` — 152 combat arts across nine class sheets
 

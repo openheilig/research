@@ -303,6 +303,13 @@ by reading the file, and by a different author from a different direction.
 > The tool is third-party and its names are its author's reading of the format,
 > not Ascaron's. Nothing above was tested by round-tripping a file through it.
 
+**A second, independent tool carries the same enum, 2026-08-25.** Raven Rock's
+`srr.dll` holds **10 of 10 `CET_` names and 7 of 7 `ERROR_` names identically**,
+and it names `global.res` and builds a `%s%sscripts` path — so it parses the
+resource tree at runtime with the same library. Two unrelated Sacred tools
+sharing the vocabulary makes it the community's settled reading of the format
+rather than one author's private naming. It still is not Ascaron's.
+
 ### 50 symbolic names recovered
 
 Its `hash-0.txt` is a name list, and **all 50 resolve against our own
