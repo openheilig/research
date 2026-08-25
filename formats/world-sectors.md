@@ -442,6 +442,34 @@ been recovered. An aspect-ratio gate ("only give the height to something far
 taller than it is wide") was measured and **refuted** at every ratio from 1.5
 to 4.0; it loses more on squat furniture than it wins back on candles.
 
+**UNVERIFIED EXTERNAL CLAIM, recorded 2026-08-25 — it would explain the failure
+to recover this, so test it before searching further.** Two Russian modders who
+have each done their own reverse engineering state, in a
+[2023-03-12 thread](https://vk.ru/wall-191594029_1960) recovered by `tools/vk/`,
+that the composition is **not in the shipped files at all**:
+
+> «Какие именно составные объекты входят в статический объект в файлах не
+> описано. Эти описания были в редакторе уровней (нам не доступном).»
+> — *which composite objects go into a static object is not described in the
+> files; those descriptions were in the level editor, which is not available to
+> us.*
+
+Their model of the hierarchy is **tiles -> MIX-objects (`mixed.pak`) -> static
+objects (`static.pak`), and static objects carry STATES**; the level editor
+emitted `Static.PAK` and `Floor.PAK` from a source map that never shipped. One
+of them wrote a script that assembles MIX-objects out of `mixed.pak` and reports
+that **furniture assembles whole while houses come out only as "MIX-parts"** — a
+floor, a piece of front wall — which is the same boundary this project hits from
+the other side.
+
+WARNING: this is a forum claim, and it is documentation of behaviour rather than
+a citation — the same clean-room rule as `community/unpack-tools/`. It is
+recorded because it is *falsifiable and cheap to test*: if the per-static-object
+part list really is absent from the shipped data, recovering "the authored
+order" from files is impossible by construction, and this item should be
+re-scoped to a measured per-building table rather than a search. Nobody has
+checked it. **Do not cite it as a finding and do not close this item on it.**
+
 Building construction and the interior/exterior swap are a separate matter and
 are deliberately not documented here; the reason is under Related, above.
 

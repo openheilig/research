@@ -145,6 +145,7 @@ it stopped being true.
 | 3 | **Equipment actually equipped** | Medium | Armour and resist for 8c, the `bonus` term for 8d, the weapon base for the recovery clock | Row 3b: *"ids only, not equipped"*. Three formulas currently take a placeholder: `Combat.damage` gets zero armour, `Regen.rates` gets bonus 1.0, `sub_81A8636` falls back to 20.0. **They are one gap, not three.** |
 | 4 | **What an art does to damage** | Med, uncertain | Makes a spent art matter | `+0x50`/`+0x54` are measured and read like a multiplier for attack moves, but the same field is a duration on a shapeshift art. Row 1036 notes the weapon-slot flag appears nowhere in `sub_81FAC30`. |
 | 5 | **The experience value** | Low-Med | Fills the XP bar that is already identified and drawable | Dumping the hero creature's `+0x420`…`+0x620` across a kill moved only two noise fields. |
+| 6 | **Drop shadows** — retail draws one under the hero, the port draws none | Unknown | An unmeasured share of the start-scene pixel delta | `view/player_view.gd:96`, in the scale-calibration docblock: *"her drop shadow — which the port does not draw at all — contaminates the bottom"*. **Unranked on purpose: its pixel cost has never been measured.** See Open. |
 
 **Why #2 is not first.** It reads like the obvious next step and it is not the
 biggest one. The list is ordered by effort and by what each unblocks, never by
@@ -190,5 +191,61 @@ derivation found before any of #2 can start.
   `sub_428790` and are *not* in the Linux build, whose display path computes
   `100·AT/(AT+PA)` through `sub_815D44C` with no level term. Recorded as a
   discrepancy between two binaries rather than resolved.
+- **Drop shadows, and what draws them.** Retail draws a shadow under the hero
+  that the port does not draw at all — `view/player_view.gd:96` records it as a
+  measurement nuisance ("contaminates the bottom") while calibrating character
+  scale, and that code comment is the only place in the project the fact is
+  written down. **Registered here 2026-08-24 because it was named as a defect
+  and then lost.** `AGENTS.md` § STATUS 2026-08-17 (evening) decomposed the
+  then-29.3% two-engine delta and made its FIRST bucket "object-sprite shading +
+  retail's drop shadows under every object and character (halo blobs in the diff,
+  the port draws none)". That bucket does not appear in row 1018's enumeration of
+  the 13.55% the same night, was never closed by any row, and the word "shadow"
+  appears in neither `open-questions.md` nor `world-sectors.md` nor this file
+  until now.
+
+  **What is fact.** The port draws no character drop shadow. Retail draws one.
+  Nothing in `view/` emits a shadow pass; the only other occurrence of the word
+  in the engine is `shaders/object.gdshader:78`, which is about Sacred's 4-bit
+  alpha gradient and not about a shadow pass.
+
+  **What is NOT established, and must not be assumed.** (1) Its pixel cost —
+  never measured, in any frame. It is a *candidate* for the roughly 8.4pp of
+  row 1018's 13.55% that its four named items do not account for, and a candidate
+  is not a finding. (2) Whether the "under every object" half is a separate pass
+  at all: `object.gdshader:78` states Sacred's sprites carry shadows, glass and
+  smoke at partial alpha, so a static object's shadow may already be baked into
+  its art and already drawn. The hero's is the only one proven missing. (3) How
+  retail draws the character's — projected quad, sprite, or blob — is untraced.
+
+  **UPDATE 2026-08-24, same day: the mechanism is now named, from our own
+  binary.** A lead out of the VK corpus (`tools/vk/`) pointed at a Sacred NL
+  config key; the key was then verified first-hand in `install/sacred`, which is
+  where the evidence below comes from — the forum was the pointer, not the
+  source.
+
+  | String in `install/sacred` | What it settles |
+  |---|---|
+  | `cGranny::renderShadow()` | retail has a **named shadow render path in the Granny layer** |
+  | `cGranny::renderShadowFake()` | and a second, cheaper one — two modes, not one |
+  | `SHADOWDOT.TGA` | the character blob shadow is a **texture**, not geometry |
+  | `SHADOW_TREE00.TGA` | objects get their own shadow art, so the "under every object" half **is** a real pass |
+  | `NOSHADOW`, `FLAGS:NOSHADOW` | a **per-object opt-out flag**, so the pass is selective |
+  | `FORCE_BLACK_SHADOW` | a `Settings.cfg` key that selects between the modes |
+
+  The art ships in data the port already reads: `texture.pak` carries
+  `SHADOWDOT.TGA`, `FX_SHADOWDOT01.TGA` and `SHADOW_TREE00.TGA`. None of these
+  seven strings is named anywhere in `research/`, `engine/` or `AGENTS.md`.
+
+  **What this does NOT settle, and must still not be assumed.** The pixel cost is
+  still unmeasured. What `renderShadow` computes, what distinguishes it from
+  `renderShadowFake`, what `NOSHADOW` is actually set on, and which mode
+  `FORCE_BLACK_SHADOW` forces are all untraced — four string names are a map, not
+  a mechanism.
+
+  **The cheap first step is still a measurement, not an implementation:** crop the
+  hero's footing in the existing retail/port pair and take the delta. The second
+  step is now obvious and cheap too — decode `SHADOWDOT.TGA` and look at it.
+
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
