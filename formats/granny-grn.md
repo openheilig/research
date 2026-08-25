@@ -369,6 +369,48 @@ Ten `.tga` path strings live in the entry and only **three** are referenced —
 `hands`, `legs`, `belt_skirt`) is a superseded export left in the file; four of
 the six materials share the one combined body atlas.
 
+### Which SUBMESH a draw batch paints — the file says so
+
+A group's `mesh` field is **not** the reader's submesh number, and the two
+orders differ per file with no single rule:
+
+| entry | reader's submeshes (triangles) | group order |
+|---|---|---|
+| `GLADIATOR.GRN` | 868, 385, 442 | 442, 868, 385 — a 3-cycle |
+| `DWARF.GRN` | 824, 136, 1384 | 1384, 824, 136 — the same 3-cycle |
+| `WALDELFE_DARK.GRN` | 1282, 116, 394 | 116, 1282, 394 — a transposition |
+| `SERAPHIM.GRN` | 144, 1910 | 144, 1910 — the identity |
+
+**`group.mesh` is a 0-based index into the FormMesh list, and each FormMesh
+(`0xCA5E0C03`) node's int32 payload is the 1-BASED index of its Mesh node
+counted over ALL Mesh nodes in directory order.** That is the same reference
+the bone-list pairing above already trusts, read for a second purpose rather
+than re-derived.
+
+Measured over every entry carrying groups: on **1563 of 1565** the submesh this
+resolves to has exactly the triangle total its groups declare. The two that
+disagree — `SERABFG.GRN` and `EDLST_RUND_GESCHL_KLEIN.GRN` — resolve to the
+same submesh a triangle-count rule picks and disagree only on the count, each
+declaring a single triangle against a 114- and an 80-triangle mesh. So the join
+is unanimous and the residue is those two files' own group data.
+
+**What it was worth.** The port reconciled the two orders by triangle count and
+refused the split whenever two submeshes had the same face count. That refused
+**143 of 1567** entries, and the twelve of them naming more than one texture
+rendered as flat untextured clay — including `THIEF2_FEM.GRN` (8 materials) and
+`ELVE_SORCESS.GRN` (7), both character bodies, drawn as featureless
+silhouettes. The count rule agreed with the reference wherever it decided at
+all, so this is the same answer without the refusals.
+
+**Triangles no group claims.** Four entries leave geometry outside every draw
+batch: `ELVE_SORCESS` (six whole 14-triangle submeshes) and 14 triangles each
+on `GIGANT_SPIDER`, `CHEST4` and `DWARF_CHEST_02A`. Whether retail's own draw
+loop reaches them is **open** — a batch is what binds a texture, so unclaimed
+geometry has no stated material. Drawing it as clay was tried and is visibly
+wrong: ELVE_SORCESS grows a column of pale lumps down her spine. The port draws
+such triangles only where the entry names exactly ONE texture, which leaves no
+room for doubt, and counts them otherwise.
+
 ## Equipment sockets
 
 A weapon is attached by a **named socket that exists on both sides of the
@@ -551,9 +593,11 @@ unambiguous FormMeshBone pairing**, down from 240 (24.72%). See "The pairing
 rule" above for what changed and why the residue is refused rather than
 guessed.
 
-Two of the seven class body meshes do not build at all: `DUNKELELVE.GRN` and
-`MAGICIAN.GRN`. Both are correctly *named*, so this is the decoder being short
-rather than the map being wrong.
+~~Two of the seven class body meshes do not build at all: `DUNKELELVE.GRN` and
+`MAGICIAN.GRN`.~~ **STRUCK 2026-08-26. Both build fully**, and textured on
+every surface — DUNKELELVE 1856 verts / 2115 tris / 8 of 8 surfaces textured,
+MAGICIAN 1316 / 1516 / 6 of 6. The claim outlived whatever decoder shortfall
+produced it; it was re-tested directly, not argued away.
 
 ~~One mesh disagrees on vertex count with an outside reading (279 against
 280).~~ **Closed 2026-08-15 against retail's own index array**, not against the
