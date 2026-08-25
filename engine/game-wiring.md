@@ -245,10 +245,33 @@ derivation found before any of #2 can start.
   third-party tool author's, not Ascaron's, but it is specific and it is testable
   against a capture with the key flipped.
 
-  **What this still does NOT settle.** The pixel cost is still unmeasured. What
-  `renderShadow` computes, what distinguishes it from `renderShadowFake`, and what
-  `NOSHADOW` is actually set on are all untraced — string names are a map, not a
-  mechanism.
+  **THE PIXEL COST IS MEASURED, 2026-08-25 (row 1099), and it is small.** The
+  shadow is plainly there in a retail capture and plainly absent from the port's.
+  Isolating it — pixels under her feet where retail is more than 8 levels darker
+  than the port, with her boot columns excluded — gives **1,826 pixels, 100% of
+  them differing, at MAE 32.64**. In the gate's units that is:
+
+  | | of the full frame | of the world band |
+  |---|---|---|
+  | the shadow | **0.23pp** | **0.30pp** |
+  | her body, for scale | 0.59pp | 0.76pp |
+
+  A same-sized control crop of open floor beside her differs by **0.60% at MAE
+  0.28** — so the floor is exact and the footing is not, which is what makes the
+  0.30pp attributable rather than ambient.
+
+  **So the shadow is NOT the ~8.4pp candidate.** Rows 1061 and 1063 both listed
+  it as a candidate for the share of row 1018's delta the four named items do not
+  account for. It is worth about a thirtieth of that. Where it differs it differs
+  hard — MAE 32.6 — but there are only 1,826 such pixels. **Her own body costs
+  more than twice the shadow**, and that is the lead this measurement actually
+  hands on.
+
+  **What this still does NOT settle.** What `renderShadow` computes, what
+  distinguishes it from `renderShadowFake`, and what `NOSHADOW` is actually set on
+  are all untraced — string names are a map, not a mechanism. The measurement
+  above is of the HERO's shadow only; the "under every object" half is still
+  unmeasured and may be baked into sprite art.
 
   **The cheap first step is still a measurement, not an implementation:** crop the
   hero's footing in the existing retail/port pair and take the delta. The second
