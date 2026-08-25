@@ -460,5 +460,16 @@ derivation found before any of #2 can start.
   1106: `player_view.gd`'s own calibration block states "ortho size 768 over a
   768-px viewport", reached from a different direction entirely.
 
+- **The port has two noise floors and they are not the same size** (row 1109).
+  Two runs of the SAME build differ by **3,710 px = 0.604pp of the world band**,
+  yet both score **11.11** against the same retail frame — identical to 0.01pp,
+  because the pixels that wobble are already inside the set that differs from
+  retail. So the gate's `TOL=0.10` sits six times above the score's own noise
+  and is sound, while a pixelwise comparison of two captures is six times
+  noisier than the tolerance and will call a no-op a regression. It nearly did:
+  a change verified as pixel-neutral moved 2,848 px, fewer than the control.
+  **Compare scores, never raw pixel counts.** Retail's own floor is 1.31pp of
+  pixels (row 1104).
+
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
