@@ -273,6 +273,47 @@ derivation found before any of #2 can start.
   above is of the HERO's shadow only; the "under every object" half is still
   unmeasured and may be baked into sprite art.
 
+  **Correction to the lead this handed on, 2026-08-25 (row 1100).** Row 1099
+  closed by calling the hero's cost a shading difference — "the port draws her
+  markedly darker". **That was an eyeball impression and it is wrong.** Over the
+  differing pixels the port is on average **+8.09 BRIGHTER**, and darker only
+  36.6% of the time. What the capture actually shows is **different equipment**:
+  retail's Seraphim wears light blue armour with white boots and a horned helm,
+  the port's wears heavy dark segmented plate on shoulders, forearms and legs and
+  carries a different weapon.
+
+  **The port says so itself.** `main.gd:47` — *"a full starting kit is not what a
+  new retail character has. It is here so the composition path is exercised by
+  the default run; a real inventory replaces it."* `START_SET := 6` is an
+  acknowledged placeholder, and nobody had connected it to the milestone metric.
+
+- **The hero costs 0.78pp of the world band, and drawing her is a net loss.**
+  Measured 2026-08-25 with an exact silhouette — the port driven twice, once
+  normally and once with `--hideplayer`, so her pixels are the difference between
+  two port frames rather than a guessed box.
+
+  | | px | of the world band |
+  |---|---|---|
+  | both engines drew her — surface / outfit | 2114 | **0.344pp** |
+  | port drew her where retail did not | 956 | 0.156pp |
+  | retail drew her where the port did not | 1722 | 0.280pp |
+  | **hero total** | **4792** | **0.780pp** |
+
+  So roughly **44% surface, 56% silhouette** — it is not one problem. (The two
+  silhouette rows depend on a threshold estimate of retail's own mask and carry
+  method uncertainty; the 0.780pp total and the 0.344pp surface row do not.)
+
+  **Hiding her entirely scores BETTER than drawing her as she is**: the world band
+  reads 10.95% with her and **10.88% without**. The port's hero rendering is
+  currently worth −0.07pp — retail still draws her either way, so the port's
+  version does not remove the disagreement, it relocates it.
+
+  Row 1018's *"unmoved by dressing — START_SET 6 and the bare rig score within
+  0.01pp"* does **not** exonerate the outfit. It shows the bare rig and set 6 are
+  **equally wrong**, which is what you would expect when neither is what retail
+  starts her in. **What retail actually equips a new Seraphim with is the open
+  question**, and it is worth up to 0.34pp.
+
   **The cheap first step is still a measurement, not an implementation:** crop the
   hero's footing in the existing retail/port pair and take the delta. The second
   step is now obvious and cheap too — decode `SHADOWDOT.TGA` and look at it.
