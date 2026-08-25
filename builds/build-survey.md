@@ -27,6 +27,58 @@ behaviour there, then confirm it against the binary that actually ships.
 Two builds were closed on cheap external measurement without an IDA session
 at all — Gold 2.28 Russian retail among them.
 
+## A third debug build, from its `DEBUG.LOG` alone, 2026-08-25
+
+A `DEBUG.LOG` recovered from VK is a **fourth data point and a third build** —
+addon-era retail lineage, not Armalion. It identifies itself by content, not by
+a banner: it plays `SOUND_FX_MENU_ADDON` and loads `ITEMS03/MODELS03/TEXTURE03`,
+the Krombacher promo paks that only the shipped game carries.
+
+Every Sacred debug build opens by printing its own class sizes. Three builds
+side by side, and the split is the point:
+
+| class | 2001-09-20 | 2001-12-11 | VK log (addon-era) |
+|---|---|---|---|
+| `cSectorChunk` | 512 | 512 | **512** |
+| `sObjectStatic` | 64 | 64 | **64** |
+| `cTrigger` | 16 | 16 | **16** |
+| `cPatchIso` | 32 | 32 | **32** |
+| `cPatchSharedIso` | 64 | 64 | **64** |
+| `cGrnMtnChunk` | 256 | 256 | **256** |
+| `cSoundChunk` | 128 | 128 | **128** |
+| `cTimerListener` | 12 | 12 | **12** |
+| `cSectorEnvironment` | 256 | 256 | **256** |
+| `granny_transform_state` | 220 | 220 | **220** |
+| `cWorld` | 132448 | 132708 | 56936 |
+| `cSector` | 384 | 384 | 1452 |
+| `cObjectShared` | 384 | 256 | 128 |
+| `cGrnMdlChunk` | 1200 | 1200 | 1194 |
+| `cEvent_creature` | 52 | 52 | 68 |
+| `cCritical` | — | — | 24 |
+| `sObjectNonstatic` / `…3D` | 53 / 86 | 53 / 86 | absent |
+
+**The classes that own an on-disk record never move; the runtime classes move a
+lot.** `sObjectStatic` is 64 bytes across five years and three builds, and so
+are `cTrigger`, `cPatchIso`, `cPatchSharedIso` and `cSectorChunk` — an
+independent third confirmation of the freeze
+[`pak-containers.md`](../formats/pak-containers.md) argues from the file data.
+Meanwhile `cWorld` more than halved, `cSector` nearly quadrupled and
+`cObjectShared` fell by two thirds. A size in this table is evidence about a
+FORMAT only for the classes in the frozen group; for the rest it is evidence
+about a build.
+
+`cCritical` (24) appears in no earlier build, and `sObjectNonstatic` /
+`sObjectNonstatic3D` are printed by both Armalion builds and by neither the VK
+log — the print list itself changed, so absence here is not absence from the
+engine.
+
+The same log independently confirms seven container headers we had read from
+the files themselves — `texture.pak` v3/25535, `texture03` 3, `items.pak`
+v5/32768, `items03` 32768, `models.pak` v3/4993, `models03` 4, and
+`sndprofiles.pak` v1/8192. Seven for seven. The log misspells that last one
+`SNDPORFILES.PAK`; the file on disk is `sndprofiles.pak`, and the typo is
+retail's, not ours.
+
 ## The rule that follows
 
 Recover on a debug build, **confirm on the shipping one**. The to-hit formula

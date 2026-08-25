@@ -122,6 +122,49 @@ Three rules complete it, and each cost several failed attempts:
 
 `FunkCode`'s symbol table. Decoded: 5684 sectors, 0 orphans.
 
+## The script loader's own stage list, and three files we do not have, 2026-08-25
+
+Retail's binary carries an ordered progress-trace table at `0x6a4a00`-`0x6a4d40`.
+It is the script subsystem's load sequence, in the engine's own words:
+
+    hero -> openQuests -> dialogText -> mouseEvent -> questKram -> avl_trigger
+    -> base trigger -> regionsnamen -> ref2name -> functionen -> quest
+    -> questpool -> questregions -> ready
+
+Fourteen stages. Three of them are followed **immediately** by a filename, and
+the pairing is adjacency in the string table, nothing stronger:
+
+| Stage | File named next | On disk? |
+|---|---|---|
+| `* scripts/functionen` | `bin\sgf.bin` | **no** |
+| `* scripts/quest` | `bin\sgq.bin` | **no** |
+| `* scripts/questpool` | `bin\sgqp.bin` | **no** |
+
+**None of the three exists in the install**, and none is documented anywhere in
+`research/`. They are `bin\`-relative, i.e. **global and class-independent**,
+where the script bytecode we read is per-class under `bin/type_npc_<class>/`
+as `FunkCode.bin`, `QuestCode.bin`, `QuestPoolCode.bin`. The stage names line
+up with those three files one for one, so the obvious reading is a global
+counterpart to each per-class script file. That reading is NOT established:
+what is proven is that retail names three paths it can open, that the names sit
+beside those three stages, and that our copy of the game does not contain them.
+Whether they are ever written, read from a savegame, or are dead paths like
+`capture\world_spawn` (row 1074) is open.
+
+The same region names a fixup pass over the symbol table that
+[`vectoren.bin`](#vectoren-bin) holds:
+
+    Funks Vector Korrektur (%d Durchlaeufe)
+    - Changes in Funks [%d]   - Overwrites in Funks [%d]   - New members in Funks [%d]
+
+So `FunkCode`'s symbol vector is **corrected at load**, in multiple passes, and
+entries can be changed, overwritten or added. A reader that treats
+`vectoren.bin` as the final symbol table is reading the input to that pass, not
+its result. Nothing here says what the correction does.
+
+Also in the table, the quest trigger callbacks: `QIS_Trigger%d`, `QIS_OnEnter%d`,
+`QIS_OnExit%d`, `QIS_OnLose%d`, `QIS_OnSetUp%d`, keyed by `Sector` and `Region`.
+
 ## Related
 
 `builds/armalion-script-api.tsv` holds the script API surface extracted from
