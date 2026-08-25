@@ -311,12 +311,43 @@ derivation found before any of #2 can start.
   Row 1018's *"unmoved by dressing — START_SET 6 and the bare rig score within
   0.01pp"* does **not** exonerate the outfit. It shows the bare rig and set 6 are
   **equally wrong**, which is what you would expect when neither is what retail
-  starts her in. **What retail actually equips a new Seraphim with is the open
-  question**, and it is worth up to 0.34pp.
+  starts her in.
 
-  **The cheap first step is still a measurement, not an implementation:** crop the
-  hero's footing in the existing retail/port pair and take the delta. The second
-  step is now obvious and cheap too — decode `SHADOWDOT.TGA` and look at it.
+  **ANSWERED 2026-08-25 (rows 1101, 1102), and the answer removes equipment from
+  the list of suspects.** Retail equips a new character from two arrays filled by
+  `equip=<CLASS>,<slot>,<itemid>` and `inventory=<CLASS>,<itemid>` lines in the
+  balance text, and **no shipped file carries such a line** — not the install, not
+  `balance.bin`, not any build we hold, not the 88k VK corpus. A stock retail
+  Seraphim therefore starts BARE, and the capture shows her base rig.
+
+  `main.gd` gained a `--nodress` flag so that could be measured rather than
+  argued. All three configurations against the same retail frame:
+
+  | port config | world band | MAE | hero box |
+  |---|---|---|---|
+  | dressed, `sets.bin` set 6 | 10.95% | 5.05 | 31.10% |
+  | bare rig, `--nodress` | 10.92% | 5.02 | 29.94% |
+  | mesh hidden, `--hideplayer` | 10.88% | 4.96 | 28.81% |
+
+  **Undressing her recovers 0.03pp of her 0.78pp — about 4% — and hiding her
+  entirely is still better than either.** The dressed and bare port renders differ
+  from EACH OTHER by 2,324 px (0.378% of the world band), so the outfit is plainly
+  on screen; it simply does not move the score. This independently reproduces row
+  1018's result, which was doubted precisely because the two outfits look nothing
+  alike. They do look nothing alike. It still does not matter to the metric.
+
+  **So the remaining ~96% is the base rig itself — mesh, texture, pose or scale —
+  and that is where the 0.344pp surface row above actually lives.** That is the
+  next thing to attack, and it is a different investigation from equipment.
+
+  `START_SET := 6` was deliberately NOT changed. It is the only thing exercising
+  the equipment-composition path in a default run, and the trade is 0.03pp of
+  fidelity against that coverage — a human decision, recorded in
+  [../open-questions.md](../open-questions.md) § Decisions waiting on a human.
+
+  The footing crop that this entry once named as "the cheap first step" was taken
+  on 2026-08-25 and is the 0.30pp shadow measurement above. What is still cheap
+  and still undone: decode `SHADOWDOT.TGA` and look at it.
 
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
