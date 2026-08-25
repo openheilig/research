@@ -575,6 +575,60 @@ This matters rather than being a nicety: `rust.bin` exists to say which mesh an
 armour *becomes* for a different wearer, so binding one to the wrong body is a
 real error.
 
+### External prior art, and where it disagrees with us
+
+The only public implementation of Sacred's attach maths is the community **GRN
+Model Viewer** (`https://sacred-tribute.com/3d/`), a self-contained HTML/JS
+reconstruction derived from ptasev's Age of Mythology Granny work. Every other
+Sacred tool — SacredMagician, SacredUtils, SacredGameTools, bssth/sacred-sdk —
+is balance/save/data work and says nothing about mesh attachment. Documentation
+only; no code was taken.
+
+Its model, in prose: the wearer's hand-bone rest **world** matrix rebuilt with
+**uniform** scale (cube root of the absolute product of its three components —
+Sacred's Biped bones carry non-uniform scale that otherwise shears the weapon),
+the weapon's grip world matrix rebuilt with scale forced to exactly `(1,1,1)`,
+attach = `hand × grip⁻¹`, baked into the vertices and rebound to that one hand
+bone at weight 1.0. Armour is the same invert-and-compose shape but **per bone**,
+matched by name never by index, unmatched armour bones skipped. Handedness: an
+item sent to the left hand with no `Bone_weapon_02` falls back to `_01` with a
+`scale(-1,1,1)` mirror; where `_02` exists, **no mirror** — mirroring anyway
+puts the weapon in the right place backwards.
+
+**Where it disagrees with this project, unresolved.** The viewer attaches to
+`Bip01 R/L Hand` (shields to `Bip01 L Forearm`) and **ignores the wearer's
+`Bone_weapon_*` entirely**; its author flags as an open unknown what that bone
+is then for. Our census says substituting the hand is invention with a known
+failure rate — the socket-to-parent-hand rotation is within 15° on 299 entries
+but **90–180° on 107**, and on `SOLDIER` it laid a kite shield flat across the
+chest. Our refusal has more measurement behind it; the viewer renders equipped
+characters correctly. Neither is settled. For `SERAPHIM` the question is moot on
+*position*: her `Bone_weapon_01` sits at local origin `(-1e-6, 0, -1e-6)` on
+`Bip01 R Hand`, exactly at the hand, so the two models differ only in rotation.
+
+### The base body already wears boots
+
+`SERAPHIM.GRN`'s own sub-meshes include **`legs` and `shoes`**, and its own
+texture list includes **`Sera_boots.tga`** — measured here and independently
+read off the mesh name table by the outside sweep. So equipping `SeraBoots01.grn`
+on a body that still draws `shoes` puts **two boots in the same place**, which is
+exactly the stack the port renders. It generalises: `Gladiator_boots.tga`,
+`magician_boots.tga`; Dwarf and Wood Elf use one whole-body texture instead.
+
+Retail must therefore **hide the base sub-mesh an armour piece covers**, and how
+it chooses is documented nowhere — the viewer does not implement hiding at all,
+it stacks and offers manual toggles. The likely vocabulary is the 18-slot
+equipment array at `cCreature + 0x1A4` (main hand `0x0D`, off hand `0x0C`, mount
+`0x12`, slots `0x00`–`0x06` helmet/body/belt/arms/legs/**shoes**/gauntlets),
+whose slot names line up one-to-one with the base-body sub-mesh names.
+
+**Open:** there is no starting-equipment table in any Sacred 1 data file, and
+none is documented anywhere — not the manual, not `balance.bin`, whose decoded
+fields are skill unlocks, experience values and spawn counts only. The
+`EquipNPC` opcode is real and used, but the Vampiress's 76 records all equip
+**horses**, none the hero. Where retail's two Seraphim blades come from is
+unanswered.
+
 ### A weapon is a rigid prop, not a second garment
 
 Armour shares its wearer's skeleton (R1.4, `checks/equip_check.gd`). A weapon
