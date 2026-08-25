@@ -270,6 +270,56 @@ a timer, a flag), 3 of `OnExit` and 1 of `OnLose`, with a zero-byte `Trigger`
 string in the record or a `res:` id resolving through `global.res`; none of it
 is fitted. See findings log rows 936–937.
 
+## Two operand vocabularies, recovered 2026-08-25
+
+`## Open` below says a name is not a behaviour, and that what an opcode's
+operands mean is only what the operands suggest. Two of them are now read off
+the binary instead.
+
+`sacred_orig` carries a contiguous run of `strcmp` sites, each testing one
+literal, in this order and at these addresses:
+
+| vma | literal | |
+|---|---|---|
+| `081c109e` | `lock` | ⎫ |
+| `081c10e4` | `Fix` | ⎪ |
+| `081c112a` | `ToInv` | ⎬ object states |
+| `081c1170` | `unlock` | ⎪ |
+| `081c11b6` | `open` | ⎪ |
+| `081c11fc` | `close` | ⎭ |
+| `081c1242` | `enemy` | ⎫ |
+| `081c1288` | `follow:` | ⎬ NPC states |
+| `081c13ef` | `hireling:` | ⎪ |
+| `081c1556` | `Damage:` | ⎭ |
+
+The two blocks are contiguous, in that order, and the strings themselves sit
+adjacent in `.rodata` at `0x6a2b05`…`0x6a2b3b`. **`SetObjState` is opcode 2
+(table B index 3) and `SetNPCState` is opcode 3 (B[4])** — adjacent opcodes,
+adjacent handlers, adjacent vocabularies, same order.
+
+⚠️ **The binding is inferred from that adjacency, not proven.** No jump table
+anywhere in the file points into `081c0d00`…`081c1700` — the region is inline
+code inside one large function, reached by relative `call`/`jmp` — so the
+dispatch from opcode number to this code was not found, and neither block is
+demonstrably the handler the VM selects for opcode 2. What is demonstrated is
+that the literals exist, that they are compared in two ordered blocks, and
+that the block order matches the opcode order. Treat the vocabularies as
+strong and the *binding* as open.
+
+**Independent corroboration of the object side.** The same binary carries
+`cTrigger::setState ()`, `cTrigger::resetState ()`, the log formats
+`Trigger[%d] locked` / `Trigger[%d] unlocked`, and the refusal string
+`cTrigger::setState () trigger is locked` at `0x6b7410`…`0x6b7464`. So a
+lock/unlock state on a trigger is real, and it is a trigger property rather
+than a door property.
+
+**Provenance.** The lead came from a 2023 Russian modding thread recovered by
+`tools/vk/`, which described a quest door held by a trigger and freed by
+`setobjstate` with `unlock`. Everything above was then read from the binary;
+the thread is not the evidence and is not cited as such. **What the thread
+claims and this does NOT establish:** the door/trigger id mechanics, the two
+object lists, and the name-collision bug it blames for the door staying shut.
+
 ## Open
 
 The FORMAT is closed. The NAMES are now closed too, for 120 of 141 — see the
