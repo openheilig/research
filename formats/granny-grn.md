@@ -111,9 +111,40 @@ they are distinct node types.
 
 ## Ground truth
 
-`tools/granny_oracle/` calls the **retail Granny 2.x runtime** directly to
-check our decode against the vendor's own. That is the oracle; agreement
-between our two readers is the gate (`tools/parity/grn_parity.sh`).
+`tools/granny_oracle/` checks our decode against the vendor's own. That is the
+oracle; agreement between our two readers is the gate
+(`tools/parity/grn_parity.sh`). **It reads a converted file, not ours:** the
+chain is `.GRN` → `grn2gr2.dll` → `.GR2` → `granny2.dll`, so a 2.x runtime is
+answering questions about a 1.x file that a converter has already rewritten.
+
+### The native 1.x runtime exists, 2026-08-25
+
+`Granny.dll` — the actual library Sacred links — was recovered from VK. Built
+**2003-11-27**, copyright *1998-1999 RAD Game Tools*, 101 named exports, and
+its identity is not in doubt:
+
+| Binary | Granny symbols | Against the DLL's 101 exports |
+|---|---|---|
+| Windows `Sacred.exe` | 55 | imports **54**, the subset it calls |
+| Linux `sacred` | 122 | carries **all 101**, plus 21 `Granny*` error-enum names — statically linked |
+| DLL exports unused by either | — | **none** |
+
+So the export surface is exactly Sacred's Granny API. A harness against this
+DLL would read `.GRN` **natively** and remove the `grn2gr2` conversion from
+between our reader and the vendor's, which is the one step in the present
+chain nobody has audited.
+
+Two open items above are the obvious first questions for it: the **eight of
+3421 animation clips that do not decode**, and **`DUNKELELVE.GRN` and
+`MAGICIAN.GRN`, the two of seven class body meshes that do not build**. Both
+are our decoder being short, so the vendor's answer settles them.
+
+> **Licence, unchanged and binding.** The DLL is proprietary RAD code. It stays
+> in the unpublished workspace, is never committed, and is read only by
+> observing the OUTPUTS of its exported API — the same terms
+> `tools/granny_oracle/README.md` already sets, which is why no third-party
+> binary lives in that directory. Nothing here has been run yet; this records
+> that the oracle is available, not that it has spoken.
 
 ## Why the clip-to-mesh match is believed
 
