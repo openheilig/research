@@ -74,6 +74,77 @@ The names make the language legible at a glance: `IF` / `ELSEIF` / `ELSE` /
 `PlaySound`, `PlayAnim`, `Teleport`, `SetHP`, `GiveStat`, `GiveSkill`,
 `SetDrop`, `AddExp`, `AddGold`, and `StartPosition` (45).
 
+## `cInterpretSQW` — the per-sector entry points that populate the world, 2026-08-25
+
+**This is how the world gets its cast, and the port does none of it.** Retail's
+own log, from the `new` menu route into the Seraphim start:
+
+    cInterpretSQW::initRegion(1)
+    WorkFunktion (6230 "Region1Init", 0, 0)
+    cInterpretSQW::initSector(50,39)
+    WorkFunktion (17127 "Sector50039Init", 0, 0)
+    cInterpretSQW::enterRegion(1)
+    WorkFunktion (6231 "Region1Enter", 0, 0)
+    ...
+    cInterpretSQW::enterSector(33,39)
+    WorkFunktion (17094 "Sector33039Enter", 0, 0)
+
+As the player's view moves, the interpreter runs `<Region|Sector>…<Init|Enter|Exit>`
+procedures by NAME through `vectoren.bin`. They are ordinary `FunkCode`
+procedures, in data we already read:
+
+| symbols in `type_npc_seraphim/vectoren.bin` | count |
+|---|---|
+| `Sector<x><y><Init\|Enter\|Exit>` | **11,414** |
+| `Region<n><Init\|Enter\|Exit>` | **128** |
+
+Sector ids are the cell divided by 64 and printed `%02d%03d` — the Seraphim
+start cell `3236,2511` is sector **50,39**, procedure `Sector50039Enter`, and
+it is 515 bytes of bytecode holding:
+
+| opcode | | count |
+|---|---|---|
+| 1 | `CreateNPC` | **6** |
+| 8 | `CreateObj` | **4** |
+| 100 | `SpawnValues` | 1 |
+
+`CreateNPC`'s arg 3 is a PACKED CELL — one u64 read as `lo = x, hi = y`. Six
+placements, all inside sector 50,39, resolved through `items.pak`:
+
+| cell | id | name |
+|---|---|---|
+| 3255,2503 | 677 | `NOVIZIN.GRN` |
+| 3233,2531 | 677 | `NOVIZIN.GRN` |
+| 3239,2538 | 677 | `NOVIZIN.GRN` |
+| 3255,2544 | 677 | `NOVIZIN.GRN` |
+| 3258,2536 | 560 | `CHICKEN.GRN` |
+| 3254,2547 | 516 | `RABBIT.GRN` |
+
+plus four `CreateObj` of id 886, `FX_FIRE_L`. Novice nuns, poultry and fires —
+a cathedral courtyard, authored one procedure per sector.
+
+**None of those six is on screen at the start**, and that is arithmetic rather
+than a guess: the camera is orthographic at `size = 768 / 2.0`, so the
+world-to-pixel scale is exactly **2.0**, and with `HW=48`/`HH=24` the visible
+half-width is 512/(48·2) ≈ **5.3 cells of `x−y`**. Everything above is 16–40
+cells away. The same arithmetic clears `--npcs` of a defect it appeared to
+have: it reports `built=5` and changes no pixel outside the hero, because its
+five `startcode.bin` thieves are all ≥20 cells out and legitimately off-camera.
+
+**What IS on screen is not accounted for by any of this.** A robed figure with
+a `?!` quest marker stands beside the player and is worth **0.918pp of the
+world band at MAE 56.8** — more than the entire hero. Inverting the projection
+from her measured screen offset of (−95.1, +98.0) px gives `d(x−y) = −0.99` and
+`d(x+y) = +2.04`, i.e. **cell 3236.5, 2512.5 — one and a half cells from the
+player**; feeding the rounded integers back predicts (−96, +96) px, so the
+localisation is good to about two pixels. A scan of **all 23,494 procedures**
+for a `CreateNPC`/`CreateObj` with a literal cell within ±8 of the player
+returns **zero**, and all 319 `startcode.bin` NPC records carry a cell with the
+nearest at 20.4. **So she is placed by neither file's literal-coordinate path**,
+and where she does come from is open — a trigger, a quest hook, or a `CreateNPC`
+whose position argument is one of the tag-`0x2b`/`0x30`/`0x42` variants that
+appear in arg 3 and decode to no value.
+
 ## The opcode table
 
 The jump table is at `0x086f4298`, **141 entries**. The dispatcher is

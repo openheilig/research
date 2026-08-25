@@ -349,5 +349,48 @@ derivation found before any of #2 can start.
   on 2026-08-25 and is the 0.30pp shadow measurement above. What is still cheap
   and still undone: decode `SHADOWDOT.TGA` and look at it.
 
+- **The base rig: scale and placement are RIGHT, the POSE is wrong.** Measured
+  2026-08-25 against the same retail frame, using the port's exact hero mask
+  (drawn minus `--hideplayer`) and retail's thresholded one in the same column.
+
+  | | px | height | width | centroid x | IoU vs retail, best-aligned |
+  |---|---|---|---|---|---|
+  | port, dressed | 3070 | 146 | 43 | 512.4 | **0.460** at dx=0, dy=+5 |
+  | port, `--nodress` | 2574 | 135 | 43 | — | **0.441** at dx=−1, dy=+3 |
+  | retail | 3837 | 149 | 76 (shadow included) | 511.9 | — |
+
+  **Height agrees to 2%** (146 vs 149) so scale is not the defect. **The best
+  alignment is dx=0** and the centroids agree to half a pixel, so horizontal
+  placement is not the defect either; the port draws her about **5px high**,
+  which is small. What is left is shape: **IoU 0.46 — less than half the
+  silhouette overlaps even after the best shift**, and shifting buys only
+  0.019 of it, so it is not a translation. Retail's idle holds her arms away
+  from the body with a drawn sword; the port's holds them in. **The bare rig
+  is WORSE than the dressed one (0.441 vs 0.460)**, which is the second
+  independent reason equipment is not the lever here.
+
+- **Retail's own frame is not reproducible, and the variance sits exactly on
+  the things being compared.** Two retail runs of the same route at the same
+  millisecond differ by **1.31% of the world band** (MAE 0.15–0.38), and a
+  difference map puts effectively all of it in one place: the hero, the NPC
+  beside her and the `?!` marker, which are animating. That is a noise floor
+  larger than the whole 0.78pp hero budget, and no single-frame pose
+  comparison can see past it. Row 1075 characterised 0.07pp of port-side
+  run-to-run spread; this is the retail side and it is nearly twenty times
+  bigger. **Any future pose work must measure against several retail frames,
+  not one.**
+
+- **The port draws no scripted cast at all, and in this frame that costs more
+  than the hero does.** Retail's start frame contains a robed NPC with a `?!`
+  quest marker standing beside the player. The port draws nothing there:
+  **5,639 px at MAE 56.8 = 0.918pp of the world band**, against the hero's
+  0.780pp at MAE ~17. The mechanism is `cInterpretSQW`, which runs a
+  `Sector<x><y>Enter` procedure per sector as the player arrives;
+  `Sector50039Enter` alone creates four `NOVIZIN.GRN`, a `CHICKEN`, a `RABBIT`
+  and four `FX_FIRE_L`. See
+  [../formats/script-bytecode.md](../formats/script-bytecode.md) for the
+  decode, the projection arithmetic that puts the on-screen figure at cell
+  3236.5,2512.5, and the open question of which record actually places her.
+
 - **`height_scale`** in `sector_view.gd` is still an admitted guess of 1.0.
 - **Eight of 3421 animation clips** do not decode.
