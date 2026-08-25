@@ -452,6 +452,17 @@ derivation found before any of #2 can start.
      built by thresholding one image against another carries everything that
      differs, not the thing being measured — segment the subject on its own
      properties instead.
+  1b. **NOT a transparency defect — I claimed one and it does not exist**
+     (row 1111). Comparing a 4x crop of retail's nun, who is turned AWAY from
+     the camera, against the port's, who faces it, I read the garment's own
+     gold-filigreed front as limbs showing through a translucent robe. At yaw
+     180 the port's rig is plainly solid. Every one of ten character skins
+     sampled is opaque on every texel, and switching the material to
+     `TRANSPARENCY_ALPHA_DEPTH_PRE_PASS` moves **zero pixels**. What WAS wrong
+     was the comment: `DEPTH_DRAW_OPAQUE_ONLY` does not "still write the depth
+     buffer", it means only opaque materials do. The behaviour is fine, the
+     description was not, and only the description changed.
+
   2. **Facing — still open and NOT fittable.** Retail has her turned away from
      the camera; the port's `set_yaw(0.0)` faces it. Nothing in the hook says
      which way she looks, and her real facing is presumably her arrival
