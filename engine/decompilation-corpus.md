@@ -22,7 +22,7 @@ functions, 0 failures, 0 timeouts.**
 | `armalion-sep01` | 2001-09-20 `armalion.exe` | the narrating debug build | 7,388 | 7,388 | 127 (736) | 786 (10.6%) |
 | `armalion-us01` | 2001-09-20 `armalion_us.exe` | rules oracle (combat maths named in debug strings) | 7,401 | 7,401 | 127 (736) | 787 (10.6%) |
 | `armalion-dec01` | 2001-12-11 `armalion.exe` | source-layout oracle (`_assert` paths) | 8,514 | 8,514 | 145 (935) | 957 (11.2%) |
-| `sacredserver` | LGP dedicated server | multiplayer, out of scope; dumped for completeness | 7,653 | 7,653 | none — Itanium ELF, no `??_7` tables | 896 (11.7%) |
+| `gold228-rus` | Gold 2.28 RUS (`analysis/builds/gold228-rus`) | localization rebuild of the same source tree | 9,636 | 9,636 | 328 (2,072) | 2,277 (23.6%) |
 
 The 11 patch-series builds are **not** dumped: UPX-packed with a tampered
 packer and closed as provenance-only (RESEARCH §16).
@@ -69,7 +69,7 @@ six builds, one column each:
 |---|---|---|---|
 | linux1002 (Itanium, `lgp_linux_vtables.json` — 383 primary, 386 with MI secondaries) | 386 | — | 323 |
 | win228eng (MSVC `.?AV` scan) | 325 | 323 | — |
-| win228rus | 325 | — | 325 (identical sets) |
+| gold228-rus | 325 | — | 325 (identical sets) |
 | demo-usa | 268 | 264 | 265 |
 | armalion-sep01 | 126 | 85 | 85 |
 | armalion-dec01 | 144 | — | — |
