@@ -4,8 +4,8 @@
 **Purpose:** How a `.GRN` is laid out -- meshes, skeletons, per-bone animation
 -- and which parts of it the engine consumes.
 
-3413 of 3421 animation clips decode; meshes, skeletons and per-bone transform
-tracks all resolve, and skeletal animation retargets across characters.
+3413 of 3421 kind-65 entries decode under the current reader; row 1159 shows
+only **two** are genuine decoder gaps, while six are correct refusals.
 
 The entries live inside `models.pak` (4993 of them). Two independent walkers
 exist and agree — `tools/formats/grn_tagwalk.py` in Python and the reader in
@@ -70,18 +70,21 @@ animation section.
 
 ## Per-bone animation record (`0xCA5E1204`)
 
-A 52-byte header carrying three declared counts, then three flat time tracks,
-then three flat payload arrays, then a real but never-decoded 48-byte trailer
-that does not depend on any count.
+An ordinary record has a 52-byte header carrying three declared counts, then
+three flat time tracks and three flat payload arrays. There is **no fixed
+48-byte trailer**; row 1168 corrects that earlier decoder error. Exact size:
+
+`52 + 16*numTranslates + 20*numQuaternions + 40*numUnknowns`
+
+Each unknown key is one time float plus a 9-float `3x3` scale/shear matrix.
+Sampled records instead carry a 12-byte header followed by `N` 68-byte poses:
+time, vec3 translation, quaternion and mat3 scale/shear.
 
 | Offset | Field |
 |---|---|
 | 24 | `numTranslates` |
 | 28 | `numQuaternions` |
 | 32 | `numUnknowns` |
-
-Verified zero-slack across every sampled record: the declared counts account
-for the whole body exactly.
 
 ## A retracted conclusion worth keeping
 
@@ -444,14 +447,16 @@ rendered as flat untextured clay — including `THIEF2_FEM.GRN` (8 materials) an
 silhouettes. The count rule agreed with the reference wherever it decided at
 all, so this is the same answer without the refusals.
 
-**Triangles no group claims.** Four entries leave geometry outside every draw
-batch: `ELVE_SORCESS` (six whole 14-triangle submeshes) and 14 triangles each
-on `GIGANT_SPIDER`, `CHEST4` and `DWARF_CHEST_02A`. Whether retail's own draw
-loop reaches them is **open** — a batch is what binds a texture, so unclaimed
-geometry has no stated material. Drawing it as clay was tried and is visibly
-wrong: ELVE_SORCESS grows a column of pale lumps down her spine. The port draws
-such triangles only where the entry names exactly ONE texture, which leaves no
-room for doubt, and counts them otherwise.
+**Triangles no group claims are never drawn by retail** (row 1167). The
+character-select apitrace identifies `ELVE_SORCESS` by its full ordered group
+sequence and observes exactly seven `glDrawElements` batches — its seven
+declared groups — with no six extra 14-triangle calls for the six wholly
+unclaimed submeshes. Fully grouped `SERAPHIM` and `GLADIATOR` controls emit
+exactly their six declared batches. The binary has one real indexed-model draw
+callsite, `sub_8053772:0x8053935`, so the trace is exhaustive: there is no
+default-material or separate leftover pass. Port rule: emit only explicit
+group index lists; count but skip every unclaimed triangle, even for
+single-texture entries.
 
 ## Equipment sockets
 
@@ -682,7 +687,19 @@ appending `.TGA` to a stem, and the stored name is already cut — so that half
 of the original observation stands. The other two are reachable and were only
 ever a decoder artefact.
 
-Eight of the 3421 animation clips do not decode.
+Of the eight historically refused kind-65 entries, six are intentional:
+`INVALID_MOTION` is a 256-byte stub; `GLADIATOR`, `SD01_ACTIVATE`,
+`WILB_DYING_C` and `WIZARD` carry no transform-key records; and
+`ANDD_ATTACK_SPECIAL01` contains one non-normalizable quaternion.
+
+`FX_E_IDLE_BH` and `FX_G_IDLE_BH` are fully decoded (row 1168), as are 26
+other hybrid entries found by the corpus sweep. Per-record classification is
+content-defined: SAMPLED iff count dwords `+24/+28/+32` are all zero and the
+span is `12 + 68*N`; otherwise ORDINARY with the size formula above. Across
+258,534 records, all 128 count-zero records are valid sampled streams with zero
+false positives. Duplicate bone ids retain first/ordinary ordering, and their
+sampled record replaces the sparse ordinary output because it is the dense
+evaluated form of the same complete transform. No FX decoder research remains.
 
 **169 of the 971 weight-declaring meshes — 17.40% — still have no
 unambiguous FormMeshBone pairing**, down from 240 (24.72%). See "The pairing

@@ -61,10 +61,11 @@ are `SetVar`, `IncVar` and `DecVar`. `atmo_rg` is a frequent *operand* string,
 not the opcode's identity — which is exactly the failure mode naming-by-payload
 has. Opcode 58's `if IsNotVarBit:%s=%d` was closer: it is `IF`.
 
-**21 opcodes remain unnamed**: 0, 27–34, 39–44, 47, 101, 102, 111, 122, 123 —
-two contiguous runs and four strays, i.e. the keyword tables omit them rather
-than scattering them, which suggests a third table or a deliberately
-unexposed group.
+**21 opcodes remain absent from the compiler keyword tables**: 0, 27–34,
+39–44, 47, 101, 102, 111, 122, 123. Row 1161 separates missing NAME from
+missing BEHAVIOUR: executable behaviour remains meaningfully unresolved only
+for handlers 40, 44 and 111; the rest are halt/no-op/control/template/stub
+roles described in `## Open`.
 
 The names make the language legible at a glance: `IF` / `ELSEIF` / `ELSE` /
 `NOP` (58/66/59/62), `SetVar` / `IncVar` / `DecVar` / `SetVarBit` /
@@ -571,16 +572,45 @@ object lists, and the name-collision bug it blames for the door staying shut.
 
 ## Open
 
-The FORMAT is closed. The NAMES are now closed too, for 120 of 141 — see the
-keyword table above; **21 opcodes remain unnamed** (0, 27–34, 39–44, 47, 101,
-102, 111, 122, 123). The 66 zero-width tags are presumably operators whose
-identity sits in handlers already located.
+The FORMAT is closed. The compiler keyword tables name 120 of 141; 21 remain
+unnamed. Their executable behaviour is nevertheless bounded (row 1161):
 
-A NAME IS NOT A BEHAVIOUR. `SetIcon`, `SetNPCState` and `CallFunktion` are the
-compiler's words for them; what each does to the world, and what its operands
-mean, is still only what the operands themselves suggest. The section below is
-kept because it is the record of how far string-based naming got before the
-keyword table replaced it — and of where it went wrong.
+- 0 is script halt.
+- 27–30, 34, 101 and 102 have no dispatcher case and no shipped records;
+  42 likewise has no case and is ignored despite 4,950 records.
+- 39 binds an integer id to a trigger name; 41 and 43 are operandless control
+  markers around 42; 47 is an unused platform stub.
+- 31–33 and 122–123 are fixed steps in the six-stage dynamic-quest template
+  chain around opcode 118.
+- 40 appends/inserts a fixed 88-byte record into a flat interpreter vector.
+- 44 classifies creature/type state into the selector used by `NPCUWR_*`
+  template construction.
+- 111 tokenizes a string plus numbers and inserts or replaces a keyed 100-byte
+  slot record in the interpreter table at `+820`.
+
+All 141 executable opcode behaviors are now bounded (row 1169). Of the 21
+compiler keyword names originally absent, 1 is now recovered: opcode 122
+is the script conditional `if IsInRgn` (row 1175). German source phrase: the
+per-handler preamble at loc_82A8A65 pushes the literal `"if IsInRgn:%s"`
+from 0x86ef651, which is the keyword the engine prints at runtime when the
+conditional fails; the handler reads [ecx+0xA86Ch] and compares against the
+resolved region id. Twenty names remain absent, but only as a
+language-vocabulary gap: sixteen of them (0, 27-34, 39-44, 47) sit below
+the 0x3A dispatch entirely, three (101, 102, 123) fall in the default-case
+column of jpt_82A781F, and one (111) has a non-German literal "hero" at
+its handler. The literal-byte case table at 0x86f4298 is pure binary, with
+Twelve of the 21 originally missing compiler names are now recovered. After
+row 1175 (opcode 122 = `if IsInRgn`), row 1176 (opcodes 27-34 named via
+the quest-config directive mappers sub_81B88CA / sub_81B8978 in the
+second quest-pool config parser sub_81BAF28: 27=MaxOffen, 28=Delay,
+29=Rettungsmission, 30=ToDoBloecke, 31=Dialog, 32=Belohnungen,
+33=HideTmpToDo, 34=Schatzsuche) and row 1177 (opcode 123 = SelfTriggerQuest,
+via the German runtime literal `"SelfTriggerQuest%d"` at 0x86e4550), nine
+names remain absent. They are: 0, 39, 40, 41, 42, 43, 44, 47 (no German
+runtime literal in their handlers), 101 and 102 (in the default-case
+column of jpt_82A781F), and 111 (handler literal is the English word
+`"hero"`). The literal-byte case table at 0x86f4298 is pure binary, with
+no German comments.
 
 Six were named this round from strings reachable *within two calls* of the
 handler rather than inside it — 17 award experience, 20 quest-in-sector

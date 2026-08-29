@@ -80,37 +80,38 @@ The wings are **tiled**, not stretched: each side starts with an anchor piece
 `rand() & 1` so the ornament does not visibly repeat. The port alternates
 deterministically instead, because a recorded run has to replay identically.
 
-## Open — the life and mana gauges
+## Life gauge, experience bar, and no mana — residuals
 
-All 46 functions of `cUI_Taskbar2` (`0x85E130C`…`0x85EB38F`) were enumerated.
-The class references gfx ids 6–12, 40, 41, 82, 88–95, 102–104, 135, 136, 141,
-142, 175–181 and the `GUI_spell*` icons, **and nothing else**. It contains no
-orb or fill-bar art and computes no fraction or scissor rect.
+Retail has **one life gauge and no mana pool/gauge** (row 1158). The life
+gauge is the red/grey portrait ring (`UI_CHR_HEALTH_01/_02`, gfx 42/43) in a
+separate portrait window. Same-process frames show it drain red to grey while
+the type-1 hero falls from 119/119 to 5/119. `cUI_Taskbar2` genuinely does not
+reference this art or compute its fraction because it does not own the ring.
 
-So where the gauges are drawn is unrecovered, and they are the most
-recognisable part of a Sacred screenshot — which is why the port leaves the
-gap visible rather than inventing a pair of orbs.
+The green ten-bead bar under the portrait is **experience**, not health or
+mana: health loss, walking, combat-art use and target-health changes leave it
+empty, while forced kills advance it from 0 to 1 to 3 vivid beads. The muted
+beads row 1039 called "72 lit" were the empty track; row 1040 and row 1158
+correct that description.
 
-> **Correction, 2026-08-17 (row 1015).** This section used to add that the
-> orb-looking 95×107 elements of `GUI_main_02` (ids 42, 43) "are used only by
-> the mercenary window". That is wrong, and a pixel match says so: the 95×107
-> block at that sheet's own origin is the **player portrait frame**, and
-> retail's spawn capture draws it at (932, 15) — ring, horned finial and
-> leafwork exact, including the three columns it clips off the right edge of
-> the canvas. The port now draws it. The two adjacent 95×107 blocks are a RED
-> ring and a GREY ring, which is what ids 42/43 most likely are.
->
-> This does not contradict the enumeration above; it *locates* what the
-> enumeration was missing. `cUI_Taskbar2` genuinely does not reference these
-> elements, because the portrait is a **different window**, and that window is
-> the thing to find. Two reasons to think the gauges are in it: `GUI_MAIN_02`
-> also carries three beaded SEGMENTED BARS (yellow, green, red) plus framed
-> variants of each, exactly the shape of a fill gauge; and retail draws one of
-> them, green, immediately under the portrait — its beads start at about
-> (942, 124) and run to the right edge of the canvas. That extent is an
-> eyeballed colour mask, not a pixel match, so treat it as a place to look
-> rather than a rect to transcribe. Neither bar is wired, and which
-> quantity the green one reads is unconfirmed.
+Spells and combat arts use **per-art recharge**, not a shared mana pool.
+`sub_85E676A` slices EMPTY/LOAD/FULL art at a vertical waterline: combat-art
+fraction is `1 - remaining/total` from 22-byte records `+0x12/+0x0a`; spell
+fraction is `min(elapsed/total, 1)` from 38-byte records `+0x22/+0x1a`.
+`sub_81F118A` advances them using Mental or Physical Regeneration.
+
+Four exact edges remain: the portrait-window draw function, whether the ring
+reads current HP `+0x4c8` or display/eased `+0x4d0`, arc versus height fill
+law, and the experience value/draw path. The detailed measurements follow.
+
+**Negative lead, row 1163:** `cUI_Character` is the character-sheet window,
+not the missing portrait renderer. Its vtable is `0x872f0e0`; virtual
+`sub_854AF5E` resolves the focused creature at `0x854B00B`, adds combat block
+`+0x3a8` at `0x854B019`, then performs stat-sheet arithmetic at
+`0x854D387..0x854D4B7`. It contains no `+0x4c8/+0x4cc/+0x4d0` displacement,
+and shared HP getter `sub_819AE0E` has no UI-range caller. Do not cite that
+four-product percentage as XP; the next trace must start from gfx 42/43 and
+elements 67/68 draw calls.
 
 ### The bar is now a measurement, not a place to look (row 1038)
 
@@ -156,32 +157,29 @@ WHO def=0xafdf0b0 type=1 lvl=1 hp=  5/119   atk=0xb82c9f0 type=313 hp=42/42
 
 `type = 1` is a playable class, so the creature being beaten from 119 to 5 is
 **the hero**; the attacker at type 313 never loses a point. Across those same
-frames the bar reads **72 of 72 beads lit, in every single one**. A gauge does
-not stay full while its owner is nearly killed, so **the green bar is not
-health.** What it does read is still unknown — but it is now excluded, which is
-the useful half.
+frames the green bar remains at **zero vivid fill**: the 72 muted bead pixels
+previously counted as "lit" are the empty track (corrections rows 1040/1158).
+Health loss therefore leaves the experience bar unchanged.
 
 **The health gauge is the PORTRAIT RING.** Measured in the annulus over the
 same run, the red drains and the grey replaces it:
 
-| frame | ring red px | bar lit |
+| frame | ring red px | XP vivid beads |
 |---|---|---|
-| 70000 | 454 | 72 |
-| 95000 | 311 | 72 |
-| 120000 | 168 | 72 |
-| 145000 | 0 | 72 |
+| 70000 | 454 | 0 |
+| 95000 | 311 | 0 |
+| 120000 | 168 | 0 |
+| 145000 | 0 | 0 |
 
-and a healthy frame gives 839. The red is an **arc anchored at about +32° from
-bottom-centre** whose far end sweeps away as health falls — only the far end
-moves, the anchor never does. Visual proof, full against nearly dead:
-`analysis/evidence/hp-gauge-2026-08-20/ring-full-vs-empty.png`.
+A healthy frame gives 839 red pixels. The boundary is horizontal and symmetric;
+arc-proportional and height-proportional laws both fit the available frames
+with mean error 0.026, so the exact law remains open. Visual proof, full against
+nearly dead: `analysis/evidence/hp-gauge-2026-08-20/ring-full-vs-empty.png`.
 
 **This is why `cUI_Taskbar2` has no orb art and computes no fraction.** The
-gauge was never in the taskbar. It is the portrait window, and its art is the
-pair this file already identified: the 95×107 block at `GUI_MAIN_02` (0,0) is
-the **full** state and the one at (95,0) is the **empty** state. The port
-already draws the red one at (932,15) — what it lacks is the grey composited
-over it by fraction, not a new asset.
+gauge belongs to the portrait window. Its art pair is the 95×107 block at
+`GUI_MAIN_02` (0,0) full and **(96,0)** empty; the port already draws the red
+state at (932,15) and composites grey by fraction.
 
 > ⚠️ **Which HP slot the gauge reads is NOT settled, and one obvious test does
 > not work.** Pinning `+0x4C8` to 60 at every blow and watching the ring keep
@@ -611,8 +609,33 @@ slot, which puts the right rail's end at `627 + 104 = 731` against retail's
 measured 732. Tiling them from a fixed `x 32` / `x 890` instead laid ten rail
 tiles and eight 63×63 rings over open terrain — together 13% of the frame
 delta in a two-engine compare.
+**The XP pool is closed (row 1171).** cCreature+0x3b4 is a 32-bit signed
+dword holding the XP pool, with the whole XP record occupying
+cCreature+0x3a8..0x3fe: pool at +0x3b4, remain at +0x3ea, per-level step at
++0x3ec, hero level at +0x3fe. The per-level denominator is a closed-form
+polynomial in level with coefficients compiled into the binary at
+0x8793AC0..0x8793AD8, and the bar fraction is
+`round(remain * 10 / per_level_denom)`. The 0->1->3 non-linearity is the 2^L
+term in `per_level_max` combined with the level-up remain reset, not a
+non-uniform denominator. addExperience is sub_82140EA at
+0x82140ea..0x8216294 and is reached via wrapper sub_819AEC4 which takes
+a cCreature* and passes a1+0x3a8.
 
-## Two pieces recovered by pixel match rather than from the table
+**The portrait ring reads eased HP, not current HP (row 1172).**
+sub_819AE0E/get(obj,idx) returns *(int*)(obj + 4*idx + 0x4C8) bounds-checked
+to 0..2; sub_819AE2A/set stores the same indexed slot at 0x819AE3B.
+idx 0 = current HP at +0x4c8 (set by damage at 0x8173CD9);
+idx 1 = max HP at +0x4cc (write-only, level-up);
+idx 2 = eased/display HP at +0x4d0. HP-eased sync lives in
+sub_811FB5C at 0x8121622..0x8121681 - separate author-of-truth
+and display values, which is exactly the two-current-like pattern row 1038
+measured. The portrait draw function itself is still not located with full
+certainty: candidate sub_8254A02 reads a UI panel field at offset 0x3A4
+(screen 932) but is 31555 bytes with 692 basic blocks and a
+327-cyclomatic-complexity control flow; isolating the ring draw branch
+to its specific case and matching gfx id 42/43 dispatch was not achievable.
+
+**The XP bar and portrait ring are drawn by cUI_Horse, not by cUI_Taskbar2 (rows 1173/1174).** Elements 67 (track) and 68 (fill) live on the cUI_Horse / cUI_Mercenary window, not on the taskbar. Element 67 is registered by sub_856DDBC case 9 at a1+652 of the dialog. Element 68 is built by sub_858DE1A in a loop 0..4 producing five XP slots per window with UV sourced from unk_880DC60 (the 1887-entry by 84-byte texture atlas). The runtime draw chain is cUI_Horse::draw at sub_8569472 (vtable off_872F680 entry 6) -> cUI_Frame::draw at sub_85FB6D2 -> child vector at +112/+116 iterated by virtual at vfunc[+24], each child blitting UV at dialog origin (932,0) + slot-local offset. The cUI_Horse dialog is positioned at x=932, width 676, height 92. **The actual portrait ring + XP drawer is sub_85654FE at 0x085654FE** (656 bytes), the per-slot element-draw override inside cUI_Horse. The 31,555-byte sub_8254A02 that was the prior candidate is cScript::save/load, not a UI render path. The German keyword "UI_DWARF_CANTRIDE" at 0x871f5ec localises the ring branch to slot type 1 or 2 with a valid cCreature cast; the ring branch itself reads the tooltips "UI_TT_OVERRIDETIME" / "UI_TT_OVERRIDEDAMAGE" / "UI_TT_OVERRIDEREGENERATION" / "UI_TT_OVERRIDEHPBONUS" / "UI_TT_RESISTANCES". The ring fill function is sub_81F55B0(percent, currHP, 100.0, maxHP) with body `result = a + 2*(1 - 1/((b-1)/c + 1)) * (d - a)`, the same damage-curve as to-hit. **Nine of the 21 originally-unnamed compiler opcodes are now recovered from German source phrases** (rows 1175/1176/1177): 122=if IsInRgn, 123=SelfTriggerQuest, 27=MaxOffen, 28=Delay, 29=Rettungsmission, 30=ToDoBloecke, 31=Dialog, 32=Belohnungen, 33=HideTmpToDo, 34=Schatzsuche. cUI_Taskbar2::receive_event at sub_8569E34 sends CommandBarUpdate (id 67) on creature selection but is the taskbar's event handler, not a bar draw.
 
 Matching retail's own frame against the decoded sheets resolves art the gfx
 table did not lead to. Both land at a mean per-channel error **under 1.0**,

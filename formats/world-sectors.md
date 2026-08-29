@@ -53,24 +53,20 @@ consumer in the interpreter rather than by statistics, that is said so.
 Three of these are worth stating as negatives, because each cost a round of
 hypotheses:
 
-> `+0x08` is empty in every cell of the retail world. It is **not** meaningless:
-> the Armalion prerelease populates the same slot in 73 cells, so it is a
-> layer the shipped game dropped rather than a field with nothing behind it.
-> What it indexes is still unidentified, but `World/NonStatic.PAK` is **back
-> on the list**: it was written off because the 73 distinct values run to 170
-> while that file's header count is 106, and that comparison was wrong.
-> `NonStatic.PAK` is a **blob** container, not a fixed one — entry 0 reads
-> `(flags 133, offset 1528, size 384)` and 1528 is exactly `0x100 + 12 × 106`,
-> so the 106 are 384-byte *payloads* covering 40,704 bytes, not 106 objects.
-> The debug build prints its own `sObjectNonstatic` as **53** bytes, and
-> 53 × 768 = 40,704 exactly, so an object space of 768 is consistent with a
-> maximum of 170. What makes the candidate worth retrying rather than merely
-> unrefuted is that the cell field, the object type and the container all
-> vanish together: neither retail tree — Linux LGP nor Windows GOG 2.28 —
-> ships a `NonStatic.PAK` at all. This is not settled: 73 links give the
-> fill-ratio argument that pinned the other three fields no power whatever.
-> See *The prerelease is not a second corpus* below for how the two records
-> line up.
+> `+0x08` is the **head reference of an intrusive singly linked NonStatic
+> object list** (row 1157), not a pointer, cache or archive ordinal. Armalion
+> v4 stores the equivalent field at cell `+0x0c`. `NonStatic.PAK` loader
+> `sub_44C090` registers each object's ref in the global `cObjectManager`
+> ref-to-pointer table, then inserter `sub_449450` stores the old cell head in
+> the new object's `+0x30` next-ref and the new ref in the cell head.
+> `sub_449220` removes a node by replacing the head or resolving and splicing
+> predecessor `+0x30` links, then clears the removed next-ref. Disk seeds the
+> list; runtime load, movement and removal maintain it. Retail v5 copies the
+> cell bytes verbatim (`sub_80EF4EE`) but has zero heads in all 24,780,800
+> cells and ships no `NonStatic.PAK`, so the complete layer was removed before
+> release. Armalion carries 73 non-zero heads, maximum ref 170, within the
+> 768-object space implied by `106 * 384 = 40,704` payload bytes divided by
+> the debug-reported 53-byte `sObjectNonstatic` record.
 >
 > ~~`+0x1e` bit 1 marks "covered by a region sub-grid".~~ Refuted.
 >
@@ -139,10 +135,23 @@ over deep water and fades to nothing at the shoreline; −255 is opaque at any
 depth. The water surface itself is drawn flat — the depth shapes the bed
 beneath it.
 
-**Reflection** (open): `+0xCC` gates a pass-1 vertically-mirrored untextured
-quad modulated by ambient·(−8·depth). Its geometry is read; its blend state
-goes through untraced render-state calls (`sub_83B41F2`), so the port does
-not draw it yet.
+**Reflection** (row 1012, traced): `+0xCC` (the `REFLECTIVE` flag, true for
+ids 0,1,2,3,10,11) gates a **pass-1** quad drawn *before* the bed. Geometry:
+the iso diamond vertically mirrored (N↔S screen flip) — a no-op for the
+port's flat water surface, so the reflection reuses the bed quad — textured
+with the **same animated frame** as the bed (texcoord = the cell's own
+screen position over 128 px). Color: a grey tint carried in all three
+channels, modulated by the light field (`imul` by `sub_83AD576`'s return),
+with **alpha = `clamp(−8 · depth, 0, 255)`** — a *fixed* factor 8,
+independent of the record's `+0xD0` alpha multiplier (that multiplier is
+only read on the bed path, loop 2). So at equal depth the reflection is
+fainter than the bed (−8 vs −12 for water), and where the bed is opaque
+deep water it covers the reflection; the reflection only shows through where
+the bed's own alpha has faded toward the shoreline. Blend is the ordinary
+`GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA`, drawn into the same transparent
+pass the bed uses. The port draws it as a second surface per reflective cell
+with `render_priority = −1`, so it sorts behind the bed exactly as retail's
+pass order dictates.
 
 Which record a cell uses is **per sector**, not per cell, and it lives in
 the **keyx record itself** (row 1010). The 768-byte-record loader
@@ -406,20 +415,8 @@ which are choices rather than facts about the format.
 
 ## Open
 
-All 32 bytes of the retail cell are accounted for, and one of them has since
-become slightly more open rather than less. `+0x08` is empty in every retail
-cell and was written off as a runtime slot; the prerelease populates it in 73
-cells, so it is a **dropped layer** and the table those 73 distinct values
-index is unidentified. `NonStatic.PAK` is the obvious candidate by name, and
-the count that eliminated it was misread: it is a blob container of 106
-384-byte payloads, whose 40,704-byte payload area the debug build's own
-53-byte `sObjectNonstatic` divides into exactly 768, so a maximum of 170 is no
-obstacle. Neither retail tree ships the file at all, so cell field, object
-type and container were dropped together. It is still not proven — 73 links
-are far too few for the fill-ratio argument that pinned the other fields, and
-what would settle it is chain structure inside `NonStatic.PAK`. Nothing in the
-retail port depends on it, which is why this is a curiosity rather than a
-blocker.
+Nothing open in the 32-byte cell record. Every disk field is accounted for;
+retail `+0x08` is the removed NonStatic object-ref chain documented above.
 
 ### The overlay tile SELECTION, rows 1019–1020
 

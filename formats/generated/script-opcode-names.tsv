@@ -39,7 +39,6 @@ opcode	name	table	index
 53	QuestBook	A	7
 54	LoseQuest	B	11
 55	DelNPC	B	26
-55	DelOBJ	B	27
 56	SetTimer	A	25
 57	DelTimer	B	28
 58	IF	B	29
@@ -120,3 +119,14 @@ opcode	name	table	index
 138	GiveStat	B	58
 139	GiveSkill	B	59
 140	MachVersteck	A	60
+opcode	name	table	index
+122	if IsInRgn	A	-
+123	SelfTriggerQuest	A	-
+27	MaxOffen	A	-
+28	Delay	A	-
+29	Rettungsmission	A	-
+30	ToDoBloecke	A	-
+31	Dialog	A	-
+32	Belohnungen	A	-
+33	HideTmpToDo	A	-
+34	Schatzsuche	A	-

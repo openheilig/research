@@ -8,6 +8,12 @@ survive before it counts.
 Measured against `install/sacred`, the LGP Linux binary the port is verified
 against. Numbers are from 2026-08-15; the method is repeatable and stated so
 the numbers can be re-derived rather than believed.
+> **2026-08-29:** every retail build is now fully decompiled —
+> [decompilation-corpus.md](decompilation-corpus.md) holds the per-function
+> pseudocode, manifests and identity joins. The coverage *numbers* below
+> stand under their own definitions; the corpus does not name functions the
+> oracles here cannot reach, it makes reading what is already identified
+> cheap.
 
 ## Coverage
 
