@@ -140,11 +140,16 @@ hands over with an address attached:
 > records in the shipped scripts.** Every one of the 1,360,204 records the game
 > actually runs is covered. Script semantics is not a bottleneck.
 
-What the same recount exposes instead: those 116 readings are **inferences**
-from operand shapes and handler statics. None has been confirmed by observing
-the running game. The gap is not meaning, it is verification.
-
-## Open
+> **2026-08-29 — first behavioural confirmation (partial).** The script-spawn
+> path is confirmed live: retail's own log names every script spawn
+> (`Spawncreature ohne Waffenpool:TYPE_NPC_X Sector:cx,cy`), and across the
+> archived 18-sector walk (tmp/ab6/ctl-debug.log) every observed spawn lies in
+> the sector's `Funk.rolls_for` prediction (BLACK_RIDER in 32,38/33,38/34,38),
+> while every zero-roll sector entered produced zero spawns — the control arm.
+> Thief ids (259/260) were predicted but never drawn in this single walk, so
+> per-id confirmation stays open. Still unconfirmed-by-behaviour: every
+> recovered function *name*; the opcode-115/51 spawn semantics are now the
+> one verified exception.
 
 No name and no opcode reading has been confirmed by **behaviour**. Cross-source
 agreement covers 34 of 131 names against the Armalion catalogue and 18 of 130
