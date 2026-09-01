@@ -68,6 +68,132 @@ Node tags in use: `0xCA5E0506` bone, `0xCA5E1200` animation, `0xCA5E1203`
 transform-track section, `0xCA5E1204` transform-track keys, `0xCA5E1205`
 animation section.
 
+## The container, reconciled (2026-09-01)
+
+The open-grn project (see Licence boundary) publishes a container model
+that looked nothing like ours — signature at 0x00, header at 0x40, section
+table at 0x60 — yet every one of its *fields* checks out on our bytes once
+it is anchored at the right base. Measured with `tmp/opengrn_check.py`
+against `install/pak/models.pak` (GLADIATOR.GRN, SERAPHIM.GRN, BAT.GRN as
+kind 64; BATX_ATTACK_BH_A.GRN and GLADIATOR.GRN as kind 65):
+
+- A fixed 64-byte **signature blob** ends exactly at the root tag, i.e. it
+  occupies `magic_offset − 0x40` (`0x100` kind 65, `0x4AA` kind 64). Its
+  bytes are constant across entries and kinds, so `magic_offset` is not a
+  property of the entry kind at all — it is `signature_offset + 0x40`.
+- The 32-byte root chunk is a real **header**: `+0` magic, `+4` section
+  count = 3, `+8` CRC, `+0xC` 0, `+0x10` header size = `entry_len −
+  magic_offset` exactly in all five files, `+0x14` format = 0, tail zeros.
+- The header chain's `0102`/`0103`/`0101` chunks are a **section table**,
+  three 0x14-byte entries `{0, offset, crc, 0}` whose offsets are
+  **relative to the signature start**: `0102 → 0x9C`, `0103 → 0x1B8`
+  (constant in every entry), `0101 → a small region at the file tail`.
+- `0103`'s target is the flat node directory: `sig + 0x1B8 = magic + 0x178`
+  — the mysterious `376` is `0x1B8 − 0x40`. The directory's shape (count at
+  +0, 12 skipped bytes, 12-byte `{tag, rel, children}` triples at +16) is
+  exactly open-grn's "old-format chunk stream" (`{count@0, table@+0x10}`,
+  advance = skip the declared subtree), derived independently by both
+  projects.
+- `0102`'s target is the byte after `0101`'s own 0x14 bytes: what our walk
+  measured as "`0101` = 36" is table entry (20) plus the next section's
+  prologue (16) — a count word = 6, then at `+0x10` the four 12-byte leaf
+  chunks (`0200`, `1003`, `1001`, `1002`) plus two terminators: six table
+  slots, verified on both kinds.
+
+So the three "header chunks" were never three of a kind: the walker has
+been stepping through header + section table + section 0's table region.
+The measured strides (32/20/20/36, leaves 12) were correct because each
+region it crosses really has that stride. `engine/formats/models.gd` needs
+no change; this section records why its constants are what they are.
+
+open-grn's claims that do NOT survive contact with the retail data: the
+signature is not at file offset 0 (their `grn_dump.py` reports MISMATCH on
+every real entry); the models.pak index entry is `{kind, offset, size}`,
+not `{kind, 0, 0}`; and their export list of 105 functions including 4
+Bink exports — the retail disc `granny.dll` has exactly 101, none Bink,
+and `Sacred.exe` imports 54 Granny functions and no Bink at all (export
+table length `0x65`, re-measured 2026-09-01). Their per-record layouts —
+68-byte bone, 52-byte transform-track header with counts at +24/+28/+32,
+the `+8` format flag distinguishing interleaved (12-byte header + 68-byte
+frames) from split (times at +52) — agree with our decode and name the two
+track variants we had measured but never cross-referenced. The rest of
+their container tree is **verified on our bytes** (`tmp/opengrn_tags.py`,
+2026-09-01): `0602` appears exactly once with only `0601` children; every
+`0601` carries `0604`/`0901`/`0702`; every `0901` span is a multiple of 24
+(6× int32 per face — what the reader already assumed); GLADIATOR's six
+`0D00` materials expose their texture reference at a `0D03` sub-chunk's
+`+4`, one-based, and the values are **[2, 6, 1, 3, 4, 5] — exactly the
+permutation retail's own GL uploads confirmed**; GLADIATOR's `0B01` holds
+68 `0B00` objects against 68 bones, and BATX's clip holds 42 whose `1204`
+ChannelIds are precisely 1..42, each once — the "ChannelId is a 1-based
+OBJECTS index" claim, bijectively. Both files carry the `0301`/`0304`
+nodes their table calls the texture section. Our reader already reaches
+the same names a different way — the DataExtension `__ObjectName` chain
+(`object_names()`, `bone_names()`, `clip_bone_names()`) — so nothing here
+changes the port; it is a second, independent derivation of the same
+file. Still un-named by anyone: `0303`, `0305`, `0C04`, `0C05`, `0E03`,
+`0E05`, `0E07` — their Python tool's enum proposes names for all but
+`0C04` (texture-map image, texture-image section, FormPoseWeights,
+render-pass field section/constant/section), none yet verified beyond the
+structure checks above.
+
+### Differential against their unpacker, 111/111 (2026-09-01)
+
+`tmp/opengrn/` holds a one-shot cross-check: their MIT `grn_unpack.py`,
+fed signature-anchored slices (entry bytes from `magic_offset − 0x40`) of
+twelve mesh entries — all nine character-select heroes plus `BAT`,
+`DUNKELELVE` and both elve-sorceress spellings — and three clips, against
+the same entries read through `Sacred.Models`. **111/111 checks agree**:
+bone counts, the exact bone-name lists in bone order, mesh counts, source
+position and normal counts, triangle totals, every material→texture
+permutation (GLADIATOR `[1,5,0,2,3,4]` on both sides), texture counts,
+track counts, clip durations, and the ChannelId bijection. The only
+representation difference: a material naming no texture is `null` in
+their JSON, `-1` in ours. Track-name coverage: every non-helper track
+name in all three clips is a bone name of the matched mesh — the residue
+is authored `Cam_*.Target` / `Spot*.Target` / `Bip01 Footsteps`
+cinematic helpers, the trap a naive name-set clip equality would trip
+over; a helper-filtered coverage term is the shape that works.
+
+**Corpus sweep, 2026-09-01.** The same differential in-process over every
+walkable entry (`tmp/opengrn/corpus_sweep.py`, ~20 s): 4991 of 4993 (two
+refused, both by the standing rule), their decoder zero failures, and
+**zero divergences in any field** — bone counts, mesh counts,
+source-position/normal counts and triangle totals (1571/1571 each), the
+full material→texture tuples (1571/1571), texture counts (1571/1571), and
+track counts (3420/3420). The two decoders agree on the whole corpus, not
+just the sample; the third decoder the two-reader rule wanted already
+existed.
+
+**The sweep's one actionable find for the port: interpolation modes.**
+Every ordinary `0xCA5E1204` track declares position and quaternion mode
+**2 (quadratic)** — 255,461 of 255,461; scale-shear modes split
+1:171,384 / 2:82,815 / 0:1,262; 3,013 sampled records carry none. The
+records also carry three knot-time selectors at `+0x24/+0x28/+0x2C`.
+~~`models.gd` reads none of these fields, so the port cannot be honoring
+quad-authored keys.~~ **IMPLEMENTED 2026-09-01.** `models.gd` now decodes
+the three modes and three selectors into every record (sampled records
+declare none and are marked linear); `model_view.gd` honours mode 2 by
+subdividing each key span into 8 linear keys — Godot Animation has no
+custom basis — with the retarget applied per generated key; mode 0 plays
+nearest; unknown modes play linear and log.
+
+Mode 2's SEMANTICS needed settling first, and the corpus settled it: it
+is a **corner-cutting quadratic B-spline** — keys are control points, the
+curve at each knot equals the time-weighted blend of that knot's two
+neighbours (uniform case: their average), so the curve does not pass
+through the keys at all. Two facts decide between the readings: 9,956
+position records carry EVEN key counts, which a Bézier-triples reading
+cannot parse, and all 255,461 records have strictly ascending key times,
+which is all a B-spline needs. The vendor's pad structure (leading time
+pads, trailing duplicates) pins curve(t0)=k0 and curve(tLast)=kLast —
+which is why anim_check's t=0-is-bind-pose property survives the change
+unchanged. Verification: anim_check and anim_freeze_check green,
+verify_parity 38/38, start-scene gate **PASS** (world 11.09 vs best
+11.00, inside TOL 0.10 and the port's own 0.60pp band noise — the gate
+refuses a regression and resolves no improvement at this scene's
+distance).
+
 ## Per-bone animation record (`0xCA5E1204`)
 
 An ordinary record has a 52-byte header carrying three declared counts, then
@@ -97,18 +223,26 @@ time, vec3 translation, quaternion and mat3 scale/shear.
 
 ## Licence boundary
 
-Two outside projects are cited in the tooling, on identical terms, and both
-are read **only as documentation of the container format** — tag numbers,
-node-type names and record layouts, which are facts about a file format:
+Three outside projects are cited, on identical terms — each is read **only
+as documentation of the container format** — tag numbers, node-type names
+and record layouts, which are facts about a file format:
 
 - `github.com/SiENcE/Iris1`, `src/granny` — **GPL v2.** Documents the per-bone
   record layout and that clip length is the last translate time.
 - `github.com/ptasev/Age-of-Mythology`, AoM Model Plugin — **no licence file
   at all**, which is all-rights-reserved, not permissive. Source of the
   authoritative `0xCA5E12__` node-type names.
+- `github.com/karolak6612/open-grn` — **MIT.** A clean-room granny.dll 1.2b
+  reimplementation whose container documentation anchored the 2026-09-01
+  reconciliation below; every value was then measured on our own bytes. Its
+  code may be read and its claims tested; none of it is adopted.
 
-Neither project's code was opened, translated or adopted. The flat node
-directory shape above is documented by neither of them and was measured here.
+The first two projects' code was never opened, translated or adopted;
+open-grn's was read and none of it adopted. The flat node directory shape
+above is documented by neither of the first two and was measured here —
+open-grn's parser later turned out to contain the same shape, so it is now
+derived independently on both sides.
+
 Iris1's reading of `0x0C02..0x0C05` as a start/end bracket is a misread —
 they are distinct node types.
 
@@ -179,10 +313,15 @@ DLL would read `.GRN` **natively** and remove the `grn2gr2` conversion from
 between our reader and the vendor's, which is the one step in the present
 chain nobody has audited.
 
-Two open items above are the obvious first questions for it: the **eight of
-3421 animation clips that do not decode**, and **`DUNKELELVE.GRN` and
-`MAGICIAN.GRN`, the two of seven class body meshes that do not build**. Both
-are our decoder being short, so the vendor's answer settles them.
+~~Two open items above are the obvious first questions for it: the eight of
+3421 animation clips that do not decode, and `DUNKELELVE.GRN` and
+`MAGICIAN.GRN`, the two of seven class body meshes that do not build.~~
+**Struck 2026-09-01: both halves are closed.** All seven class bodies build
+since row 1009 (`Models._pair_by_reference`), and the last two clip decode
+gaps closed with rows 1159/1168 — sampled records are count-zero
+`12+68*N`, ordinary records `52+16*nt+20*nq+40*nu` with no trailer, 128/128
+hybrid entries. The paragraph understated its own file even when written:
+row 1009 predates it.
 
 > **Licence, unchanged and binding.** The DLL is proprietary RAD code. It stays
 > in the unpublished workspace, is never committed, and is read only by
