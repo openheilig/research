@@ -208,9 +208,28 @@ time, vec3 translation, quaternion and mat3 scale/shear.
 
 | Offset | Field |
 |---|---|
+| 0 | record id (the 1-based transform-channel index) |
+| 4 | unused |
+| 8 | format flag: 0 interleaved, 1 split |
+| 12 | position interpolation mode |
+| 16 | quaternion interpolation mode |
+| 20 | scale/shear interpolation mode |
 | 24 | `numTranslates` |
 | 28 | `numQuaternions` |
 | 32 | `numUnknowns` |
+| 36/40/44 | knot-time selector per channel |
+| 48 | padding |
+
+Modes: 0 copy, 1 linear, 2 quadratic, 3 cubic. Measured corpus-wide
+(2026-09-01): position and quaternion are **2 on all 255,461 ordinary
+tracks**, scale/shear splits 1:171,384 / 2:82,815 / 0:1,262, and mode 3
+never occurs. Mode 2 is a corner-cutting quadratic B-spline — keys are
+control points, the curve at each knot is the time-weighted blend of that
+knot's two neighbours — implemented in `model_view.gd` by span
+subdivision; see "The container, reconciled" above for the full argument
+and the engine commit. The selectors distinguish the three knot-time
+vectors; the times are stored per channel regardless, so a reader takes
+the arrays and never chases the selector.
 
 ## A retracted conclusion worth keeping
 
