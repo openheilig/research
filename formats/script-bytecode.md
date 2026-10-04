@@ -556,6 +556,47 @@ that the literals exist, that they are compared in two ordered blocks, and
 that the block order matches the opcode order. Treat the vocabularies as
 strong and the *binding* as open.
 
+**2026-10-04, LGP 1.0.02 dispatch check:** `sub_826DA00` explicitly
+dispatches opcode 3 to `sub_8294750` (`linux1002/chunks/00017.c:35372–35374`).
+Its argument-reader case 9 passes the string to `sub_825D466`
+(`00018.c:9336–9338`). The Dwarf tutorial's quest-1 OnEnter supplies
+`res:17085` and tag-9 `dlg_HQDWARF_Romata03`. This proves the handler and
+operand handoff, not the complete downstream task/dialogue transition.
+`sub_825D466` is specifically a dialogue-name lookup: it walks 80-byte
+records whose names begin at +4, returns their index on an exact match, and
+logs `Dialog (%s) nicht oder nocht nicht vorhanden` before returning -1 on
+failure (`00017.c:30179–30197`). Opcode 3 subsequently passes its populated
+348-byte state request to `sub_824F354` (`00018.c:9530–9595`); implementing
+the tutorial requires the dialogue binding/application path, not just a label.
+The port must retain refusal until that transition is implemented; recording
+the string or skipping opcode 3 would not execute the tutorial behavior.
+
+**2026-10-04, dialogue binding contract cross-checked:** the state application
+in LGP `sub_824F354` clears the old dialogue record's actor reference at +76,
+writes the target actor reference into the new record, stores the dialogue
+index at `cCreature+581`, and sets object flag `0x80000`. Index -2 leaves the
+binding unchanged; other non-positive values clear it. The setter also emits
+notification 282. Gold ENG `sub_461540` / `sub_5498F0` and Gold RUS
+`sub_461920` / `sub_549CF0` reproduce these writes and sentinel handling.
+Sources: LGP `00017.c:24767–24780,26626–26640`, `00015.c:30028–30039`;
+ENG `00005.c:12542–12594`, `00010.c:51383–51394`; RUS
+`00005.c:12392–12444`, `00010.c:50292–50303`.
+
+The table is populated by raw opcode-40 definitions, not inferred from
+procedure names: LGP `sub_824B442` appends the 80-byte payload and inserts
+an empty index-0 sentinel on the first append (`00017.c:23074–23101`).
+The Dwarf's actual `startcode.bin` definition names
+`dlg_HQDWARF_Romata03`; its +68 procedure index resolves through
+`vectoren.bin` to `Dialog:dlg_HQDWARF_Romata03`. Running the port's existing
+decoder over that real 167-byte routine yields opcodes
+58, 26, 60, 66, 26, 60, 59, 62: IF, an unnamed opcode, SetButton, ELSEIF,
+the unnamed opcode again, SetButton, ELSE, NOP. Its branches carry different
+resource keys and button destinations. **The binding contract is recovered,
+not the dialogue execution/UI contract.** Enabling opcode 3 alone is not
+proof of a working tutorial, and skipping the conditional/dialogue routine
+remains forbidden.
+
+
 **Independent corroboration of the object side.** The same binary carries
 `cTrigger::setState ()`, `cTrigger::resetState ()`, the log formats
 `Trigger[%d] locked` / `Trigger[%d] unlocked`, and the refusal string
@@ -636,3 +677,89 @@ reach the same shared pair.
 Provenance: `tools/formats/startcode.py`, `tagwidths.py`, `opcodes.py`, `opsem.py` module
 docstrings; findings log rows 718-723.
 
+
+## Operand-shape profiles for the highest-frequency unnamed opcodes (2026-09-30)
+
+The Seraphim tree's `funkcode.bin` decodes to 125,055 records / 102 distinct
+opcodes (finding 1293). The port implements 8. Operand-shape profiles for the
+highest-frequency unnamed ones, extracted from every record of the real file
+(`donotpublish/tmp/engine-revision-20260929/opcode-profiles.txt`,
+`seraphim-script-surface.txt`). These are DATA-level profiles — shape and
+content witnesses, NOT names; the two-filter naming rule still applies.
+
+| op | count | dominant shape | content witness |
+|---|---|---|---|
+| 115 | 22,762 | (int, int, v12, [v12], int-14) — cell-pair + packed payload, constant tail 14 | region-grid registration scale (one per grid span) |
+| 100 | 11,498 | EXACTLY one signature: (50, 41, 70) — a constant triple in every record | fixed-argument marker or call |
+| 8 | 6,774 | (res-handle string, int, v12/v8, ...) | `'res:17561'`, `939`, `NON_UNIQUE`, `885` — object/spawn creation shape (the CreateObj surface) |
+| 66 | 5,391 | single string | `'TYPE_NPC_NOBLE_MAL'`, `'TYPE_NPC_CITIZEN_MAL'`, `'TYPE_NPC_SOLDIER'` — creature-class attach |
+| 26 | 4,303 | single string | `'HQ_3_1_4_glad_NPC_Auftrag_Qoffen'`, `'..._Qstart'` — quest-pool directive keys (feeds the row-1176 mappers) |
+| 62 | 2,574 | operandless | control/marker |
+| 63 | 2,058 | (string, int) / (int, int, int) | variable-write shape |
+
+Implementation consequence for S1: handlers for 26, 8, 66 and 63 can be
+built against OBSERVED operand shapes with real samples as test fixtures;
+115 and 100 first need their handlers pointed at in the decompiler (the
+profiles bound what a correct implementation must accept, not what it
+must do). The engine's ScriptVM now decodes all of this exactly
+(commit 2f2994e, finding 1294).
+
+## The dispatcher is two-stage, and the second stage is keyed on the LAST TAG
+## (2026-09-30, completed)
+
+`sub_82A77C0` (WorkFunktion) switches on the **raw opcode − 58**; opcodes with
+dedicated cases handle inline. Everything else — including 100 — falls to the
+default arm, which calls **`sub_826A014`** (the 14,827-byte / 412-block tag
+evaluator) and then **re-dispatches on the value `sub_826A014` RETURNS**:
+`sub eax, 0x3A; cmp 0x66; ja default; jmp jpt[eax*4]`.
+
+**The return value is the record's LAST TAG BYTE.** The evaluator's tail is
+`mov eax, edx` where `edx = dl = var_106D` — the most recent tag byte of the
+arg walk. So the second jump table is keyed on `last_tag − 58`: a record is
+routed to its handler by **how its tag list terminates**, and only opcodes
+with dedicated first-stage cases escape that rule entirely.
+
+**Opcode 100 closed:** its records end in tag 0x0b (11), so the second
+dispatch computes 11 − 58 → underflow → unsigned `ja` → the default arm again
+— with the cursor now past the record. Net behavior: the three constant
+operands (50, 41, 70 in every one of the 11,498 records) are evaluated into
+scratch slots 0..2 and immediately discarded; **no handler runs**. Opcode 100
+is an evaluate-then-skip no-op marker, and the interpreter genuinely skips it
+(the research's own "the dispatcher skips" line, now with the mechanism).
+
+This reframes the handler model: first-stage opcode cases (58 etc.) are the
+exceptions; the general dispatch space is keyed on terminating tags. Any S1
+handler implementation must dispatch the way retail does — opcode special
+cases first, then last-tag routing — or records that retail routes one way
+will run through the wrong handler.
+
+**Opcode 115 closed (2026-09-30): also evaluate-then-skip.** Its observed
+last tags (137 → index 79, 139 → index 81, 14 → underflow) ALL route to the
+default arm — verified by reading `jpt_82A781F[79]` and `[81]` directly: both
+point at `0x082A77EC` (default). So all 22,762 records have their payloads
+evaluated into scratch slots and skipped. The cell-pair + packed-payload
+shapes are likely region-descriptor data embedded in the bytecode stream —
+present in the file but never consumed by the script interpreter. S1's real
+handler surface therefore excludes 115 and 100 entirely (~34k of the 125k
+records); the remaining top unnamed ops are 8 (6,774) and 66 (5,391), whose
+last-tag routing is the same one-read check.
+
+**Opcode 8 closed (2026-09-30): skip.** All four dominant tag signatures'
+last tags (126 → index 68, 32 → underflow, 2 → underflow) route to the
+default arm — index 68 read directly: `0x082A77EC` (default). All 6,774
+records skipped.
+
+**Opcode 66 NAMED (2026-09-30): creature-class reassignment.** Last tag 125
+routes to a REAL case at `0x82A7FEA` (confirmed by the jump-table comment
+"case 125"). The block: resolves the interpreter's numeric slot through the
+cObjectManager (`dword_8B89240`), dynamic-casts to `cCreature`, reads the
+creature's name field (+0x10 via the type table), `strncasecmp`s it against
+the record's string argument (e.g. `'TYPE_NPC_NOBLE_MAL'`); if they MATCH →
+skip; if NOT → looks the string up in the creature type table
+(`dword_8B8AD60`) and presumably assigns the resulting type. The witnesses
+(`'TYPE_NPC_NOBLE_MAL'`, `'TYPE_NPC_CITIZEN_MAL'`, `'TYPE_NPC_SOLDIER'`)
+are class names, confirming the profile. **Two-filter test passes: unique
+profile + handler semantics read from assembly.** Op 66 is a conditional
+`creature_setClass(name)`: "become this NPC class if not already it."
+Secondary forms (tags[72,72] → case 72 at `0x82A8372`, [73,73] → case 73,
+[82] → case 82) are sibling overloads, not yet read.
