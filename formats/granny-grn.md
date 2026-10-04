@@ -666,8 +666,12 @@ references resolve to `VMPD_IDLE_BH.GRN` / `VMPN_IDLE_BH.GRN`, respectively.
 The port's class map now includes the day body. Production `PlayerView`
 construction, eight decoded skin batches and a textured Vulkan capture were
 exercised; startup reports class-6 data at its authored `(3500,2477)`, layer 2,
-with 129 derived HP. The ordinary world capture still obscures her beneath
-the storey surface, so this is body support, not proven in-world parity.
+with 129 derived HP. ~~The ordinary world capture still obscures her beneath
+the storey surface.~~ **Follow-up:** the live actor is admitted to painter
+phase `(3,1,0)`, and its ready capture contains her textured body in a
+`(460,0,99,118)` screen rect with the head clipped at the top. Missing admission
+is not the cause; a storey-occlusion explanation is not proven. This remains
+body support, not proven in-world placement/parity.
 
 The native form setter is independently present in LGP `81AC81E`, Gold ENG
 `557040` and Gold RUS `557300`: it changes actor type 6/7, rebuilds the model,
