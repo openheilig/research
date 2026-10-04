@@ -8,6 +8,39 @@ Each entry is the `## Open` section of the document it names — that document
 is the authority, this is the index. If you close one, close it there and
 strike it here.
 
+### Revision corrections — 2026-09-29
+
+The [current revision audit](engine/engine-revision-2026-09-29.md) takes
+precedence over contradictory historical closure/status wording below.
+
+- Gold navigation is reopened: LGP80EE194, ENG636C10 and RUS637040 use
+  cell-class/flag admission and a coordinate-keyed trigger-state override,
+  not the transferred Armalion height-byte/static-mask contract. The base
+  branch has new live positive/negative witnesses; complete actor traversal,
+  support selection and trigger-index mutation remain open. See
+  [footprints](formats/footprints.md).
+- The alleged max-HP spawn loader is a sector loader. That attribution is
+  withdrawn. The actual derivation was found in CalcResults' callee81F4FFA,
+  corroborated by ENG5658F0/RUS565BA0 and observed live; full modifiers,
+  field naming and numerical parity still require focused verification.
+  See [combat formulas](engine/combat-formulas.md).
+- Finding1171's purported XP-gauge denominator belongs to level-up learning
+  points; thresholds, points and gauge fraction are separate contracts.
+- Retail has eight classes, including the original Vampiress.
+  ~~The current seven-entry class-model map is incomplete.~~ **Updated
+  2026-10-04:** class 6 now resolves the native day body `VLADY_D.GRN`,
+  verified through the production textured body path. Type 7's `VLADY_N.GRN`
+  is a second form, not a selectable ninth class. All eight body mappings
+  exist; form mechanics, completed tutorials and storey occlusion remain open.
+  Current production callers and absent systems are enumerated in the audit;
+  old “gate-only” labels are not a current implementation census.
+- The image benchmark currently refuses repeatability; the old absolute
+  start-scene percentage is not a measure of game completion.
+
+This is a targeted correction, not a claim that the entire historical index
+has been revalidated or that all retail semantics are implementation-ready.
+
+
 Nineteen documents carry an `## Open` section. Three of them — `balance-bin`,
 `tech-stack`, `build-survey` — say "nothing open" and are deliberately absent
 below. The rest are indexed. An audit on 2026-08-16 found five items that were

@@ -74,7 +74,7 @@ Offsets are absolute and the entries are contiguous. Named payloads begin
 with a NUL-padded filename. Known flags: `0x04` TGA, `0x40` Granny `.GRN`,
 `0x20` raw RIFF/WAVE.
 
-> **`size` is the PAYLOAD, not the entry.** In `texture.pak` an entry is a
+> ~~**`size` is the PAYLOAD, not the entry.** In `texture.pak` an entry is a
 > 32-byte name, then `u16 width; u16 height; u32 format; u32 payload_size`,
 > zeros to `+80`, then the zlib stream — and the index's `size` field is that
 > zlib stream's length alone. `ELVE_SORCERESS_HANDS.TGA` declares **15**, and
@@ -82,7 +82,24 @@ with a NUL-padded filename. Known flags: `0x04` TGA, `0x40` Granny `.GRN`,
 > entry length, or gates on it to decide whether a name is there, loses the
 > small entries: 28 of `texture.pak`'s 25535 are under 32 bytes, all of them
 > solid-colour placeholders (`DUMMY*`, `FX_OPAQUE`, and eight `*_HANDS`
-> referenced 13 times from `models.pak`).
+> referenced 13 times from `models.pak`).~~
+>
+> **Correction, 2026-10-04:** the assertion that every TEX index size is
+> compressed-stream length is false. The three final LGP entries have
+> physical spans 38,543 / 33,841 / 36,270 bytes, each including its header,
+> while each index declares 131,072. Independently inflating each complete
+> physical entry's stream produces exactly 131,072 bytes = 256×256×2.
+> The field can therefore describe decoded size rather than stored bytes.
+> The tiny hands texture remains a valid consumer witness; neither a small
+> declared size nor a declared extent beyond EOF proves a malformed TEX.
+>
+> Derive physical entry bounds from distinct payload offsets and EOF,
+> excluding header/empty sentinels as delimiters. Do not assume index order
+> equals physical order in an authored mod. This also applies to MDL kind-64
+> entries: the established model reader already documented that index field
+> 3 is not their physical byte length. Ordinary byte-length records still
+> require their declared range to fit the physical span. Header, dimensions,
+> decompression and format checks remain the responsibility of each reader.
 
 **Fixed-record** (three files only). Records tile the file directly with
 `stride = (filesize - 256) / count`; there is no index.
@@ -191,6 +208,41 @@ The 31 recovered are the Das Schwarze Auge hero line
 `BORON_PRIEST_BODY`, `BORON_PRIESTESS_BODY`, `ELVE_SORCERESS_BODY`,
 `MAGICIAN_BODY` — art the Seraphim and Gladiator replaced. The mod puts it back
 from the prerelease.
+
+## Generated weapon definitions — 2026-09-07 (finding 1250)
+
+An empty `items.pak` record does not necessarily mean an absent runtime
+type. Each 258-byte `weapon.pak` row names its own type at u32 `+128` and
+an optional parent type at u32 `+36`.
+
+After loading base definitions, retail first stamps **every** weapon row's
+index into its type's u16 `+24`. A second, ascending file-order pass copies
+the parent's complete 128-byte definition into each generated type, retaining
+the destination's u16 `+24` and u32 `+32`; a retained zero at `+32` becomes
+the destination type id. Both inheritance ids must be in `1..32351`.
+This is a single ordered pass, **not recursive resolution or a fixed point**:
+a forward parent contributes its current definition, and a later mutation
+of that parent must not retroactively change earlier children.
+
+Cross-build proof: LGP `0x0814D288`, `0x0813B5D8`, `0x0813A398`; Gold ENG
+and RUS `0x00434100` plus the inlined pass in `0x004257A0`. Linux's table
+has a 16-byte prefix, so its runtime `+40/+48` correspond to record
+`+24/+32`. The loader also corrects nonzero resource ids to the row's own
+type and assigns type 4053 category 6 before inheritance.
+
+**Live control:** the start Seraphim's held reference 18 is type 7901,
+weapon row 4748, parent 1724. Body and shadow observations both resolve
+`SWORD_BASTARD.GRN`. Parent and child differ only at bytes 24,25,32,33;
+the adjacent-parent control differs outside the preserved fields. This
+proves the guarded definition bytes, not completeness of the GL draw replay.
+Evidence: `donotpublish/tmp/actor-pose-20260907/run18/` and
+`measure_item_inheritance.py`.
+
+The port's `formats/weapons.gd` now applies this pass before `Items` builds
+its model, texture and category lookups. A synthetic forward/chained-parent
+regression verifies value-copy and ordering through `Items.name_of`.
+The gameplay equipment source is unchanged: resolving native type 7901
+does not by itself replace the set-6 blade.
 
 ## Three corrections worth keeping
 

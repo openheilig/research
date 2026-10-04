@@ -23,6 +23,196 @@ the parity diff structurally incapable of failing.
 
 Chain root is `0xCA5E0000`; the walk ends at `0xCA5EFFFF`.
 
+### Sacred's authored motion references (finding 1244)
+
+Before the kind-64 root tag, Sacred's model wrapper carries 256 little-endian
+u32 motion references starting at byte **112**. A native motion enum selects
+`112 + 4*enum`. The value is an ordinal among **kind-65 entries in archive
+order**, not an index in the mixed-kind pak table. Zero denotes no motion;
+kind-65 ordinal zero is the invalid-motion entry and still occupies its slot.
+These are Sacred wrapper fields, not generic Granny node-directory fields.
+
+LGP `sub_810D0FC` checks this reference and `sub_810D1F2` consumes it. The
+running Seraphim's motion enum 2 selects ordinal 1467, `SERA_IDLE_BH.GRN`,
+mixed pak entry 3039; her whole 1,024-byte motion table matches the shipped
+header (finding 1238). All 5,110 nonzero references in the primary archive
+resolve within its kind-65 table.
+
+`Models.native_motion_entry(model_entry, motion)` implements this lookup
+without geometric matching, returning -1 for absent, invalid or out-of-range
+references. It resolves the supplied Pak only, not runtime overlay/model
+replacement. The viewer consumes it through `--grn=NAME --motion=ENUM`.
+Choosing the enum from actor state and equipment is a separate engine rule;
+neither a filename suffix nor the viewer's explicit enum supplies that rule.
+
+Verification: corpus-wide reader comparison and live model-viewer playback;
+enum 2 binds 69 of 70 named tracks on the Seraphim, with `Bip01 Footsteps`
+unbound. This is not a claim of native pose parity. Evidence:
+`donotpublish/tmp/actor-pose-20260907/native_motion_reader_check.gd` and
+`native-motion-viewer.png`.
+
+### Action and weapon-mode selection table (finding 1248)
+
+The ordinary selector indexes a six-row, twenty-column u32 table by
+`20 * action_row + weapon_mode`. The complete 480 bytes agree in Linux
+LGP (`0x87938E0`), Gold 2.28 ENG (`0x956E40`) and RUS (`0x955E48`).
+Consumers are respectively `sub_8197C8A`, `sub_5467A0` and `sub_546BA0`.
+The USA demo's table is at `0x7B80E8`: all six rows agree in columns 0–12,
+but columns 13–19 are zero. Gold adds values in columns 13 and 14 only.
+Each binary has one matching candidate; a one-dword-shifted control fails.
+
+For weapon modes 0–12, the table is described by these formulas:
+
+| Action row | Authored clip family | Motion enum |
+|---|---|---|
+| 0 | IDLE | `1 + mode` |
+| 1 | WALK | `27 + mode` |
+| 2 | RUN | `40 + mode` |
+| 3 | FIDLE | `14 + mode` |
+| 4 | ATTACK variants | `79 + 5 * mode` |
+| 5 | DEFEND | `53 + mode` |
+
+Gold column 13 is respectively 235, 237, 238, 236, 241, 239; column 14
+repeats column 12. This table is **not the whole selector**: actor flags,
+mounts, type-specific branches, available-motion checks and attack variation
+also participate. For missing walking/running motions, the Linux and ENG
+consumers try their own family's first three enums, then the other family's
+first three; successful fallback writes locomotion mode 1 or 2 at actor
+`+504`. Exhausting those candidates returns enum 2 if available, otherwise 1.
+Other nonzero, non-attack rows can fall back to row 0. Do not replace these
+rules with geometric similarity.
+
+The Seraphim's authored entries explicitly include `SERA_WALK_1H.GRN`
+(enums 27–29), `SERA_RUN_1H.GRN` (40–42), and `SERA_IDLE_BH.GRN` (1–3).
+Thus the port's earlier claim that she has no walk is a resolver failure,
+not absent content. `NOVIZIN02.GRN` names `NOVI_IDLE_BH.GRN` at enum 1,
+not the geometrically selected `PRSS_IDLE_BH.GRN`.
+
+**Live control:** in `run14`, an open-floor click produces sampled enum
+`2 → 41 → 2`, with enum 41 at 48,055 ms and a visibly running figure in
+the 48,000-ms frame. The same equipped references `[0,18]` remain throughout.
+The bench-target control `run13` samples only enum 2. Both record 30 samples
+with no identity failures and a proper timeline end. In both, actor `+504`
+changes from 0 to 2 and remains 2 after the figure is idle; it is therefore
+not interchangeable with the currently playing motion enum.
+
+Evidence: `donotpublish/tmp/actor-pose-20260907/measure_motion_table.py`,
+`motion-table-measurements.json`, `motion_table_clips.gd`,
+`measure_locomotion.py`, `locomotion-measurements.json`, and `run13/` /
+`run14/`. Gameplay integration remains open.
+
+### Equipped weapon input (finding 1245)
+
+LGP `sub_8368E26` reads the weapon's item type at object `+16`, resolves its
+weapon-table index through the item's u16 at `+40` (`sub_814D1CC`), and
+returns byte **30** of the corresponding **258-byte** `weapon.pak` row.
+This is a weapon-mode input, not a motion enum.
+
+Two independent start-scene observations, at 42 and 60 seconds, identify the
+held reference at actor `+472` as reference 18, type **7901**, with the
+`cWeapon3D` vtable. Actor `+468` is empty. Its weapon index is **4748** and
+mode byte is **1**. All 258 bytes match the shipped row in both body and
+shadow snapshots; the adjacent row does not match, and byte 31 is zero.
+
+The later capture also observes motion enum **2**, active playback of
+`SERA_IDLE_BH.GRN`, and rate **1.25**. The earlier capture instead has enum
+zero and no active control; its motion-identity guard fails explicitly.
+Thus the equipment input is stable across these samples, but equipment
+alone does not establish current playback. This does not prove the
+transition between the samples, which came from separate processes.
+
+The native hand-precedence rule is in `sub_81988EC`: resolve both references
+as `cWeapon3D`; with two eligible weapons and the first not satisfying
+`sub_813813A`, any nonzero weapon mode produces mode 8. Otherwise the second
+resolved hand overrides the first; mode 14 becomes 12 when its argument is
+false. These branches are statically read, not all behaviourally exercised
+by the one-equipped-hand observation.
+
+Evidence and reproducible byte comparison:
+`donotpublish/tmp/actor-pose-20260907/{run07,run08}/`,
+`measure_equipped_motion.py`, and `equipped-motion-measurements.json`.
+
+**Same-process control (finding 1246):** a bounded, read-only timeline in
+`run09` re-resolves the actor through the object manager and verifies
+reference, address and type on each sample. All 28 samples between 42,026
+and 69,118 ms retain enum 2, one unchanged active-control tuple and equipped
+references `[0,18]`; no identity guard fails. Sampling is once per second,
+not a claim that no shorter transition occurred. This run already has active
+playback at 42 seconds, so `run07` must not be generalized into a fixed
+startup delay. Raw events and `run09/timeline-summary.json` preserve the
+control. The cause of the earlier inactive sample is not established.
+
+### Authored local animation poses (finding 1247)
+
+**Correction, 2026-09-07:** the port's rest-relative retargeting rule from
+finding 766 was wrong. A clip key is an absolute local pose, not a delta to
+be multiplied by `model_rest * inverse(clip_rest)`. Dropping position tracks
+was also wrong. Production `ModelView.build_animation` now binds both
+authored local channels directly, retaining the existing curve interpolation
+and parentless world-placement exclusion.
+
+The discriminator is a frozen pose comparison against native runtime bones,
+not agreement with the model's bind pose. Native model and motion identity,
+last evaluated animation time, every bone name and parent, and all 300-byte
+bone records were captured from two actors. Coordinates are reconciled by
+the captured animation transform's Y reflection, not a fitted rotation.
+
+| Model | Compared model-space bones | Old maximum position error | Corrected maximum position error | Old maximum rotation error | Corrected maximum rotation error |
+|---|---:|---:|---:|---:|---:|
+| `SERAPHIM.GRN` | 71 | 2.23904 | 0.000929 | 78.0417° | 0.004283° |
+| `NOVIZIN02.GRN` | 72 | 0.758285 | 0.000441 | 90.0000° | 0.001935° |
+
+Position errors are model units. Rotation errors use normalized
+double-precision quaternion dot products; Godot's float32 `angle_to` is too
+coarse for the corrected residuals. The native `__Root` contains world
+placement and is explicitly outside this standalone model-space comparison.
+No other bone is excluded or missing. Samples are at native local times
+0.8300000131 and 0.8575021327 seconds, respectively.
+
+The old `anim_check` enforced the disproven rest-relative formula and was
+removed. `hero_anim_check` now checks actual pose changes over time rather
+than a fitted distance from model rest. This establishes local pose binding,
+not full actor rendering parity: production clip selection, world placement,
+lighting, playback timing and scene insertion remain separate contracts.
+
+Evidence: `donotpublish/tmp/actor-pose-20260907/{run10,run12}/`,
+`prepare_pose_comparison.py`, `compare_native_pose.gd`, and
+`pose-binding-measurements.json`. The comparison's `legacy` arm restores the
+old retargeting and dropped positions as an explicit counterfactual.
+
+**Running control, finding 1249:** a state-triggered capture (`run17`) waits
+for object reference 1 to select enum 41, rather than assuming a wall-clock
+click has started movement. `SERA_RUN_1H.GRN` at native local time
+0.16829998834133164 compares all 71 non-placement bones. The legacy binder's
+maximum rotation/position errors are 93.420217° / 2.146717 model units;
+production gives 0.216043° / 0.00009156. The active control has no secondary
+sequence and the actor's blend-end field is zero.
+
+The remaining angle is **not closed**. Inserting a directly evaluated
+quadratic quaternion key at the exact captured time gives 0.214369° maximum
+error (`Bip01 L Calf`), so ordinary eight-way track subdivision does not
+explain most of it. This isolated `exact-time` arm is not production code,
+and no curve change follows from it. Evidence: `run17/godot-pose-*.json`
+and `compare_native_pose.gd`; normalized errors use the same metric above.
+
+**Resolved cause, finding 1251:** the preceding exact-time result normalized
+each quaternion control point before the blend. That changes its effective
+weight. Retaining the stored control magnitudes and normalizing only the
+evaluated quaternion reduces the running exact-time maximum error from
+0.214369° to **0.00003931°**. The independent Seraphim-idle and novice-idle
+captures give **0.00003432°** and **0.00002888°**, respectively.
+
+`Models._clip_ordinary_record` now preserves mode-2 quaternion controls;
+`ModelView` already normalizes evaluated poses before inserting Godot keys.
+Production still uses eight subdivisions per span: running maximum error
+falls from 0.216043° to **0.023341°**, while idle residuals remain about
+0.004277° / 0.001937°. Thus premature normalization is corrected, but exact
+curve evaluation is not implemented. The synthetic
+`quaternion_control_check` fails before the correction and passes afterward
+by checking a sampled orientation, not a quaternion-length convention.
+Evidence: `run{10,12,17}/godot-pose-{raw-exact-time,production-raw-controls}.json`
+and `raw-quaternion-running.png` in the same evidence directory.
+
 ## Header chunks — measured sizes, tag inclusive
 
 | Tag | Chunk | Size |
@@ -175,7 +365,8 @@ quad-authored keys.~~ **IMPLEMENTED 2026-09-01.** `models.gd` now decodes
 the three modes and three selectors into every record (sampled records
 declare none and are marked linear); `model_view.gd` honours mode 2 by
 subdividing each key span into 8 linear keys — Godot Animation has no
-custom basis — with the retarget applied per generated key; mode 0 plays
+custom basis. ~~The retarget is applied per generated key.~~ **Corrected
+2026-09-07 (finding 1247):** local keys are bound directly. Mode 0 plays
 nearest; unknown modes play linear and log.
 
 Mode 2's SEMANTICS needed settling first, and the corpus settled it: it
@@ -187,8 +378,10 @@ position records carry EVEN key counts, which a Bézier-triples reading
 cannot parse, and all 255,461 records have strictly ascending key times,
 which is all a B-spline needs. The vendor's pad structure (leading time
 pads, trailing duplicates) pins curve(t0)=k0 and curve(tLast)=kLast —
-which is why anim_check's t=0-is-bind-pose property survives the change
-unchanged. Verification: anim_check and anim_freeze_check green,
+~~This preserves anim_check's t=0-is-bind-pose property.~~ **Withdrawn
+2026-09-07 (finding 1247):** endpoint interpolation does not imply agreement
+with the model's bind pose. Historical verification on 2026-09-01:
+anim_check and anim_freeze_check green,
 verify_parity 38/38, start-scene gate **PASS** (world 11.09 vs best
 11.00, inside TOL 0.10 and the port's own 0.60pp band noise — the gate
 refuses a regression and resolves no improvement at this scene's
@@ -335,12 +528,13 @@ chain nobody has audited.
 ~~Two open items above are the obvious first questions for it: the eight of
 3421 animation clips that do not decode, and `DUNKELELVE.GRN` and
 `MAGICIAN.GRN`, the two of seven class body meshes that do not build.~~
-**Struck 2026-09-01: both halves are closed.** All seven class bodies build
-since row 1009 (`Models._pair_by_reference`), and the last two clip decode
-gaps closed with rows 1159/1168 — sampled records are count-zero
-`12+68*N`, ordinary records `52+16*nt+20*nq+40*nu` with no trailer, 128/128
-hybrid entries. The paragraph understated its own file even when written:
-row 1009 predates it.
+**Correction, 2026-09-07 (finding 1235):** all seven class bodies build
+since row 1009 (`Models._pair_by_reference`). The 2026-09-01 assertion that
+the remaining clip decoding gaps were closed was premature: its count-zero
+discriminator refused valid interleaved records with nonzero pose components.
+Header `+8`, already documented above, selects interleaved (`0`) or split (`1`).
+Using that flag restores 26 clips; 3415 decode, with the six refusals listed
+below. Record sizes remain `12+68*N` and `52+16*nt+20*nq+40*nu`.
 
 > **Licence, unchanged and binding.** The DLL is proprietary RAD code. It stays
 > in the unpublished workspace, is never committed, and is read only by
@@ -464,6 +658,23 @@ sequence appears **zero** times in the trace, which is what a prediction about a
 model that is not on screen should do. Every other run appears 330 times — once
 per frame.
 
+**2026-10-04, native class-6 startup:** item 6 is `VLADY_D.GRN`
+(models entry 680); item 7 is `VLADY_N.GRN` (entry 689), and both creature
+definitions are HERO-class records. The class-6 template remains the selected
+hero data; type 7 does not become a selectable class. The native motion-1
+references resolve to `VMPD_IDLE_BH.GRN` / `VMPN_IDLE_BH.GRN`, respectively.
+The port's class map now includes the day body. Production `PlayerView`
+construction, eight decoded skin batches and a textured Vulkan capture were
+exercised; startup reports class-6 data at its authored `(3500,2477)`, layer 2,
+with 129 derived HP. The ordinary world capture still obscures her beneath
+the storey surface, so this is body support, not proven in-world parity.
+
+The native form setter is independently present in LGP `81AC81E`, Gold ENG
+`557040` and Gold RUS `557300`: it changes actor type 6/7, rebuilds the model,
+preserves animation parameters and recomputes art regeneration. Recovering
+that setter is not recovery or implementation of its activation, duration,
+daylight and damage rules; those remain open.
+
 Retail re-uploads the skin immediately **before each batch** as `GL_BGRA` +
 `GL_UNSIGNED_SHORT_4_4_4_4_REV` — so the pixels are in the trace, and the match
 above is against the actual image, not merely its dimensions. (That upload
@@ -488,11 +699,49 @@ exact string — logging `Texture [%s] not in PAK! IGNORED!!!` on a miss.
 
 The lookup (`0x83c3fde` → `0x83cbd9c`) is a linear-probed hash table keyed on
 two further hashes of the name, **with no string compare**; its inserter
-(`0x83cbc0a`) probes to the first free slot and never overwrites. So where a
-name is duplicated the **first entry in pak order wins** — which is what the
-port's stem index already does, now confirmed rather than assumed.
-`texture.pak` duplicates 25 names, six of them with differing payloads
-(`DAEMONIA_1024`, `DRYADE_SCOUT_ARMS/HEAD/LEGS`, `DWARF`, `DWARF_WARHAMMER`).
+(`0x83cbc0a`) probes to the first free slot and never overwrites.
+~~Therefore the first entry in pak order wins (finding 897).~~ **Retracted
+2026-09-21, finding 1258:** that conclusion omitted insertion order.
+The constructor inserts headers **backwards**, so the **last matching texture
+entry wins**. LGP `0x83C284E` / `0x83C2CAA`, ENG `0x656420` and RUS `0x656910`
+agree. Model-name indexing is different: its forward insertion remains
+first-wins. Do not apply one precedence policy to both asset families.
+
+A fresh read-only native snapshot retains the texture-manager header vector,
+hash buckets and hash seed table. Replaying lookup against those captured
+buckets selects these entries, rejecting the earlier-entry control:
+
+| Name | Earlier, wrong by name | Native selection |
+|---|---:|---:|
+| DRYADE_SCOUT_ARMS | 6868 | 6890 |
+| DRYADE_SCOUT_HEAD | 6873 | 6895 |
+| DRYADE_SCOUT_LEGS | 6874 | 6896 |
+| DAEMONIA_1024 | 7168 | 7974 |
+| DWARF | 7178 | 7986 |
+| DWARF_WARHAMMER | 7180 | 8481 |
+
+Five pairs have different decoded pixels. DWARF_WARHAMMER differs as a
+compressed payload but decodes identically: it distinguishes lookup identity,
+not appearance. CHEST02 still resolves to direct-ID control 7442; an absent
+name misses. The snapshot reports zero concurrent changes, all six scene
+vectors unchanged at consumption, and restored observation hooks. Its
+untouched floor crop is byte-identical to a fresh no-snapshot control.
+
+`TextureFormat._stems` now iterates backwards. The DWARF regression fails
+before the fix (7178) and passes afterward (7986); the real Forward+ staged
+viewer renders all three Dwarf surfaces textured. This verifies lookup and
+render-path integration, **not a new native GPU-upload comparison** or
+whole-scene visual parity.
+
+Evidence: `donotpublish/tmp/global-order-20260907/asset-glue-20260921/`,
+`asset-control-20260921/`, and `mapping-20260921/verify_mapping.py`.
+Direct texture indices are unchanged. Numbered archive composition is mapped
+in [install-inventory.md](install-inventory.md), but remains unwired in the port.
+
+Final verification: **53 checks pass, zero fail**. The fixed start-scene
+benchmark remains **5.05% world delta / MAE 1.85**, full **6.35% / 2.97**,
+with **0.00% repeated-render difference**. This skin-selection fix does not
+improve the Seraphim-only benchmark; no broader visual improvement is claimed.
 
 ### Which side is the front
 
@@ -809,6 +1058,80 @@ locators. "Declares no weights" and "weights did not decode" must therefore be
 distinguished, or every weapon reads as a decode failure and every genuinely
 broken skin reads as a prop.
 
+## Full affine deformation and actor volume — 2026-09-21
+
+Findings **1265–1266** correct two independent defects that scene-order checks
+could not detect: the wolf's stretched geometry and the flat appearance of
+otherwise coherent actors.
+
+### Scale/shear is part of the pose, not optional metadata
+
+`WOLF.GRN` entry 16 and its authored idle `WOLF_IDLE_BH.GRN` entry 1632 have
+valid weight references and matching animation-channel identities. The defect
+was downstream: `ModelView` applied positions and quaternions but discarded
+the nine-component scale/shear tracks. `Skeleton3D.reset_bone_poses()` also
+decomposes a sheared rest transform into TRS, losing part of the matrix.
+
+Native local composition is **translation × rotation × full scale/shear**,
+then parent composition. LGP `0x08074996` multiplies all nine scale/shear
+components; `0x08074F9C` composes the parent. Eight actual wolf neck, head and
+clavicle inputs were evaluated through the original native function in a
+guarded running process. Full-matrix predictions agree within **1.683e-7**
+per component; diagonal-only controls differ by **0.177–1.128**. Input/stack
+canaries remain unchanged, floating-point state is restored, and the independent
+floor-control capture matches the no-call arm exactly. This is a native local
+transform oracle, not a claim to have captured a complete native wolf draw.
+
+The installed Godot API independently discriminates the transport problem:
+a synthetic sheared matrix loses **0.513743** basis error through either
+rest reset or a weight-1 global-pose override. A direct RenderingServer skin
+palette retains it with **zero** error.
+
+The port now retains original affine rests, samples decoded SS modes 0/1/2
+without decomposition, and uploads complete palettes after animation and
+placement. Activation follows matrix/channel content, never the model name.
+Worn meshes use their own binds; sockets, crop bounds and blob shadows consume
+the same full global pose. Ordinary TRS rigs retain the engine path.
+`affine_skin_check` protects the actual wolf's neck/head/clavicle transport;
+GPU probes additionally verify animated matrices and inspect four phases each
+of its authored idle, walk and run.
+
+### Native projection and lighting replace the flat actor approximation
+
+World actors now use the same recovered camera projection, model-header scale
+and native facing transform as authored model objects. The calibrated
+`133/73` body scale, front-on world basis and `HERO_LIGHT` flat ramp are removed
+from production actor placement/materials. Root placement is not applied a
+second time inside the skeleton.
+
+The shared shader computes native directional Gouraud diffuse/specular light,
+ambient **0.3 for category 3 / 0.8 otherwise**, shininess **38.4**, and encoded
+texture modulation before linear output. Given native camera `C`, body
+projection `Q` and mesh world transform `M`, its normal-space conversion is
+`inverse_transpose(C * inverse(Q)) * MODEL_NORMAL_MATRIX * NORMAL`.
+`NORMAL` is already skinned; applying skin deformation again would be wrong.
+The formula also retains each socket mesh's own world transform.
+
+Same-time native Seraphim/novice comparisons match **all 2054 / 2064 triangles**
+through positions, UVs and three-corner topology, with no missing or ambiguous
+faces and no normal-based correspondence selection. Normalized direct skin
+normals differ by at most **0.000225 / 0.000209**; omitting normalization gives
+errors up to **0.219 / 0.074**. Wrong Y-reflection controls average over 1.16.
+Actual GPU post-skin/light-space probes agree within **0.00324**, measured
+through RGB-half readback; that is not exact float32 equality.
+
+Actor constructors now honor definition texture overrides as equipment and
+rigid objects already did. Forced wolf type **588** selects texture **8185,
+WOLF_VAMP01.TGA**: its red/black appearance is authored skin, not a red lighting
+tint. Heroes, scripted NPCs and rolled creatures use the same binding rule.
+
+Initial white-daylight inputs are supported. Solar RGB/pulse behavior,
+general nonuniform-native-scale normal parity, exact animation scheduling and
+whole-corpus pixel parity are not established by these fixtures.
+All raw captures, oracle inputs, meshes and images remain private under
+`donotpublish/tmp/actor-shape-20260921/` and
+`donotpublish/tmp/global-order-20260907/wolf-affine-20260921/`.
+
 ## Open
 
 ~~Five of `texture.pak`'s 25535 names are malformed.~~ **STRUCK 2026-08-25,
@@ -850,14 +1173,26 @@ Of the eight historically refused kind-65 entries, six are intentional:
 `WILB_DYING_C` and `WIZARD` carry no transform-key records; and
 `ANDD_ATTACK_SPECIAL01` contains one non-normalizable quaternion.
 
-`FX_E_IDLE_BH` and `FX_G_IDLE_BH` are fully decoded (row 1168), as are 26
-other hybrid entries found by the corpus sweep. Per-record classification is
-content-defined: SAMPLED iff count dwords `+24/+28/+32` are all zero and the
-span is `12 + 68*N`; otherwise ORDINARY with the size formula above. Across
-258,534 records, all 128 count-zero records are valid sampled streams with zero
-false positives. Duplicate bone ids retain first/ordinary ordering, and their
-sampled record replaces the sparse ordinary output because it is the dense
-evaluated form of the same complete transform. No FX decoder research remains.
+`FX_E_IDLE_BH` and `FX_G_IDLE_BH` decode and merge their duplicate bone ids.
+**Correction, 2026-09-07 (finding 1235):** the former claim that count dwords
+`+24/+28/+32` distinguish sampled records is withdrawn. Those offsets are
+translation/quaternion components in the interleaved layout. Zero-valued
+components made the heuristic pass the FX examples while rejecting 2885
+of 3013 interleaved records, including `HORS_DYING_A.GRN`.
+
+The explicit **u32 format flag at +8** selects the decoder: `0` interleaved,
+`1` split. A complete kind-65 record census finds 3013 interleaved and 255461
+split records, no other flags, and zero size violations under the corresponding
+formulas. Size congruence alone is not classification. The interleaved decoder
+checks its complete size rather than flooring a partial sample count.
+
+The production `--clip=HORS_DYING_A.GRN` command now returns 48 bones,
+48 records, length 1.1 seconds, and 4896 channel keys. Existing hybrid
+regression checks preserve the 24-to-12 duplicate-bone merge and the
+ordinary wolf's variable scale/shear counts. The stale total-coverage assertion
+was removed instead of repinned to a new corpus count; the checks exercise
+the discriminating layouts. Evidence:
+`donotpublish/tmp/shadow-contract-20260907/motion-format-census.json`.
 
 **169 of the 971 weight-declaring meshes — 17.40% — still have no
 unambiguous FormMeshBone pairing**, down from 240 (24.72%). See "The pairing
