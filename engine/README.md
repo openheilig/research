@@ -21,4 +21,4 @@ behaviour.
 ## Related
 
 This describes the **retail** engine. The reimplementation that consumes these
-findings is the [engine](../../engine) repo — same word, different thing.
+findings is the [engine](https://github.com/openheilig/engine) repo — same word, different thing.

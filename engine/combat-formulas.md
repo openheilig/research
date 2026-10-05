@@ -317,11 +317,44 @@ maximum. Its three callers are potion and regeneration sites, and it fired
 it**. Whatever applies damage writes the pool directly, and that write is not
 yet located.
 
-**Max HP is loaded, not derived.** `CalcResults` does not write it: the bulk
-copy at `0x80EF361`–`0x80EF3B5` moves `+0x4B0` … `+0x4CC` field by field out
-of a stack buffer into the creature. So the standing claim that "HP is in no
-table read so far" is better stated as *HP is in a table we have not yet
-identified* — it is a stored record field, not an attribute derivation.
+~~**Max HP is loaded, not derived.** The bulk copy at
+`0x80EF361`–`0x80EF3B5` was attributed to a creature record.~~
+**Withdrawn 2026-09-29:** its owner `sub_80EF028` loads
+`WORLD/SECTORS.KEY`; its sibling `sub_80EF4EE` loads `SECTORS.KEYX`.
+The caller names both files, and the body constructs sector objects and logs
+`SECTORS.PAK`. Offsets `+0x4C8/+0x4CC` in that object are not evidence about
+creature HP. Finding 1140's spawn-loader closure inherits the same false
+attribution. The independently observed creature pools/accessors above remain
+valid; max-HP generation and restoration must be established from creature
+callers, not numerical offset coincidence. See
+[the revision audit](engine-revision-2026-09-29.md).
+
+**Replacement lead recovered 2026-09-29:** `CalcResults` (`0x820E04C`)
+conditionally calls `0x81F4FFA`, which derives max HP and writes combat-block
+`+292` = creature `+0x4CC`. The corresponding base arithmetic is also present
+in Gold ENG `0x5658F0` and RUS `0x565BA0` (their block-relative output is
+`+300`; do not transfer structure offsets mechanically). The base combines
+two base fields, level-scaled integer terms, a live-attribute ratio and a power;
+the function then applies skill, special/type, difficulty and related-object
+modifiers and clamps current pools. This refutes “CalcResults never writes HP”
+as well: that claim missed a callee and its different pointer base. Preserve
+field-offset names until attribute order is joined; full numerical/modifier
+parity is not established by locating the function.
+
+**Creature tail structure (2026-09-29, live 48 samples, `hp-diff.log`):** the
+non-hero path at `0x81F54C8`–`0x81F54F9` computes
+`stored_max = stored_max × curve(L) × ProzHP[mapped]` — a RE-SCALE of an
+already-stored max, not a recomposition. Observed curve ratios: 0.766667
+(L=1), 0.783333 (L=2); pre-tail stored max varies per type (63, 66, 69, 101,
+116), so the type-varying base originates in earlier passes. The difficulty
+index remap produced `mapped=5` on the default run, making ProzHP[5]=1.0
+inert there. **ProzHP recovered from balance.bin offset 1836:**
+`[1.10, 1.25, 1.40, 1.50, 1.28, 1.00]` — confirming the parse target
+`0x8B89B48 = flt_8B89420 + 0x728` is exactly the table multiplied at
+`0x81F54D6`. Open for C1: the pre-tail base's origin per type, the curve's
+interpolation source, and reconciliation with the base formula that matched
+the hero (119) but not creatures. Implement the hero branch and ProzHP table
+with witnesses; do NOT implement the creature branch until observed.
 
 **The fraction exists, at `0x8188FB3`** — and it is a level-up routine, not a
 gauge:
@@ -340,10 +373,74 @@ That is "a stat change preserves your percentage of health", and it
 **independently re-confirms `a1 = &creature[0x3A8]`** from an unrelated call
 site.
 
-**`ProzHP` is dead.** The key parses into the float array at `0x8B89B48`
-exactly as `ProzAW` does, and the address occurs **once** in the whole binary —
-the write. Nothing reads it. It is one of the 28 parsed-and-unused balance
-keys, so do not model an HP difficulty scaler on it.
+~~**`ProzHP` is dead.** The array at `0x8B89B48` has no readers.~~
+**Withdrawn 2026-09-29:** the max-HP callee `0x81F4FFA` reads it through
+an indexed base, which a literal-address census missed. At `0x81F54CE`
+`eax=0x8B89420`; `0x81F54D6` multiplies by
+`[eax + edx*4 + 0x728]`, and `0x8B89420+0x728=0x8B89B48`.
+The preceding code remaps the difficulty index before this non-hero/type
+scaling branch. This establishes a real read, not complete numerical
+qualification of every difficulty. Do not retain the “parsed-and-unused”
+classification or omit this branch when transcribing max-HP derivation.
+
+## XP thresholds — solved by live observation (2026-09-29)
+
+`sub_8216294(arg0, level)` returns the XP threshold for a level, quantized to
+a multiple of 100. Decompile lost the `pow` returns; the formula below was
+recovered by pairing entry/exit breakpoints in a live LGP process
+(`tmp/engine-revision-20260929/xp-live.log`, 64 samples; intermediate stores
+`xp-t1.log`, `xp-n.log`):
+
+```
+N(L)          = L⁴ + 40L³ + 150L² + 200L − 90
+threshold(L)  = 100 · floor(N(L) / 100)
+```
+
+Constants, all read from the binary and consistent with the live outputs:
+`0x8793AC4`=200, `0x8793AC0`=−200, powers 3.0/4.0/1.0 at `0x86E7984/88/80`,
+coefficients 40 (`0x8793ACC`), 1 (`0x8793AD0`), and the quantizer
+`0x51EB851F >> 37` = division by 100, then ×100. The final `fistp` rounds
+to nearest (control word `0x0C`); the floor comes from the magic-multiply
+division, not the store.
+
+Verified live: L=1→300, 2→1200, 3→3000, 4→5900, 5→10200, 6→16400, 7→24700,
+9→49500 — every observed value equals the formula. The `level` argument is
+the explicit `arg4` when nonzero, else the u16 at `arg0+0x56`. Level-1 hero
+starts at 0 XP, so the working reading is **threshold(L) = XP needed to
+advance from level L**; `sub_82164BC`'s exact comparison direction is the
+caller-side residual.
+
+Open: the award-side multiplier (`sub_8213ED6`, boundary levels 99/124/149/205)
+and difficulty/party factors — same live-observation method applies. The
+ENG/RUS builds were not re-observed; constants are presumed shared with the
+same caveat as all cross-build transfers.
+
+### Award-side level multiplier — `sub_8213ED6(level)` (2026-09-29, static with exact constants)
+
+Read from the LGP assembly after the decompile's pow artifact (it "returns"
+the base; the asm stores the pow result into `var_1C` and returns that):
+
+```
+level  ≤ 99          → 1.0
+100 .. 124           → 0.985^(level − 99)     flt_86E78A0
+125 .. 149           → 0.980^(level − 99)     flt_86E789C
+150 .. ∞             → 0.975^(level − 109)    flt_86E7898
+level > 205, hero-context conditions met → additionally × sub_83A3FBC(...)
+```
+
+Branch bounds from the compares (`0x63`, `0x7C`, `0x95`, `0xCD`); constants
+read from `.rodata` and float-decoded exactly. The >205 extra factor applies
+when the owner's `+12` field ≤ 16 or a type-table predicate holds with owner
+`+492` in range; `sub_83A3FBC`'s argument comes from `sub_83A4E62` — its
+meaning (difficulty? party size?) is UNRESOLVED and must not be guessed.
+
+Evidence level: the ≤99 arm is what a new-game session can reach (the
+tutorial awards no XP, so the function is not even called — a 48-sample
+exit breakpoint saw zero hits, `xp-award.log`); the three powered branches
+are static-only, arithmetic from binary constants, never observed live.
+Callers: `sub_821369A` (single-player addExperience path) and `0x82C72BA`.
+A live witness at level ≥100 is the residual before this ladder is
+"behaviourally verified" in the plan's four-state ledger.
 
 ## Where AT and PA come from — skills, not attributes
 
@@ -676,7 +773,7 @@ case and no balance family, and is the only skill in the list that does not.
 balance global.
 
 Regenerated and re-checked by
-[`tools/binary/skillmap.py`](../../tools/binary/skillmap.py) into
+[`tools/binary/skillmap.py`](https://github.com/openheilig/tools/blob/main/binary/skillmap.py) into
 [generated/skill-families.tsv](../formats/generated/skill-families.tsv).
 
 ## The creature's level is a CLAMP on the hero's, not a draw

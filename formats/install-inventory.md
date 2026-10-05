@@ -87,10 +87,10 @@ a numbered-overlay vocabulary that no document here had:
     Pak\Items00.pak .. Pak\Items15.pak     (all sixteen, spelled out)
     PAK\Mod1.pak
 
-So `items03.pak`, `models03.pak` and `texture03.pak` are **slot 3** of a
-sixteen-slot array the engine already indexes by number, not a one-off promo
-naming. Only slot 3 ships. `Mod1.pak` is a separate, singular slot and no file
-answers it in any install we hold.
+~~All three families share a sixteen-slot array.~~ **Corrected 2026-09-21,
+finding 1259:** items and textures load base plus numbered files **00..15**;
+models load **sixteen files total: base plus 00..14**. All use numbered archives,
+not a one-off promo name. Only suffix 03 ships here. `Mod1.pak` remains separate.
 
 This surfaced from the other direction: Raven Rock's `srr.dll` patches the
 sixteen `Pak\ItemsNN.pak` strings in place, at a 16-byte stride, which is what
@@ -123,8 +123,8 @@ The rule inside the loader, per 128-byte record:
 | `≥ 1` (slot) | index **read from the record itself**, at record offset 118 |
 
 An add-on record therefore names its own target id and **overwrites whatever is
-there**. If the target already holds a populated record — the byte at record
-offset 62 is set — the engine logs
+there**. Admission and the existing-target warning use the category byte at
+record **+46** (~~+62~~ was the LGP manager-relative offset):
 
     TypeManager::loadItemTypes() - WARNING!!! Overwrite of base itemType [%d] because of add-on [%s]!
 
@@ -132,17 +132,62 @@ offset 62 is set — the engine logs
 ascending**. A missing file is skipped silently — the loader `fopen`s and returns
 0 without a message.
 
-For `a3 ≥ 1` it also adds a per-slot delta, accumulated over `j = 0 … a3−1` from
-a table, to two fields of the record (`+24` and `+118`) — an id-space shift per
-preceding slot.
+~~The per-slot delta shifts record +24 and +118.~~ **Retracted 2026-09-21,
+finding 1259:** those expressions included the LGP manager's 16-byte prefix.
+The actual disk-record fields are **u32 +8 and u32 +102**. Their delta is the
+sum of **texture archive counts** preceding the item's archive ordinal.
+The destination type at **+118 is not rebased**. The loader clears u32 +112.
+ENG and RUS `0x429190` independently expose the record-relative offsets without
+LGP's prefix; LGP is `0x8139520`.
 
 This matches the recovered `DEBUG.LOG` line for line: `loadItemTypes...` /
 `PAK\ITEMS.PAK V5 #32768` / `loadItemTypesCustom...` / `PAK\ITEMS03.PAK V5 #32768`
 — only slot 3 appears because only slot 3 ships.
 
-> **Still not established:** the same question for `MODELS%.2d` and
-> `TEXTURE%.2d`, which have their own loaders, and what `Mod1.pak` is loaded by.
-> Only the item path was traced.
+#### Cross-archive identity contract — 2026-09-21
+
+Finding **1259** separates three namespaces that must not be merged by filename:
+
+| Family | Loading / identity | Duplicate-name policy |
+|---|---|---|
+| Item definitions | Base index; numbered record's target u32 +118 | Later admitted definition overwrites the same type |
+| Texture headers | Ascending archive concatenation, including empty slots | Last merged index wins by name; direct IDs retain their entry |
+| Model / motion headers | Separate ascending kind-64 / kind-65 vectors | Model names first-wins; motion patching remains separately unresolved |
+
+Texture manager counts are at +68+4*ordinal; runtime header byte +41 identifies
+the source archive and u32 +42 its original offset. Primary is ordinal 0;
+suffix 03 is ordinal 4. Empty slots in an opened archive count; missing files
+contribute zero. LGP `0x83C3106` appends headers; reverse name-hash construction
+is `0x83C284E` / `0x83C2CAA`, independently ENG `0x656420`, RUS `0x656910`.
+
+**Live witness, not just a plausible join:** the fresh texture-manager counts
+are `(25535,0,0,0,3,0,...)`. Numbered item type 3999 has disk skin +8 = 1;
+retail has **25536**, source archive ordinal 4, texture **CAB.TGA**.
+Do not infer KROMBACHER.TGA from the model name: that is local texture 2.
+Record +102 becomes 25535, +112 becomes zero, and target +118 stays 3999.
+The later established weapon-backpointer pass stamps u16 +24 = 2372
+(`weapon.pak` row 2372 names destination 3999, parent zero).
+Applying exactly those operations matches **all 128 live record bytes**.
+Both the unre-based record and the old wrong-target-rebase interpretation fail.
+The rendering purpose of +102 remains unnamed; its arithmetic is established.
+
+Model loader `0x810E710` appends kind-64 records at stride 1194 and kind-65
+records at stride 256. It stamps kind-64 archive ordinal +1148 and model
+ordinal u16 +1192; kind-65 archive ordinal +248 and motion ordinal u16 +46.
+Independent ENG/RUS loaders are `0x412D90` / `0x412E80`. LGP constructor
+`0x810C3D8` supplies the sixteen-total-file bound; model hash builder
+`0x810D00A` iterates forward. This is static cross-build evidence, not a new
+live merged-model witness. Subsequent `Motions.pak` / `CUSTOMMOTION.TXT`
+processing is not replaced by an invented per-archive motion-ID bias.
+
+The current production readers still open only the primary archives.
+**The contract is recovered; numbered-archive integration is not implemented.**
+Loading only numbered items would feed merged IDs into a primary-only texture
+reader and is therefore not a correct partial implementation.
+
+Private evidence: `donotpublish/tmp/global-order-20260907/asset-glue-20260921/`,
+`asset-control-20260921/`, and `mapping-20260921/verify_mapping.py`.
+Raw memory/censuses stay private. `Mod1.pak`'s loader remains untraced.
 
 ### The `03` files are a beer advertisement
 

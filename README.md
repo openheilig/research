@@ -8,6 +8,13 @@ in this repository — no extracted assets, no decompiler output, no symbol
 tables, no memory dumps. Those stay in a private workspace by design, and the
 `.gitignore` is an allowlist so they cannot arrive by accident.
 
+Public development research, not a claim of a finished game. Current engine
+behavior and the approved 0.0.1 boundary are recorded in the
+[engine status](https://github.com/openheilig/engine) and
+[playable Seraphim milestone](https://github.com/openheilig/engine/blob/main/docs/milestone-0.0.1.md).
+The September29 audit is historical evidence; later implementation does not
+turn its open contracts into completed features.
+
 ## Start here — and what state each answer is in
 
 | I want… | Read | Status |
@@ -39,7 +46,7 @@ was learned by getting it wrong first.
 formats/            one document per file format
 formats/generated/  machine-written tables -- regenerate, never edit
 engine/             engine behaviour: tech stack, recovered formulas, oracles
-builds/             which of the seven Sacred builds answers which question
+builds/             retail/prerelease build roles and independent references
 method/             the techniques, and the mistakes that shaped them
 log/                the append-only findings log
 open-questions.md   every open item from every document, in one list
@@ -48,7 +55,7 @@ open-questions.md   every open item from every document, in one list
 ## The shape of a document
 
 Every document in this repository, and every `README` in
-[tools](../tools), opens and closes the same way, so its state is readable
+[tools](https://github.com/openheilig/tools), opens and closes the same way, so its state is readable
 without reading its body:
 
 ```markdown
@@ -68,7 +75,7 @@ Provenance: the decoders, tools and log rows this rests on.
 | Status | Means |
 |---|---|
 | **Solved** | Two independent decoders agree. Nothing open. |
-| **Read** | The engine uses it in production; some fields remain unexplained. |
+| **Read** | The format has been decoded/read with named gaps; production integration is a separate engine claim. |
 | **Partial** | The core is understood; the gaps are named under `## Open`. |
 | **Blocked** | A stated obstacle, and what would remove it. |
 | **Open** | Not started. |
@@ -81,10 +88,10 @@ is a checkable claim rather than a matter of taste.
 
 ## The findings log
 
-`log/autoresearch-results.tsv` — **916 rows**, one per investigated question,
-append-only. Each row records what was asked, what was measured, and the
-verdict, including the refutations. It stands in for the missing git history
-of the analysis workspace.
+`log/autoresearch-results.tsv` is the append-only findings ledger, one row per
+result. Cite the monotonic finding **id**, not the physical line number or a
+remembered row total. Rows preserve observations, corrections and refutations;
+they do not by themselves establish the current engine's behavior.
 
 **If you are about to test a hypothesis, grep it first.** It may already be
 settled, or already dead.
@@ -107,9 +114,9 @@ Anything not stated is not claimed. Open questions are marked as open.
 
 This is one of three repositories:
 
-- [engine](../engine) — the reimplementation: an open Sacred Gold engine on
+- [engine](https://github.com/openheilig/engine) — the reimplementation: an open Sacred Gold engine on
   Godot 4.7 that reads your own retail install.
-- [tools](../tools) — the analysis and extraction tools, and the Python half
+- [tools](https://github.com/openheilig/tools) — the analysis and extraction tools, and the Python half
   of every parity gate.
 
 ## Licence

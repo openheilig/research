@@ -1,12 +1,28 @@
 # Footprints / collision bitmask
 
-**Status:** Solved (2026-08-27, rows 1148–1156). Supersedes the "geometric
-footprint" hypothesis that drove the original W2 framing — outdoor walkability
-is **not** a per-object footprint polygon tested against the player point. It
-is a 16-bit collision-class **bitmask intersection**. Closes open-questions
-row 89 (opened 2026-08-17, row 990), which measured the old `byte26 != 1 &&
-byte26 != 4` heuristic at a 91.01% base rate and found no cell field predicted
-the navmesh better. The mask IS the answer the field scan could not find.
+**Status:** Partial; Gold transfer reopened 2026-09-29.
+
+**Correction:** the earlier “Solved” verdict transferred an Armalion predicate
+to Gold without establishing its shipping consumer. The historical sections
+below describe that investigation, not an accepted Gold implementation spec.
+In particular, the claim that `byte26 != 1 && byte26 != 4` is correct for every
+non-door Gold cell is withdrawn.
+
+Gold LGP `0x080EE194`, ENG `0x00636C10`, and RUS `0x00637040` agree on a
+different base predicate: resolve the support-aware cell; reject missing cells,
+low-nibble `cell[31]` classes 1/2, or `cell[30] & 8`; otherwise allow. With
+`cell[30] & 4`, a coordinate-keyed runtime trigger lookup can override that
+answer using bit 0 of the resolved sixteen-byte record's byte 10. This is not
+the Armalion static-mask intersection described below. The companion wrapper
+LGP `0x080EE244` / ENG `0x00636D20` also admits class 2; caller choice matters.
+
+A bounded live LGP observation captured 24 entry/return pairs. Same height byte
+0 produced both true and false; class-0 cells with height byte 1 returned true,
+while class-1/2 cells returned false. All observed samples had flags 0 and
+layer 0: trigger overrides, bit-8 rejection, support layers, and actor-specific
+permissions were not behaviorally tested. See
+[the revision audit](../engine/engine-revision-2026-09-29.md) for evidence and
+remaining gates. No engine implementation changed.
 
 ## The system
 
@@ -109,8 +125,37 @@ queued behind a user go-ahead (the phase is analysis-only).
 
 ## Open
 
-Nothing open in the collision-bitmask decode. The port implementation remains
-integration work, not research.
+The Gold world-admission helper is cross-build recovered and its base branch
+has live positive/negative witnesses. Still open: support selection,
+caller-specific class-2 handling, actor-specific traversal, and complete
+path/interaction behavior. The historical Armalion-only closure below does
+not close these Gold requirements.
+
+**Coordinate-trigger index population — answered 2026-09-29 (E2/NAV).**
+A corpus-wide call census finds exactly ONE writer pair for the lookup map
+at `0x8BB0148`: `sub_867444A` (clear) then `sub_86796DA` (insert), both in
+the world-state loader (`linux1002/chunks/00025.c:13946-13952`), which reads
+`8*v47` stream bytes as dword pairs `(coordinate_key, record_index)` and
+inserts each. Consequences, both testable:
+
+- On a NEW game the map is empty; `sub_8650744` misses and `0x80EE194`
+  preserves its base answer. The bit-4 override is therefore SAVE-DRIVEN
+  state, not sector-authored data — consistent with the live observation
+  where all 24 samples had `cell[30] & 4 == 0`.
+- A save that carries override pairs restores them verbatim on load; the
+  port's equivalent belongs in the P1 save schema (trigger-state block),
+  keyed by the same `(x<<18)|(y<<4)|(layer>1?layer:0)` packing.
+
+The same loader block also rebuilds `0x8BB0110` (key → dword vector) and
+`0x8BB0168` (88-byte records); `chunk 00017.c:32524` inserts the treppe
+`(level<<26)|(y<<13)|x` packing into a DIFFERENT map (`v122+7494`), so the
+packed-coordinate key scheme is an engine convention, not unique to this
+lookup.
+
+Still open for W1 implementation: which caller predicate each movement kind
+uses (base `0x80EE194` vs companion `0x80EE244`), support resolution, and
+per-actor permissions — with allowed/denied runtime witnesses per the
+implementation plan's NAV ticket.
 
 ## Behavioural confirmation
 

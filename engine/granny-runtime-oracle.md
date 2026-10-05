@@ -10,7 +10,7 @@ what a file contains. The harness only **calls exported functions and reads
 their output** — nothing decompiled, nothing derived from RAD's SDK source.
 The binaries it drives come from a community archive and live in a scratch
 directory; none is stored in any repository here. The harness itself is
-[`tools/granny_oracle/`](../../tools/granny_oracle/).
+[`tools/granny_oracle/`](https://github.com/openheilig/tools/tree/main/granny_oracle/).
 
 ## Two corrections worth keeping
 

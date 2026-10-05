@@ -313,11 +313,18 @@ rather than one author's private naming. It still is not Ascaron's.
 ### 50 symbolic names recovered
 
 Its `hash-0.txt` is a name list, and **all 50 resolve against our own
-`global.res`** — checked in with their hashes and text as
-[`generated/global-res-symbolic-names.tsv`](generated/global-res-symbolic-names.tsv).
+`global.res`**.
+
+> ~~The resolved hashes and retail text were checked in as
+> `generated/global-res-symbolic-names.tsv`.~~ **Publication correction,
+> 2026-10-05:** that extracted dialogue table crossed the authored-findings
+> boundary. It is removed from every published revision, not merely HEAD;
+> the original research history remains privately preserved. Read the user's
+> own `global.res` at runtime; no replacement dialogue dataset is distributed.
+
 They are one quest chain, `E3Q01`, with `cptHawkwood`, `groomJohn`,
-`brideSarah`, `wPriest`, `wHighPriest` and `ranger`, plus `E3_Teleporter`
-("...the beautiful city of Mascarell"). Retail's file keeps only the hash, so
+`brideSarah`, `wPriest`, `wHighPriest` and `ranger`, plus the
+`E3_Teleporter` resource. Retail's file keeps only the hash, so
 these are vocabulary that cannot be enumerated from the container — every
 symbolic name recovered has to come from outside it.
 

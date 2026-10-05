@@ -48,7 +48,7 @@ by one slot and the count drops and the run fails.
 
 ## Related
 
-Implementations: Python in [tools/formats/](../../tools/formats/), GDScript in
-[engine/formats/](../../engine/formats/). The two are diffed against each
+Implementations: Python in [tools/formats/](https://github.com/openheilig/tools/tree/main/formats/), GDScript in
+[engine/formats/](https://github.com/openheilig/engine/tree/main/formats/). The two are diffed against each
 other — that agreement, not either one alone, is why these documents claim
 what they claim. The rule is in [../method/discipline.md](../method/discipline.md).

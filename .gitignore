@@ -29,3 +29,24 @@
 *.so
 *.png
 *.jpg
+
+# Prose/table suffixes do not make private dumps or caches publishable.
+/donotpublish/
+/install/
+/data/
+/analysis/
+/decomp/
+/chunks/
+/rtti/
+/symbols/
+/captures/
+/traces/
+/cache/
+/tmp/
+/vendor/
+/.codegraph/
+/graft/
+/.remember/
+
+# A past extracted-dialogue table is private even though its suffix is allowed.
+/formats/generated/global-res-symbolic-names.tsv

@@ -82,7 +82,7 @@ reached through the name hash at `sub_80ACC3E`.
 | 5 | sector → Init proc | `Sector<cx><cyyy>Init` | **yes** | `spawnlevel_check` |
 | 5b | `SpawnValues` → band | opcode 100 | **yes** | `spawnlevel_check` |
 | 6 | sector → Enter proc | `Sector<cx><cyyy>Enter` | **partly** — hooks run for quests, not per-sector | `quest_check` |
-| 6b | placements → world | `startcode.bin` | **yes** (`--npcs`) | `spawn_check` |
+| 6b | placements → world | `startcode.bin` | NPCs via `--npcs`; opcode-8 model objects stream with sectors (finding 1253) | `spawn_check`; live chest draw and sector unload/revisit smoke |
 | 6c | sector → music | `world/sectors.keyx` | **yes** `formats/sectors.gd` | `sectorenv_check` |
 | 7 | band + hero level → level | `sub_81806DC` | **yes** | `spawnlevel_check` |
 | 7b | body id → creature | `creature.pak` | **yes**, all 86 bytes | `creature_check` |
@@ -145,7 +145,7 @@ it stopped being true.
 | 3 | **Equipment actually equipped** | Medium | Armour and resist for 8c, the `bonus` term for 8d, the weapon base for the recovery clock | Row 3b: *"ids only, not equipped"*. Three formulas currently take a placeholder: `Combat.damage` gets zero armour, `Regen.rates` gets bonus 1.0, `sub_81A8636` falls back to 20.0. **They are one gap, not three.** |
 | 4 | **What an art does to damage** | Med, uncertain | Makes a spent art matter | `+0x50`/`+0x54` are measured and read like a multiplier for attack moves, but the same field is a duration on a shapeshift art. Row 1036 notes the weapon-slot flag appears nowhere in `sub_81FAC30`. |
 | 5 | **The experience value** | Low-Med | Fills the XP bar that is already identified and drawable | Dumping the hero creature's `+0x420`…`+0x620` across a kill moved only two noise fields. |
-| 6 | **Drop shadows** — retail draws one under the hero, the port draws none | Unknown | An unmeasured share of the start-scene pixel delta | `view/player_view.gd:96`, in the scale-calibration docblock: *"her drop shadow — which the port does not draw at all — contaminates the bottom"*. **Unranked on purpose: its pixel cost has never been measured.** See Open. |
+| 6 | **Actor shadow raster parity** — native blob geometry now renders | Open | Matching actor footing | Finding 1232: texture and five float32 strip sizes match native captures; pose, anchor, encoded blending, native depth/order, and projected/stencil branch remain incomplete. |
 
 **Why #2 is not first.** It reads like the obvious next step and it is not the
 biggest one. The list is ordered by effort and by what each unblocks, never by
@@ -191,8 +191,264 @@ derivation found before any of #2 can start.
   `sub_428790` and are *not* in the Linux build, whose display path computes
   `100·AT/(AT+PA)` through `sub_815D44C` with no level term. Recorded as a
   discrepancy between two binaries rather than resolved.
-- **Drop shadows, and what draws them.** Retail draws a shadow under the hero
-  that the port does not draw at all — `view/player_view.gd:96` records it as a
+- **Actor blob shadows, current 2026-09-07 (finding 1232).** The observed
+  start actor uses LGP `0x080FE8DA` / Windows `0x00407960`, not a projected
+  body mesh. Five strips use root, root/left-foot midpoint, root/right-foot
+  midpoint, left foot, and right foot; all flatten to sampled support height.
+  Half-size starts at float32 `radius * 0.6000000238418579`, then shrinks by
+  float32 `0.6666666865348816` for the midpoint and foot pairs. Captured radius
+  50 gives 30.0000019073, 20.0000019073, and 13.3333349228.
+
+  The production renderer's five sizes and 64×64 SHADOWDOT texture match the
+  live buffers exactly. Native diffuse is black with alpha 80/255; filtering
+  is linear/repeat, with source-alpha blending and no alpha test. This branch
+  does not inherit the body's calibrated scale. Radius comes from item `+20`,
+  model scale/reflection from kind-64 metadata `+1136/+1140/+1144`, and
+  initial heading from item `+87` through event 64. Actor `+112/+116` are
+  heading, not scale. Support height uses the authored child grid and native
+  four-triangle fan, not terrain sorting depth.
+
+  **Not 1:1.** ~~The captured root and port root differ by about 0.57/0.54
+  px.~~ Finding **1234** corrects the shadow origin to the integer native
+  lattice point already used for heading/support. A frozen-pose experiment
+  reduces root-quad mean error to **0.045851/0.066250 px**, confirmed by the
+  production packet. All origin writers now share that point; the body's
+  calibrated placement is unchanged. No fitted pixel offset was introduced.
+  The frozen control changes only 2872 shadow pixels, with exact floor control.
+  Evidence: `donotpublish/tmp/shadow-contract-20260907/anchor/` and
+  `anchor-integrated/`.
+
+  Foot positions still differ at unmatched animation times.
+  ~~Forward+ blends the production blobs in linear color; global insertion
+  is unwired.~~ **Updated 2026-09-21, finding 1263:** blob packets now draw
+  directly in encoded RGB immediately before their actor in the shared static/
+  model FIFO. Cropped model targets isolate self-depth; native cross-model
+  shared-depth equivalence and the projected/stencil branch remain open.
+  The pre-static-compositor world-band result was **7.642253%** exact-difference pixels,
+  RGB MAE **2.446650**, with an exact floor control. Actor animation times
+  differ between full-scene captures; this is not an isolated score-improvement
+  claim.
+  Evidence: `donotpublish/tmp/shadow-contract-20260907/run02/` and
+  `port-native/`. A clean render and correct geometry do not close these gaps.
+  Finding **1237** subsequently reduces the world band to approximately
+  **5.230% / MAE 1.713** through static sprite blending and authored static
+  shadows; that does not close the actor-specific gaps above.
+
+- **Native actor input observation, 2026-09-07 (finding 1238).**
+  The running start Seraphim uses effective model `SERAPHIM.GRN`, native
+  model row 661, and motion enum 2. The shipped model table at `+112 + 4*2`
+  selects native motion row 1467, `SERA_IDLE_BH.GRN` (pak entry 3039).
+  Its entire 1,024-byte motion table agrees with the live model row.
+  The active control's rate is **1.25**; its last evaluated local time in
+  the retained frame is **0.22374999523162842**. Body and shadow observation
+  share clock, sequence, and actor bytes. This is not a phase fitted to pixels.
+
+  The body draw enables fixed-function lighting with one directional light;
+  light/material state is captured. The observer still marks its raw raster
+  path incomplete for lit draws: these inputs are observed, not a successful
+  raster replay. Production body pose, calibrated transform, and lighting are
+  unchanged by this finding. Evidence: `donotpublish/tmp/actor-pose-20260907/run02/`.
+
+- **Godot lit-draw replay, 2026-09-07 (finding 1240).** The earlier lack
+  of a lit replay is now partially closed: a scratch Forward+/Vulkan
+  SubViewport replays captured head draw 6 from `run03`, including its
+  positions, normals, UVs, texture, matrices, and pre-draw color/depth.
+  Per-vertex ambient/diffuse/specular lighting reproduces exactly the
+  native draw's **194 changed pixels**, with RGB-byte MAE **0.163230**
+  and maximum error **3**. Replacing only the lighting with the port's
+  flat ramp raises MAE to **48.905498**. Both arms leave every pixel
+  outside the native changed set byte-identical to the supplied background.
+  Explicit Vulkan clip output needs Y inversion and reversed depth.
+  RGB half-float readback is rounded to UNORM8; Godot's Image.convert
+  truncation otherwise adds an artificial approximately one-byte error.
+  This validates one captured head draw, not all body surfaces, animation,
+  production transforms, or actor insertion. Production remains unchanged.
+  Evidence and repeatable measurement: `donotpublish/tmp/actor-pose-20260907/`
+  `godot_lighting_replay.gd`, `measure_godot_lighting.py`, and `godot-lit/`.
+
+  **Extended to all six body draws (finding 1241).** Fresh `run04` captures
+  before/after color and depth for each body draw; the clock/sequence/actor
+  consistency checks remain true. Replaying each independently in Godot gives
+  weighted RGB-byte MAE **0.082711**, versus **33.337444** for the flat
+  control, over **2,676 draw-pixel observations** (not distinct final pixels).
+  Every outside pixel stays exact in both arms. Draws 6–10 have exact
+  changed-pixel coverage; draw 11 misses one native pixel at (505,384):
+  retail (35,30,30), unchanged/replay (21,21,21). Maximum channel error is
+  14. That discrepancy remains unexplained; this is not exact raster parity.
+  The observer's inherited `incomplete` marker still reports its unsupported
+  lit path; these independent GPU comparisons validate the retained draws,
+  not every path in that observer. No production change. Measurements:
+  `godot-lit-all/body-measurements.json` and `measure_godot_body.py` under
+  the same evidence directory.
+
+  **Raster miss follow-up (finding 1242).** Evaluating modelview and
+  projection separately does not recover the draw-11 pixel; it raises MAE
+  to 0.176979 with unchanged outside pixels. A fresh native `run05` reports
+  `GL_SUBPIXEL_BITS = 8` for all eleven draws, refuting a four-bit
+  coverage-grid explanation. The missed pixel's original depth is 1.0
+  (after the retail draw, 0.8129918), so this is not an existing-depth tie.
+  The boundary discrepancy remains open; no fitted snapping or offsets
+  were adopted. Control: `godot-lit-all/separate-011/measurements.json`.
+
+  **Native feedback control (finding 1243).** A separate `GL_FEEDBACK`
+  diagnostic on `run06` returns 130 culled triangles with 390 window-space
+  vertices, all on a 1/256-pixel grid. That driver path returns constant
+  texture coordinates, so direct textured feedback replay is not valid.
+  Joining the original UV array through the exact surviving triangle sequence
+  (not nearest seam vertices) gives replay MAE 0.162037 versus 0.164021
+  from reconstructed raw inputs, with the same missing pixel at (525,391).
+  Outside pixels remain exact. Feedback is not evidence that real raster
+  arithmetic is identical, and it does not close this discrepancy.
+  Evidence: `run06/`, `measure_feedback.py`, and
+  `godot-lit-all/feedback-comparison.json` in the actor-pose directory.
+
+  **Source-derived chest lighting (finding 1254).** The light is not a
+  universal character preset. LGP `sub_80E7416` and ENG's scene consumers
+  select ambient 0.3 when item definition byte `+0x2e` is 3, otherwise 0.8;
+  actor flag `0x20000000` replaces it with a clock-driven pulse. The existing
+  item reader gives Seraphim/novice category 3 and chest type 5201 category 4.
+  LGP scene initialization normalizes direction `(1,-1,-3)`; its GL adapter
+  negates the direction and transforms it through the view matrix. Light
+  manager `sub_83B3B44` / ENG `sub_642FD0` multiplies diffuse/specular by
+  environmental RGB and ambient by the selected scalar. The LGP material
+  adapter maps power 30 to GL shininess `30*1.28 = 38.4`.
+
+  Fresh `chest-light-native/` retains before/after buffers for both chest
+  draws. Source direction, item-selected ambient and source shininess produce
+  the same rounded replay images as captured GL light inputs. Their changed
+  coverage is exact (2785/1914 pixels), with no outside changes; RGB-byte
+  MAE is 0.016038/0.032393. Flat-ramp controls score 19.445242/25.014629;
+  deliberately using the character ambient scores 30.156553/9.548067.
+  The source reconstruction explicitly requires the observed white
+  diffuse/specular input; it does not substitute white for environmental
+  lighting elsewhere. Maximum channel errors are 1/36, with the second
+  draw's large residual at (241,285), so exact raster parity remains open.
+  The observer still rejects full chest pose/shadow completeness; only its
+  guarded draw packets and independent GPU replay are used here.
+  Production materials remain unchanged. Evidence under
+  `donotpublish/tmp/actor-pose-20260907/`: `lighting-categories.json`,
+  `chest-lighting-measurements.json`, `chest-light-replay/`,
+  `chest-light-replay-002/`, and `measure_chest_lighting.py`.
+
+  **Unprojection precision corrected (finding 1255).** Integrating normal
+  transforms exposed a 0.74-degree chest heading error. The port used double
+  division by 768; LGP `sub_80D78BA` multiplies by the float32 reciprocal
+  (`0x3aaaaaab` at `0x086d7230`, read by `fmul DWORD` at `0x080d78fe`).
+  ENG `sub_623940` independently uses the same reciprocal expression.
+  At lattice point (173474,134834), the old conversion produced Y
+  160577.078125 rather than native 160577.09375. Subtracting two nearby
+  converted points amplified the rounding into the heading error.
+  `NativeActorShadow.lattice_to_native` now preserves the shipped reciprocal.
+  `native_unprojection_check` fails on both position and heading before the
+  fix and passes afterward. Against the fresh chest capture, all 206
+  position/UV vertices have a counterpart within 0.007526 native units;
+  matching hard-edge seam candidates leaves maximum normal-vector error
+  0.000089124. This does not resolve the remaining vertex/readback precision.
+  All 53 checks pass. Fresh inspected start-scene gate: world 5.17%/MAE 2.00,
+  full 6.44%/3.09; PASS, baseline unchanged. Production lighting is still
+  the legacy ramp. Evidence: `chest-port-normals.json`,
+  `chest-normal-measurements.json`, and `startgate-after1255/` in the same
+  private actor-pose directory.
+
+  **Production object lighting integrated (finding 1256).** Authored model
+  objects now use `native_object.gdshader`: source-derived directional
+  diffuse/specular vertex lighting, item-category ambient, native alpha test,
+  and encoded-RGB texture modulation before conversion to Godot's linear
+  target. It consumes the ordinary RGBA8 skin that `ModelView` already
+  decodes; terrain's packed-channel convention does not apply here.
+  ~~Creature materials remain on the legacy ramp pending posed-normal
+  validation.~~ **Closed for initial daylight in finding 1266:** body
+  projection and post-skin normal conversion are now validated and wired.
+  The simulation still has no native solar clock, so this does not establish
+  time-dependent RGB/pulse behavior.
+  In the fixed chest rectangle (230,250)-(335,335), production RGB MAE
+  falls 12.43746 → 4.033875 against the same retail frame; adjacent floor
+  pixels are byte-identical. The projected chest shadow is still absent.
+  All 53 checks pass. Fresh inspected gate: world 5.05%/MAE 1.86,
+  taskbar 11.01%/6.96, full 6.36%/2.97. The existing ratchet advances its
+  world baseline from 5.16 to 5.05; this is not full 1:1 parity.
+  Private evidence: `object-light-production.png`,
+  `object-light-comparison.png` (old ramp / native lighting / retail),
+  `object-light-production-measurements.json`, and `startgate-after1256/`
+  in the same actor-pose directory.
+
+  **Actor volume repair (2026-09-21, findings 1265–1266).** Full affine
+  scale/shear transport fixes the wolf's distorted neck/limbs; native body
+  camera projection and shared directional Gouraud materials remove the
+  flat/front-on actor path. Same-pose Seraphim/novice topology and normal
+  comparisons, actual GPU normal probes, a guarded native wolf-matrix oracle,
+  and twelve rendered wolf idle/walk/run samples distinguish these fixes
+  from a brightness adjustment. Actor skin overrides are also consumed;
+  forced wolf type 588 uses its authored red/black WOLF_VAMP01 texture.
+  See [the affine/volume contract](../formats/granny-grn.md#full-affine-deformation-and-actor-volume--2026-09-21).
+  Current fixed benchmark: world **4.58% / MAE 1.66**, full **5.99% / 2.82**,
+  repeat difference **0.00%**. The default benchmark contains no wolf and
+  therefore cannot establish wolf correctness. Private visible comparisons
+  and motion frames are in `donotpublish/tmp/actor-shape-20260921/`.
+
+- **Local pose binding corrected (finding 1247).** Same-clip, same-time
+  comparisons against captured native bone arrays disproved the port's
+  rest-pose retargeting and omission of position tracks. `ModelView` now
+  applies authored local quaternion and position keys directly. Across all
+  non-placement bones of the Seraphim and novice nun (71 and 72), maximum
+  local angle error falls from 78.041684/89.999983 degrees to
+  0.004283/0.001935 degrees; position error falls from 2.239036/0.758285
+  to 0.000929/0.000441 model units. The native world-placement `__Root`
+  is excluded because the standalone viewer has no world placement.
+  Native body/shadow bone arrays are identical within each captured frame,
+  and both snapshots retain their clock, sequence and actor bytes.
+  This corrects the shared production binder, not gameplay clip selection,
+  playback rate/phase, world placement, lighting, or actor depth insertion.
+  Evidence and the retained old-binder control:
+  `donotpublish/tmp/actor-pose-20260907/measure_pose_binding.py`,
+  `pose-binding-measurements.json`, and `run10/` / `run12/`.
+
+- **Scripted model objects now render (2026-09-07, finding 1253).**
+  Production previously ignored `Startcode.objects`. The active class's
+  opcode-8 records are now indexed by sector; `SectorView.sector_built`
+  attaches their model nodes to the sector, including fixed-region and
+  record/replay/crowd view construction. Sector retirement frees the nodes.
+  This renders authored initial objects; it does not implement chest interaction,
+  loot handling, or subsequent script-driven object mutations.
+
+  The start chest is type 5201, `chest.grn`, at authored cell (3232,2512),
+  layer 1. Native root position selects the **cell centre**: the corner
+  control misses by 27.6133 native units, the centre reconstruction by
+  0.015625. That remaining float32-coordinate discrepancy is not claimed closed.
+  **Correction:** finding 1255 above closes that origin discrepancy; it
+  came from replacing the shipped float32 reciprocal with double division.
+  Its item heading is -30 degrees and its model-header scale is (1,1,1).
+  Item texture 7442 decodes byte-identically to both native draw textures.
+
+  All 206 native position/UV vertices match the parsed geometry (maximum
+  reconstructed position error 0.007528 native units); all 168 triangles
+  match with reversed stored winding, versus 128 with unchanged winding.
+  **Correction to the initial experiment:** enabling self-depth alone did not
+  fix the inside surfaces. The winding/culling control did: chest-window
+  RGB MAE falls 16.1251 → 12.6037 with only that change. Production retains
+  depth testing and the camera's depth ratios. The old humanoid calibration
+  and skeleton-only placement are not used for rigid objects.
+
+  Against the fresh retail frame, the chest window (230,250)..(335,335)
+  improves from MAE 18.1046 without the object to 12.6037 with it.
+  Adjacent floor control pixels are unchanged. All 52 checks pass; the live
+  streaming smoke observes one chest, its destruction on sector unload,
+  and exactly one rebuilt chest on return.
+  Fresh gate: world 5.17% / MAE 2.00, taskbar 11.01% / 6.96,
+  full frame 6.45% / 3.08. PASS under the existing tolerance; the 5.16%
+  world baseline is unchanged. This is **not** 1:1 lighting/shadow or
+  native actor/static-depth insertion parity.
+
+  Evidence: `donotpublish/tmp/actor-pose-20260907/run19/`,
+  `chest-measurements.json`, `measure_chest.py`,
+  `chest-winding-{control,native}.png`, `scripted-object-revisit.png`,
+  and `startgate-scripted-objects/`. The general actor-pose probe marks
+  this capture incomplete because creature-only motion/bone/shadow queries
+  do not apply to the chest. Only the separately guarded chest identity,
+  geometry, texture and root-transform witnesses above are used.
+
+- **Historical shadow investigation (2026-08-24; superseded above).**
+  The then-missing shadow was recorded in `view/player_view.gd:96` as a
   measurement nuisance ("contaminates the bottom") while calibrating character
   scale, and that code comment is the only place in the project the fact is
   written down. **Registered here 2026-08-24 because it was named as a defect
@@ -204,10 +460,10 @@ derivation found before any of #2 can start.
   appears in neither `open-questions.md` nor `world-sectors.md` nor this file
   until now.
 
-  **What is fact.** The port draws no character drop shadow. Retail draws one.
-  Nothing in `view/` emits a shadow pass; the only other occurrence of the word
-  in the engine is `shaders/object.gdshader:78`, which is about Sacred's 4-bit
-  alpha gradient and not about a shadow pass.
+  **Historical, now superseded:** ~~The port draws no character drop shadow.
+  Nothing in `view/` emits a shadow pass.~~ The old
+  `shaders/object.gdshader:78` reference described Sacred's 4-bit alpha
+  gradient rather than a separate shadow pass.
 
   **What is NOT established, and must not be assumed.** (1) Its pixel cost —
   never measured, in any frame. It is a *candidate* for the roughly 8.4pp of
@@ -224,11 +480,14 @@ derivation found before any of #2 can start.
   where the evidence below comes from — the forum was the pointer, not the
   source.
 
-  | String in `install/sacred` | What it settles |
+  Historical string-based inferences below are not a substitute for the live
+  branch/geometry observation above:
+
+  | String in `install/sacred` | Historical interpretation |
   |---|---|
   | `cGranny::renderShadow()` | retail has a **named shadow render path in the Granny layer** |
   | `cGranny::renderShadowFake()` | and a second, cheaper one — two modes, not one |
-  | `SHADOWDOT.TGA` | the character blob shadow is a **texture**, not geometry |
+  | `SHADOWDOT.TGA` | ~~texture, not geometry~~ — textured geometry; five strips in the observed branch |
   | `SHADOW_TREE00.TGA` | objects get their own shadow art, so the "under every object" half **is** a real pass |
   | `NOSHADOW`, `FLAGS:NOSHADOW` | a **per-object opt-out flag**, so the pass is selective |
   | `FORCE_BLACK_SHADOW` | a `Settings.cfg` key that selects between the modes |
@@ -244,6 +503,11 @@ derivation found before any of #2 can start.
   solid black blob would be reproducing the non-default setting. The gloss is a
   third-party tool author's, not Ascaron's, but it is specific and it is testable
   against a capture with the key flipped.
+
+  **Scope correction, 2026-09-07:** that tool gloss is not proof that
+  FORCE_BLACK_SHADOW changes every branch. The observed five-strip path writes
+  alpha 80 unconditionally. Branch-specific behavior must be traced or measured,
+  not generalized from the setting's label.
 
   **THE PIXEL COST IS MEASURED, 2026-08-25 (row 1099), and it is small.** The
   shadow is plainly there in a retail capture and plainly absent from the port's.
