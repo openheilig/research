@@ -50,3 +50,4 @@
 
 # A past extracted-dialogue table is private even though its suffix is allowed.
 /formats/generated/global-res-symbolic-names.tsv
+/generated/global-res-symbolic-names.tsv
