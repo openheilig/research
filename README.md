@@ -29,6 +29,7 @@ turn its open contracts into completed features.
 | the rules and tunables | [formats/balance-bin.md](formats/balance-bin.md) | Read |
 | to draw the interface | [formats/ui-taskbar.md](formats/ui-taskbar.md) | Partial |
 | how combat resolves | [engine/combat-formulas.md](engine/combat-formulas.md) | Partial |
+| the native 0.0.1 Seraphim quest/encounter/item/save route | [engine/seraphim-native-route.md](engine/seraphim-native-route.md) | Native C0–C5 reference observed; engine parity open |
 | what the Linux port is built on | [engine/tech-stack.md](engine/tech-stack.md) | Solved |
 | whether RAD's own runtime can check our `.GRN` decode | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) | Blocked |
 | which binary to open | [builds/build-survey.md](builds/build-survey.md) | Solved |

@@ -293,11 +293,14 @@ one creature give one answer.
 +0x4D0  119 111 101 93 80 69 62 50 40 27 17  7     also current-like
 ```
 
-All three start equal to the maximum. `+0x4CC` never moves. **`+0x4C8` and
-`+0x4D0` are not the same quantity** — they track each other for eleven blows
-and then diverge, 6 against 7, which is the only reason we know there are two
-of them rather than one and a mirror. Which is authoritative is not settled;
-the rescale routine below reads `+0x4D0`.
+All three start equal to the maximum. `+0x4CC` never moves in that sample.
+`+0x4C8` and `+0x4D0` track each other for eleven blows and then diverge,
+6 against7. ~~Which is authoritative is not settled.~~ **Closed
+2026-10-06:** +0x4c8 is eased/cache; +0x4cc maximum; +0x4d0 live HP.
+LGP `sub_81F118A` moves cache toward live, while `sub_81FAC30` subtracts/clamps
+damage in live HP. `sub_819AA32` rejects zero live HP and native dying/dead
+states. Gold ENG/RUS independently apply the same contract at their own
+offsets. The table's original “current” label is historical, not authoritative.
 
 They are one array, not three fields: every accessor indexes
 `[creature + idx*4 + 0x4C8]`.
@@ -312,10 +315,14 @@ if (pool[idx] > this->[0x4CC]) pool[idx] = this->[0x4CC];   // ceiling
 ```
 
 The ceiling is `+0x4CC` **unindexed**, so all three pools clamp to the same
-maximum. Its three callers are potion and regeneration sites, and it fired
-**zero** times across a fight — so **damage does not reach hit points through
-it**. Whatever applies damage writes the pool directly, and that write is not
-yet located.
+maximum. The old add-accessor probe fired zero times during the sampled fight;
+it correctly excluded that accessor, not the full damage pipeline.
+~~The direct damage write is not located.~~ **Located 2026-10-06:**
+LGP `sub_81FAC30` first clamps cache to pre-hit live HP when needed, subtracts
+from +296 of the embedded block or zeros it, and caps against block+292.
+ENG`0x0056B130` and RUS`0x0056B3E0` independently do the same at block+304/
+maximum+300/cache+296. Linked-creature exceptions can preserve1; the formula
+is part of this mutating pipeline, not a pure return-only damage kernel.
 
 ~~**Max HP is loaded, not derived.** The bulk copy at
 `0x80EF361`–`0x80EF3B5` was attributed to a creature record.~~

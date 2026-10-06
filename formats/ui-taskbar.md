@@ -621,19 +621,22 @@ non-uniform denominator. addExperience is sub_82140EA at
 0x82140ea..0x8216294 and is reached via wrapper sub_819AEC4 which takes
 a cCreature* and passes a1+0x3a8.
 
-**The portrait ring reads eased HP, not current HP (row 1172).**
-sub_819AE0E/get(obj,idx) returns *(int*)(obj + 4*idx + 0x4C8) bounds-checked
-to 0..2; sub_819AE2A/set stores the same indexed slot at 0x819AE3B.
-idx 0 = current HP at +0x4c8 (set by damage at 0x8173CD9);
-idx 1 = max HP at +0x4cc (write-only, level-up);
-idx 2 = eased/display HP at +0x4d0. HP-eased sync lives in
-sub_811FB5C at 0x8121622..0x8121681 - separate author-of-truth
-and display values, which is exactly the two-current-like pattern row 1038
-measured. The portrait draw function itself is still not located with full
-certainty: candidate sub_8254A02 reads a UI panel field at offset 0x3A4
-(screen 932) but is 31555 bytes with 692 basic blocks and a
-327-cyclomatic-complexity control flow; isolating the ring draw branch
-to its specific case and matching gfx id 42/43 dispatch was not achievable.
+~~**The portrait ring reads eased HP, not current HP (row1172).**~~
+**Correction 2026-10-06:** the channel attribution and synchronization owner
+below were reversed, and the old title does not establish the ring's chosen
+channel. `sub_819AE0E`/`sub_819AE2A` index the LGP actor's three HP words:
+index0/+0x4c8 is eased/cache, index1/+0x4cc maximum and index2/+0x4d0
+authoritative live HP. `sub_81F118A` moves index0 toward index2; the full
+damage pipeline `sub_81FAC30` writes index2, and alive predicate
+`sub_819AA32` rejects zero index2 or native dying/dead states.
+~~Synchronization was attributed to `sub_811FB5C` at0x8121622..0x8121681.~~
+That owner is loadHero, not the per-frame easing routine. Gold ENG/RUS damage
+and alive code independently agree on cache/max/live, with different actor
+offsets. Presented native samples `[12,119,0]` show why positive cache HP
+cannot establish survival. See [the native route](../engine/seraphim-native-route.md).
+The old `sub_8254A02` portrait candidate was later identified as script
+save/load, not a renderer. The subsequent ring/XP work below is separate from
+this HP-field correction; its old candidate is not revived here.
 
 **The XP bar and portrait ring are drawn by cUI_Horse, not by cUI_Taskbar2 (rows 1173/1174).** Elements 67 (track) and 68 (fill) live on the cUI_Horse / cUI_Mercenary window, not on the taskbar. Element 67 is registered by sub_856DDBC case 9 at a1+652 of the dialog. Element 68 is built by sub_858DE1A in a loop 0..4 producing five XP slots per window with UV sourced from unk_880DC60 (the 1887-entry by 84-byte texture atlas). The runtime draw chain is cUI_Horse::draw at sub_8569472 (vtable off_872F680 entry 6) -> cUI_Frame::draw at sub_85FB6D2 -> child vector at +112/+116 iterated by virtual at vfunc[+24], each child blitting UV at dialog origin (932,0) + slot-local offset. The cUI_Horse dialog is positioned at x=932, width 676, height 92. **The actual portrait ring + XP drawer is sub_85654FE at 0x085654FE** (656 bytes), the per-slot element-draw override inside cUI_Horse. The 31,555-byte sub_8254A02 that was the prior candidate is cScript::save/load, not a UI render path. The German keyword "UI_DWARF_CANTRIDE" at 0x871f5ec localises the ring branch to slot type 1 or 2 with a valid cCreature cast; the ring branch itself reads the tooltips "UI_TT_OVERRIDETIME" / "UI_TT_OVERRIDEDAMAGE" / "UI_TT_OVERRIDEREGENERATION" / "UI_TT_OVERRIDEHPBONUS" / "UI_TT_RESISTANCES". The ring fill function is sub_81F55B0(percent, currHP, 100.0, maxHP) with body `result = a + 2*(1 - 1/((b-1)/c + 1)) * (d - a)`, the same damage-curve as to-hit. **Nine of the 21 originally-unnamed compiler opcodes are now recovered from German source phrases** (rows 1175/1176/1177): 122=if IsInRgn, 123=SelfTriggerQuest, 27=MaxOffen, 28=Delay, 29=Rettungsmission, 30=ToDoBloecke, 31=Dialog, 32=Belohnungen, 33=HideTmpToDo, 34=Schatzsuche. cUI_Taskbar2::receive_event at sub_8569E34 sends CommandBarUpdate (id 67) on creature selection but is the taskbar's event handler, not a bar draw.
 
