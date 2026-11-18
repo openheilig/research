@@ -80,10 +80,11 @@ world it is set.
 
 ## Animated liquid — the `+0x1f` high nibble, rows 669 / 1008–1011
 
-High-nibble values **9** and **10** mark a cell as liquid. This is the same
-byte the engine's walkability path blocks movement on, and it forms connected
-regions, not speckle — 4096/4096 in the open-sea sectors, coast-shaped
-fringes elsewhere. On such a cell retail draws an animated liquid surface
+High-nibble values **9** and **10** mark a cell as liquid.
+~~This is the same byte the engine's walkability path blocks movement on.~~
+**Corrected 2026-10-10:** material9/10 is not an ordinary actor veto; see
+Walkability below. It forms connected regions, not speckle — 4096/4096 in
+open-sea sectors, coast-shaped fringes elsewhere. Retail draws animated liquid
 *over* the ordinary ground tile; on the open sea that ground tile is a single
 flat image (`ISO00`) repeated across the whole sector, so a port that skips
 the liquid pass shows a uniform grey-tan plane where the sea should be.
@@ -381,9 +382,25 @@ word ever lies in 0..17. That holds in both builds.
 
 ## Walkability
 
-Cell-space walkability is a lookup over Sacred's own region grids, not a
-derived collision mesh. The engine implements it in `world/walkable.gd`; the
-reference decode is in `tools/parity/verify_ref.py`, and the two are diffed.
+~~Cell-space walkability is a lookup over region grids.~~ **Corrected
+2026-10-06:** Gold movement resolves the actor's actual support/base cell,
+then applies the caller-specific base/companion predicate. The companion adds
+class2 independently of the strict base result; raw class0 can be admitted.
+Overlapping region rectangles and their zero-filled cells are not movement
+authority. `world/walkable.gd` now binds per-actor support identity; the region
+mask comparison in `tools/parity/verify_ref.py` remains decoder parity only,
+not proof of current actor admission.
+
+**Bridge admission correction, 2026-10-10:** LGP `0x08230C90` and Gold RUS
+`0x004EC0B0` agree on the ordinary actor's low-class/flag8 branch
+(`0x08230CE0..0x08230CF4` / `0x004EC0F1..0x004EC0FF`).
+The high-material9/10 test belongs to a special actor/type branch, not a
+blanket liquid denial. The authored wooden bridge at y2546 uses ordinary
+base-grid class0/flags0 liquid cells x3227..3233, not a hidden child support
+grid. Removing only the unsupported material veto admits that deck while
+preserving class/flag restrictions and authored rail/wall controls.
+Actual Main clicks crossed the bridge in both directions twice; this is
+bounded route admission, not certification of every bridge or sea cell.
 
 Sectors used as the parity sample are deliberately *not* the same list as the
 general sector sample — the general list yields zero regions in every entry
@@ -707,8 +724,9 @@ Finding **1237** replaces per-sector transparent mesh ordering with the
 existing encoded-space canvas. Static sprites preserve the native global
 pass/cell/chain sequence; texture switches do not regroup the sequence.
 The obsolete `--bands` option and static 3D mesh construction are removed.
-Actor and liquid draws remain separate; they are not silently claimed to
-have native dynamic-list placement.
+Actor and liquid draws remained separate in this September observation.
+**Superseded 2026-10-10:** ordinary actors and animated liquids now share the
+encoded compositor; the native special-vector branch remains unqualified.
 
 LGP `0x080EA104` reads the static shadow from item offsets **91** (u16 atlas
 tile), **93/95** (s16 offsets, doubled), **99** (skew selector), and **100**
@@ -970,11 +988,34 @@ repeat difference **0.00%**. World MAE **1.85 → 1.89** and full MAE
 **2.97 → 3.00** worsen slightly: fewer differing pixels does not mean every
 remaining pixel is nearer retail.
 
-**Boundary:** this implements ordinary model/static FIFO composition, not
-full renderer parity. Native cross-model shared-depth equivalence is not
-established by independent model targets. Liquid/special-vector composition,
-projected object shadows, actor lighting and existing pose/placement errors
-remain separate gaps.
+**Boundary:** this September result implements ordinary model/static FIFO
+composition, not full renderer parity. Native cross-model shared-depth
+equivalence is not established by independent model targets.
+~~Liquid/special-vector composition remain separate gaps.~~
+**Liquid cutover, 2026-10-10:** LGP scheduler `0x080EA3B8` submits ground
+(`0x080EA98B`), overlays (`0x080EA997`), liquid (`0x080EA9C5`, callee
+`0x080E3EB2`, reflection then water), then objects (`0x080EA9E5`, callee
+`0x080E7416`). FloorView now retains all sectors' reflection/water commands
+after all terrain and before every static pass/model/shadow; no near-plane
+transparent liquid surface can paint over a composed bridge. UVs, encoded
+light, depth alpha and 2048ms cadence remain the existing authored inputs.
+Special-vector composition, projected object shadows, actor lighting and
+existing pose/placement errors remain gaps.
+
+**Walking display handoff correction, 2026-10-10:** an actual F9 desktop
+capture retained a healthy private floor but displayed it at delta(-68,-372)
+in a1024×768 window, leaving only x[-68,956], y[-372,396] covered. Streaming
+epoch/revision changes and stopped movement had removed construction urgency
+after the camera escaped the256-pixel border. Coverage urgency now survives
+those transitions; an uncovered display finishes the current hidden
+generation before drawing, with an explicitly unbounded emergency cost.
+Readiness still requires current source ownership and post-draw presentation.
+The same grey symptom occurred with DLSS injection excluded for that process;
+no global graphics setting was changed. An ordinary22-waypoint Main route,
+without inter-waypoint settled waits, reached the captured location and
+returned; matching full main/floor images preserve the hero/world and
+independent HUD. This is observed repair of the captured failure, not a
+performance bound or full renderer parity.
 Private screenshots and runnable smoke harnesses:
 `donotpublish/tmp/shared-composition-20260921/`; fixed benchmark artifacts:
 `donotpublish/tmp/autoresearch-start-scene/`.

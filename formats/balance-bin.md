@@ -10,15 +10,14 @@ longer needs decompiling, it needs reading.**
 
 ## The layout
 
-> **`balance.bin` is a flat record of little-endian `int32`/`float32` at
-> fixed absolute byte offsets.** No per-key index, no string table, nothing
-> self-describing. The key *names* live in the **executable**; the *values*
-> live in the file; **nothing but hardcoded offsets binds them.**
+> **The fixed tuning region has little-endian `int32`/`float32` slots at
+> recovered absolute file offsets; their key names are not serialized.**
+> The earlier claim that the *entire file* was an unframed flat blob is
+> incomplete: the shipping loader consumes a length-prefixed fixed region
+> followed by counted collections. See the 2026-10-07 correction below.
 >
-> Two earlier structural hypotheses were refuted (log rows 191–195). Both
-> assumed the file carried its own structure. It does not — which is why no
-> self-describing reading could ever have worked. The refutations stand as
-> measurements: don't retry them.
+> The earlier structural hypotheses refuted in log rows 191–195 remain
+> refuted. They do not establish that the trailing collections lack framing.
 
 The difficulty grid is five `float[6]` arrays at stride 24, slot order
 `[silver, gold, platinum, niobium, global, bronze]`, at offsets 1812 / 1836 /
@@ -170,9 +169,126 @@ the evidence of this document, but it is worth 0.03pp and not a fix.
 
 ## Open
 
-Nothing open on the layout or the key names. What the individual tunables
-*do* to the simulation is a separate question and is not answered here --
-the engine has to consume them before that can be checked against play.
+The scalar key map does not name or decode the trailing keyed collections.
+The HorseData framing is source-established below, but a selected profile's
+numeric contents still require an owned-media lookup and an independent
+runtime map witness. What individual tunables *do* remains a separate question.
+
+## Counted tail and HorseData — correction, 2026-10-07
+
+The binary initializer, independently corroborated in Linux and Windows
+builds, consumes this sequence from the file start:
+
+| Region | Framing |
+|---|---|
+| Fixed tuning data | `u32 byte_length`, then exactly `byte_length` bytes |
+| Collection 1 | `u32 count`; each entry has a four-byte key, `u32 row_count`, then `row_count` twelve-byte rows |
+| Collection 2 | `u32 count`, then `count` eight-byte key/value pairs |
+| Collection 3 | `u32 count`, then `count` eight-byte key/value pairs |
+| Collection 4 / HorseData | `u32 count`; each entry is a signed `i32` key followed by seven signed `i32` values |
+
+The HorseData record's first integer supplies the baseline movement
+percentage for creature **class 4 (horse)** before conversion to signed16.
+The class predicate is not the class-1 hero predicate. Ordinary heroes take
+the separate source baseline of 130, except type 5's branch of 120.
+HorseData is a keyed record map, not an attribute-derived interpolation
+curve; its reader must not invent a profile for missing media.
+
+The native container location at loaded-base plus 4968 is **not a file
+offset**. The reader must advance through the variable-sized preceding
+regions. None of those preceding counts may be skipped by assuming a stock
+size. Unnamed scalar slots and framed trailing collections coexist.
+
+Collection 5 is the ordered `UniqueThreshold` vector: `u32 count`, then
+`count` records containing an `i32` key and three `f32` parameters
+(`86607DC` collection read; `8134A18` cache lookup). Its in-memory
+container at loaded-base plus 4992 is not a file offset either.
+`Balance.unique_thresholds()` retains the **first serialized match** for
+each key, matching the original lookup rather than the last-write policy
+of other maps. The duplicate-key correction leaves all five distinct
+shipped rows unchanged; absent-key cache defaults remain separate from
+present data. Source/original-byte evidence and failing-before/passing-after
+reader/source-consumer proof are retained in
+`tmp/workflow-reference-20261016/w1-existing-threshold-duplicate-precedence/`.
+This qualifies the reader contract, not a current actor or loaded cache.
+
+The collection-2 map is not itself the quality-selection descriptor vector.
+`8369CE6` rebuilds that vector in fixed key order **0 through 17**, narrows
+each map value to a word, and supplies a zero candidate for a missing key.
+`86932DC` preserves the word; the selected `81B0BC0` consumer reads it as
+unsigned16. `Balance.item_quality_weights()` now returns that descriptor
+view, not arbitrary raw signed32 map pairs. Extra map keys do not enter the
+view. Raw indexing, rarity-map guards and the other map policies are unchanged.
+Full original rebuilds with real erase/lookup/pair/spare-append callees and
+actual reader comparisons are retained at
+`tmp/workflow-reference-20261016/w1-balance-scalar-map-integer-domain/`.
+The owned table is unchanged. Missing-key insertion and full-capacity
+allocation remain explicitly unexecuted; no RNG or current-owner result is
+claimed by the descriptor correction.
+
+The selected `81B0BC0` quality loop also zero-extends the boost word
+**before** applying its cap of 700. `LootRoll.Producer.quality()` now
+preserves that ordering; masking only the cap predicate incorrectly allowed
+high-word bits into the multiplier. Original deterministic arithmetic under
+explicit software precision controls and actual-selector counterexamples
+are retained at
+`tmp/workflow-reference-20261016/w1-quality-weight-selection-arithmetic/`.
+These use declared mathematical thresholds, not observed RNG outcomes.
+Probability staging, draw chronology, physical FPU mode and actor admission
+are unchanged and are not qualified by this integer-width correction.
+
+The variable-probability path spills its probability to f32 but retains the
+subsequent scale on the FPU stack (`81B1379`, `81B13C0..13D4`). The port
+removed only an extra forced f32 conversion of that scale, retaining its
+existing host scalar and source probability conversion. An actual-helper
+half-probability frame exposed the defect at weight 200, boost 1 and numeric
+threshold 1161: all three explicit original software precision controls
+select quality 0, while the extra conversion selected quality 1.
+The actual consumer now passes that discriminator and the retained nominal
+unit/half-probability cases. Evidence:
+`tmp/workflow-reference-20261016/w1-quality-variable-probability-surface/`.
+This is not a physical FPU-mode selection or a global floating-point parity
+claim; draw chronology and actor/source-R0 gates remain unchanged.
+
+`engine/formats/balance.gd` now exposes `horse_profile(profile: int)`.
+Success returns `{profile, values}`, where `values` is a seven-element
+`PackedInt32Array`; a zero first integer is preserved. Failure returns
+`{error, kind}` with `missing_data`, `missing_collection`, `malformed_data`
+or `absent_profile`. A valid empty collection means absent profile, not
+missing collection. Framing and the key-to-record index are validated and
+cached only on first lookup, against the bytes opened through `Pak.resolve`.
+Unsigned lengths/counts are bounded by remaining bytes before stride
+multiplication or iteration; there is no arbitrary record-count limit.
+
+`engine/checks/balance_horse_check.gd` contains authored, non-retail
+fixtures for variable fixed lengths, preceding nested rows/pair maps,
+signed fields, zero-versus-absent profiles, absent collection counts,
+truncation of every byte prefix, oversized unsigned counts and incorrect
+preceding framing. Its optional `--horse-profile=<key>` lookup reads owned
+media; `--horse-values=<seven comma-separated signed integers>` compares
+against a separately guarded runtime map record. The explicit key and
+witness must be provided by measurement, not chosen to make the check pass.
+Runtime captures and lookup output remain private; no raw table is embedded
+in source. No selected-profile numeric facts or passing-run claims are
+established by this correction.
+
+Source provenance: Linux binary initialization in `LGP00014.c:1423–1467`
+and deserialization in `linux1002/00055.c:1070–1176`; Windows corroboration
+in `ENG00014.c:8750–8893` with prefix helper at `18629–18641`, and
+`RUS00014.c:8921–8933`. The text HorseData parser independently establishes
+one key plus seven integers (`LGP00014.c:6730–6764`,
+`ENG00014.c:17141–17202`, `RUS00014.c:17159–17218`). The first-integer
+consumer is established at `LGP00017.c:648–652` and corroborated at
+`ENG00011.c:26220–26240` / `RUS00011.c:26132–26149`. These are source
+locations for private research, not copied implementations.
+
+The historical starting-equipment conclusion above is also superseded:
+the guarded route witness records real worn starter instances, as documented
+in [seraphim-native-route.md](../engine/seraphim-native-route.md).
+Absence of text key names in the binary does not prove that runtime equipment
+tables remain zero. HorseData alone likewise does not establish the final
+movement percentage: actual equipment, modifiers, effects and actor state
+still belong to the separate runtime calculation.
 
 ---
 Provenance: `tools/binary/balance_keymap.py`; findings log rows 191-195; the key table

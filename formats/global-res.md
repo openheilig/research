@@ -39,8 +39,12 @@ the last entry. Both now state `first + 4` explicitly.
 
 Conflating these is the trap, and it cost an iteration.
 
-**By slot.** `res:N` in the script bytecode is the **slot index** — the N'th
-index entry. Slot 0 is `Seraphim`, slot 1 `Gladiator`, slot 18101 `Settler`.
+~~`res:N` in script bytecode is a serialized slot index.~~ **Withdrawn
+2026-10-10:** the script dispatcher resolves positive numbers through their
+decimal-name hash; the recovered negative-number form supplies an already
+hashed identifier. Serialized slots remain an independent file-inspection API.
+The earlier slot reading selected unrelated captions and broke ordinary tutorial
+acknowledgement; it is not a second accepted script namespace.
 
 **By name.** Everything *inside the engine* reaches the same tree through a
 hash of a resource's **name**, which is the entry's first `u32`. A caller
@@ -50,14 +54,25 @@ whose name hashes like the four characters `"9400"` — `Heavenly Magic`.
 The two disagree completely. Slot 9400 is a paragraph of quest prose about an
 antidote at Faeries Crossing; resource 9400 is `Heavenly Magic`.
 
+The correction is grounded in the LGP numeric resource dispatcher/resource
+constructor and independently matching Gold ENG/RUS behavior, not a caption
+guess. `engine/formats/resources.gd` retains raw by-name/by-ID/slot reads.
+Presentation separately prepares the recovered newline/color markup before
+font layout. Missing resources remain missing; unknown markup remains literal.
+Headline segmentation must use the same prepared sequence for tokens and
+raw substring offsets, otherwise `<n>` corrupts offsets or overruns the token array.
+
+
 ## The symbolic namespace is NOT in this install
 
 **This section previously concluded that the symbolic namespace was absent
 from the install. That was wrong, and the cause was our own arithmetic — see
 [The hash](#the-hash). Corrected 2026-08-16, findings log row 954.**
 
-Both namespaces resolve, and the same `Res:` prefix carries both: a decimal
-payload is a **slot index**, anything else is a **name to hash**.
+Both symbolic names and numeric resource IDs resolve through the same `Res:`
+prefix. ~~A decimal payload is a slot index.~~ **Correction2026-10-10:**
+a positive decimal payload is a resource ID hashed from its decimal spelling;
+anything else is a symbolic name to hash, except the recovered negative-ID form.
 
 | operand | resolves |
 |---|---|

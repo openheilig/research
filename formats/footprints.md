@@ -14,15 +14,66 @@ low-nibble `cell[31]` classes 1/2, or `cell[30] & 8`; otherwise allow. With
 `cell[30] & 4`, a coordinate-keyed runtime trigger lookup can override that
 answer using bit 0 of the resolved sixteen-byte record's byte 10. This is not
 the Armalion static-mask intersection described below. The companion wrapper
-LGP `0x080EE244` / ENG `0x00636D20` also admits class 2; caller choice matters.
+LGP `0x080EE244` / ENG `0x00636D20` / RUS `0x00637150` adds resolved
+class2 when the base predicate returned false. This is an independent extra
+acceptance, including base bit8 rejection; it is not a universal bit8 blocker.
+Caller choice still matters.
+
+**2026-10-06 actual actor-consumer correction:** the independent direct chains
+LGP`0x08249872→0x082454EA→0x0824565C→0x08230C90`,
+ENG`0x004FB7E0→0x004F7CE0→0x004F7E10→0x004EBCA0`, and
+RUS`0x004FBBF0→0x004F80F0→0x004F8220→0x004EC0B0` use an
+actor-specific gate, not the unconditional class2 world companion. Class2
+exceptions depend on actor+500 bit0x200000, active effect1094/corner conditions
+or a special actor category; object+20 flags are a different field.
+A guarded six-frame native opening/talk/held-travel observation retains
+movement flags0 and a valid empty effect vector for both hero1 and novice679.
+The bounded engine baseline therefore rejects class1 **and class2**; the
+previous blanket class2 acceptance is withdrawn. A real movement consumer
+crossed a class2 blocker before and refuses it after, retaining class0 travel.
+Native privileges, coordinate overrides, occupancy and local alternative
+candidate steering remain separate unqualified contracts.
+
+The fresh-spawn port hold and continuous08 native hold are not state-aligned:
+the latter follows authored conversation/acknowledgement at precise world
+173766,135052, not the starting cell centre. A private derived-position
+terrain control exits through the eastern lane, whereas the fresh-spawn
+control meets class1. Its float32 position reconstructs173765,135051, so it is
+not an exact native-state replay. Do not open those walls or substitute this
+diagnostic for C1/C2 acceptance.
 
 A bounded live LGP observation captured 24 entry/return pairs. Same height byte
 0 produced both true and false; class-0 cells with height byte 1 returned true,
 while class-1/2 cells returned false. All observed samples had flags 0 and
 layer 0: trigger overrides, bit-8 rejection, support layers, and actor-specific
-permissions were not behaviorally tested. See
-[the revision audit](../engine/engine-revision-2026-09-29.md) for evidence and
-remaining gates. No engine implementation changed.
+permissions were not behaviorally tested in that sampling pass.
+[The revision audit](../engine/engine-revision-2026-09-29.md) preserves its
+evidence and remaining gates; no engine implementation changed in that pass.
+
+**2026-10-06 support integration:** ordinary creature movement's unowned
+actor+44 relation selects the actual static/world support, not the focus
+actor's grid or a dynamic inventory owner (tag0x400). Actor+36 is a byte-sized
+support ordinal, not physical height. Prospective selection
+LGP`0x080EE302` adjusts the support to an authored parent/ordinal or base;
+missing/outside child records are not replaced by a matching rectangle.
+The actual chapel probe resolves child758530 over base-class1. It keeps
+3242,2509 and3243,2508 blocked, but admits the authored exit beyond the
+overlapping zero-filled rectangle at3226,2520/2521. This is a bounded
+engine/source result; native whole-route chronology and all override states
+remain separate qualification gates.
+
+The relation lifecycle is separate from focus trigger mutation: LGP
+`00013.c:9385–9434,9520–9535` and independent Gold ENG
+`00015.c:7472–7555,7635–7686` resolve actor-owned support, with trigger writes
+focus-gated. The relation setter changes actor+44/tag0x400, not actor+36;
+the remembered-trigger setter does not reset that ordinal either. The engine
+therefore distinguishes a parent-disappearance release (reference0, ordinal
+preserved) from the bounded authored STEP/base-output transition (0/0).
+Actual NPC walk/contact regressions reach the exterior with base phase and
+saved0/0 while focus raw state3 remains unchanged; a relation-only control
+preserves ordinal1. The retained native novice694 is independently observed
+with758530/1 at56259ms and0/0 at68255ms; the sparse interval does not isolate
+the exact transition tick or justify attributing it to either setter.
 
 ## The system
 

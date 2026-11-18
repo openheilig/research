@@ -84,6 +84,27 @@ first, and which is correct depends on what placed the creature —
 human-readable label is not the identity. `Sacred.Creatures` is addressed by id
 only.
 
+## Normalized links: zero is not the dummy record
+
+The native definition table's word at `+42` (file record `+26`) is a
+derived CIF row ordinal. The startup pass represented by
+`Items.bind_creatures()` reconstructs these links from CIF definition IDs.
+`815970C` returns null when that word is zero; it does **not** return
+`creature.pak` record 0. That dummy record has id 0 and EXP 10/10, so using
+it as a victim invents experience and changes pre-quality boost scaling.
+
+The ordinary reward and outer boost consumers now require a positive link.
+The raw `Items.creature_row_of()` API remains unchanged: the separate
+`8159742` class query gives zero-link playable aliases 2/8/9 class 1.
+Globally converting the raw zero ordinal would break that distinct contract.
+
+Original lookup/class/prefix controls and complete ordinary null-creature XP
+paths are retained in
+`tmp/workflow-reference-20261016/w1-quality-creature-source-lookup/`.
+Actual reader/reward and real staged outer-prefix observations reproduce the
+old dummy-record behavior and verify the correction. These are bounded
+source/API results, not admission of a native current actor or loot route.
+
 ## Open
 
 **HP is not in this file, and neither are the attack and defence ratings** the

@@ -77,8 +77,9 @@ The names make the language legible at a glance: `IF` / `ELSEIF` / `ELSE` /
 
 ## `cInterpretSQW` — the per-sector entry points that populate the world, 2026-08-25
 
-**This is how the world gets its cast, and the port does none of it.** Retail's
-own log, from the `new` menu route into the Seraphim start:
+~~The port does none of this sector work.~~ **2026-10-09 correction:** the
+engine runs mounted Init/Enter procedures and persists their entry lifecycle.
+The historical retail log from the Seraphim `new` menu route is:
 
     cInterpretSQW::initRegion(1)
     WorkFunktion (6230 "Region1Init", 0, 0)
@@ -108,6 +109,15 @@ it is 515 bytes of bytecode holding:
 | 1 | `CreateNPC` | **6** |
 | 8 | `CreateObj` | **4** |
 | 100 | `SpawnValues` | 1 |
+
+In the installed LGP Seraphim tree, `Sector50039Init` is a19-byte
+SpawnValues procedure; the six NPC births are in `Sector50039Enter`. The engine's
+old `phase=Init` message described combined first-entry Init/Enter work and
+must not be used to attribute births to Init. Engine-owned composite schema11
+retains the schema7 current-sector/visited history contract. Restoring the current
+sector does not execute Enter again; genuine re-entry retains its consequences.
+This is a bounded engine continuation contract, not retail save interchange
+or proof of the complete native scheduled-task lifecycle.
 
 `CreateNPC`'s arg 3 is a PACKED CELL — one u64 read as `lo = x, hi = y`. Six
 placements, all inside sector 50,39, resolved through `items.pak`:
@@ -160,12 +170,21 @@ read here through the same `vectoren.bin` the port already parses:
 | 67 | `SetVar` | `atmos10`, 1 |
 | 68 | `SetVarBit` | `10`, 1 |
 
-**This is why no coordinate scan could find her.** `CreateNPC` here carries
+~~**This is why no coordinate scan could find her.** `CreateNPC` here carries
 **no position at all** — its argument tags are `0x1 0x2 0x4 0x9 0x6b 0x67`,
 naming a handle, a creature id, a script name, a task and a combat art. The
 position arrives one record later from a separate `NPC_Goto` against the
 handle. A search for a `CreateNPC` near a cell is looking for something the
-format does not put there.
+format does not put there.~~ **Corrected 2026-10-09.**
+
+Tag4's `-2` operand names a position: the LGP decoder resolves the named
+DefPos coordinates; shipping ENG/RUS CreateNPC consumers use resolved tag4,
+12 and13 triples. The installed `novizin1` creation point is3239,2525,
+distinct from the following Goto3237,2514. The engine retains the original
+integer creation point and physically executes the command after binding.
+The ordinary novice acquires its own child support at the authored class9
+doorway; preplacing it at the Goto cell, or substituting the hero's origin,
+would erase the movement/lifecycle being qualified.
 
 Creature **679 is `NOVIZIN02.GRN`** — the sector script's four nuns are 677,
 `NOVIZIN.GRN`, so she is a distinct model, not one of them. `QuestKompassObj`
@@ -215,6 +234,35 @@ Three rules complete it, and each cost several failed attempts:
 2. A tag `>= 0xa2` fails the bounds check and exits the record.
 3. **VARIANT** tags read a `u32` and, when it is the sentinel `0xfffffffe`,
    take a NUL-terminated string instead of their fixed payload.
+
+### Literal level tag31: current source correction, 2026-11-04
+
+The inherited three-byte payload width is wrong for literal tag31.
+Hash-bound Linux1002 `826A014` dispatches through `86ED31C`; tag31 enters
+`826CE85`, increments the cursor for the tag and consumes a DWORD. Eight
+original-byte fresh-frame cases, including both retained Underworld records,
+confirm five bytes total and the complete numeric value. The legacy table
+address/tool input above is not silently rebound to this current namespace.
+The CFG extractor misses the `inc eax; mov [esi],eax` cursor increment here.
+
+ScriptVM, Startcode and the Python reader now retain four literal bytes.
+The separate `9f/feedbeef/name` numeric-variable form still requires its scoped
+owner and explicitly refuses rather than inventing a level. Its exact marker
+occurs zero times across the20 owned code files inspected.
+
+The actual Underworld records retain bodies336/247, level1000, named positions
+and tasks; the static census moves6316→6318 candidates and2→0 unresolved,
+without new creature IDs. Five focused GDScript checks and two Python tests pass.
+**Runtime integration is not complete:** the broad profile is108PASS/6FAIL.
+Three newly exposed opening/restore/attack failures reach the existing
+level1000/class-admission boundary. Source now exposes quest9 actor267,
+`BLACK_MAGICIAN.GRN`, main1716 and `ECS_HELLFIRE`; no class/level/owner guard,
+extra fight or source/R0 qualification is inferred from corrected decoding.
+Original CreateNPC sets flags500 bit0x80000 and requests initial level1/reset1
+for exact1000;28 original branch cases retain that narrow scope, not a whole
+constructor or current actor qualification. Evidence and active integration
+prerequisites are under `tmp/workflow-reference-20261016/w1-literal-level-tag-width/`,
+`w1-strict-creation-operands/` and `w1-level1000-linkage/`.
 
 ## The fifth tag class, and why the metric was wrong
 
@@ -610,6 +658,167 @@ than a door property.
 the thread is not the evidence and is not cited as such. **What the thread
 claims and this does NOT establish:** the door/trigger id mechanics, the two
 object lists, and the name-collision bug it blames for the door staying shut.
+
+## Bounded tutorial/dialogue execution — 2026-10-10
+
+Opcode95 requests a source dialogue definition owned by the active hero;
+it is not a generic dismiss event. The installed `Pre_Tutorial` acknowledgement
+executes `Tutorial_Trigger`, which requests `Hilfetext`. Opcode131(0) pauses
+simulation; the installed `TT_KEINEMEHR` choice resumes with131(1).
+The ordinary novice `exit01` callback is separate. Callback execution uses its
+definition context and procedure's quest association: zero-operand EndQuest ends
+quest1, not the subsequently started quest9. Explicit numeric Dwarf variants
+remain admitted rather than narrowing the opcode to the Seraphim's operand form.
+
+Opcode132 modes are separate real consumers:100 requests Movie3/act1 under
+the owned movie preference;7 reveals the2500ms black fade;1 queues the centered
+font3 resource headline. Its audio9/subtype201/value1 is an audio event, not an
+invented UI item201. The LGP backend's selected201 arm is no-work; Windows
+backend/audio-output equivalence is not established. Cinematic88/89 controls
+simulation-timed bars independently of admitted real-time headline age.
+
+Native Goto preference2 does not itself select physical RUN2. The measured
+type679 novice uses WALK1/rate97. Her authored target remains in the request
+while native path admission replaces the live action endpoint; IDLE proves
+action completion, not arrival at the original requested point. The engine's
+owned-support/14-cell blocked-target continuation reaches the observed endpoint
+without pinning it. Full55-wide search/tie ordering and initial replan chronology
+remain unqualified.
+
+Undefined named trigger positions start at the native all-minus-one scratch
+sentinel; an absent first endpoint creates no trigger. It must not become
+invented coordinates or a fatal generic bootstrap error. Composite9 retains
+source pause/request/talk/FIFO and consumed resource/callback identities, rebuilding
+the acknowledgement after restore without executing its opening again.
+
+## Bounded sector-trigger/wildlife execution — 2026-10-10
+
+The desktop exit at sector50,40 was a real opcode48 refusal, accompanied by
+freed compositor capture references. Installed LGP handlers48/50 are
+`082A42B4`/`082A55A2`; Gold ENG/RUS independently corroborate their roles.
+CreateTrigger retains tag0x28's one-byte type and zero-width state markers rather than
+inventing state0 when decoding dropped them. Raw allocation follows authored
+identities, duplicate declarations consume a fresh ID but keep the first name
+binding, and ground patch layers0/1 share a packed coordinate key. Three raw
+coordinate bindings consume trigger state bit1 through real navigation.
+
+Actual50,39 and50,40 Init/Enter begin SpawnValues100(50,1,4).
+The matched LGP/ENG/RUS handler clears its40-byte scratch, consumes the three
+bare integers, and writes associated sector-local environment words209/211/213.
+The following two FillSector51 calls each carry count(6,6,4096),
+type/weight/membership(516,100,0) and alert100. Skipping100 was not harmless:
+it changes count bounds, level override and the final environment cap.
+Whole-entry admission now stages both source rolls and their sequential RNG
+before Exit, trigger/environment, registry or visit-history mutation.
+
+Each KEYX record embeds its own256-byte environment at0x1e9. Timer154 and
+enabled kind4 descriptors belong to that sector; the grouping ID215 is not
+a shared timer-table key. Birth does not stamp the population timestamp or
+append the exit snapshot. Genuine Exit selects retained alive actors; Enter
+restores them after its script phase. Native writer expiry is a serialization
+operation, not a Fill elapsed-TTL rule. The engine's own JSON snapshot is
+observational and does not claim native world-save-writer interchange.
+
+The selected ordinary wildlife path reads actual reconstructed item/creature
+class, faction, motion/equipment absence, source skills, level cap and HP inputs.
+Hero cache byte28 is an equipped/socketed set28 piece count, not skill28;
+native duration is restored from C4 seconds and accumulated only under its
+source personal-flag gate. The persisted portable RNG preserves engine
+continuation but does not reproduce the native libc/constructor random stream.
+Enemy/group/MP, nonempty ReplaceSpawn96 and unknown modifier/helper forms
+remain explicit refusals. The inspected selected startup stream has no96.
+
+Observed actual Vulkan/Main input crosses50,39→50,40→50,39 without the fatal
+refusal, creates two definitions/three patches and ten computed wildlife
+births, and draws no dormant wildlife after exit. Fresh CLI continuation keeps
+36 actor IDs/next watermark,35 views, RNG and trigger/population state, walks
+and exits with119HP. These are bounded runtime/continuation observations,
+not fixed population constants, complete campaigns or native pixel parity.
+
+**Species-consumer correction, 2026-10-10:** a subsequent actual desktop
+process reached sector54,40 and exited1 at type530. Its two Fill51 records
+use516/530/531/532, while context/stat/source-state readers only admitted the
+rabbit trio. This was a port whitelist, not proof of nonempty deer equipment.
+Owned model slots and independent LGP/Gold life branches establish the same
+guarded ordinary creator path for these deer. Preflight now derives source
+weighted species plus possible native remaps and checks each model/class/
+relation/profile before mutation. Canonical source/independent capture readers
+retain positive-u16 class6 identity and exact registry/sector ownership rather
+than a rabbit enumeration. Schema11's representation is unchanged.
+Native species constructor/creator flags and positive CIF speeds remain
+distinct. Unsupported pool, override, HP skill, modifier, hostile/group and
+MP forms still refuse; no missing spawn is silently skipped.
+
+**Pair-consumer correction, 2026-10-10:** actual later travel into53,41
+exposed `ScriptVM._args` advancing eight bytes for tags0x33/0x34 while
+returning only the low signed32 word. The source sector pair(53,41) became
+scalar53; its level pair was likewise incomplete. Both now decode to signed
+`Vector2i`, matching the existing Funk reader's pair convention. Consumer
+regressions fail three assertions before repair and pass afterward: authored
+sector rectangle, upper-bound population count and signed negative-upper
+fallback. Triple and unrelated operand decoding are unchanged.
+
+This fixes operand loss,not hostile/group execution. The same hook's first
+population carries membership1 and leader/enemy definitions; the ordinary
+wildlife consumer still refuses it before applying the hook. No enemies may
+be skipped or converted to wildlife to claim travel success. Sector53,41
+continuation requires a separately agreed source-backed group population
+consumer beyond the currently qualified ordinary route.
+
+## Installed quest9 death callback consumer — 2026-10-11
+
+The selected ordinary callback now admits tag`0x48` equality and
+opcode75`IncVar`, rather than interpreting equality as a bit predicate or
+mistaking132 for a new activation opcode. Native equality looks up the
+full-length, case-insensitive variable and compares signed32 values; an
+absent variable fails even when the operand is zero. The separate`LOC_RG`
+position namespace remains an explicit unsupported evaluated predicate.
+Proof: LGP`082A77C0`, equality case72; Gold ENG`004987B0`, case72.
+
+`IncVar`'s admitted `(tag1 name, tag0b signed32 amount)` form performs
+signed32 addition, retaining the old value when the resulting value is
+smaller; an absent variable is inserted with the supplied amount.
+LGP`082AE58C` and Gold ENG`0049C930` independently establish lookup,
+insertion and the write guard. The VM's reachability shadow uses the same
+arithmetic before evaluating later predicates. Unknown operand forms refuse
+the entire selected path before any counter or effect mutation.
+
+The installed StartCode initializes the group counter to zero. The selected
+ordinary acknowledgement calls`exit01`, whose StartQuest9 reaches the real
+OnEnter9; neither procedure calls the death callback or increments that
+counter. The only explicit CallFunktion22 references to the callback are a
+different group-movement wrapper and alternate`exit010` acknowledgement,
+not the initial selected path. Consequently the six actual death callbacks
+select the pre-increment equality branches0–5 and leave the counter at6.
+They do **not** select equality6, set quest9's completion-dialogue bit,
+create a completion trigger or schedule a tutorial. No seventh actor,
+manufactured initial callback or forced quest completion is justified.
+
+Reached InfoPlayer132 mode0 is the same centered font3 headline request as
+mode1, but carries independent audio9/subtype200 rather than201. LGP
+`082C9F02` and Gold's installed InfoPlayer handler agree on both producer
+forms. LGP audio receiver`084CAF66` event9 has neither subtype200 nor201:
+both take its default release/return, so rendering these selected headlines
+does not invent a sound from a GUI element number. Windows audio backend
+equivalence and native headline pixels remain separate qualifications.
+
+The **unselected** equality6 arm contains opcode56`Quest`: it is a named
+calendar timer, not EndQuest or StartQuest. LGP`082A68E2` and Gold ENG
+`004982D0` collect an ID, positive tag56 delay and function name; their
+calendar owners upsert by ID. LGP`080F55B4` expires inclusively in calendar
+minutes, suppresses callbacks associated with an already-completed quest,
+and retires the ID. The ordinary constructor rate is24 calendar seconds per
+simulation second (LGP`080F5B98`, Gold`00417560`). Those facts do not authorize
+executing this arm in the selected six-death route. Opcode56, runtime
+SetBaseTrigger4 and CallFunktion22 still refuse if actually reached; no timer
+or declaration schema was added. Composite16/fragment7/replay5 are unchanged.
+
+`death_callback_check` consumes installed procedures/resources, checks six
+successive counter/message branches and whole-session JSON continuation
+without callback replay, and checks malformed arithmetic and the unselected
+completion arm refuse without mutation. The presentation regression checks
+mode0's exact independent subtype and shared queue. Checks are authored here;
+their runtime verdict belongs to the integration run, not this source recovery.
 
 ## Open
 

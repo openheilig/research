@@ -69,9 +69,43 @@ types**; the VK saves only corroborate it across nine files. The reason it went
 unnoticed is that the document said "hero saves" and nobody opened the file
 whose extension said `pak`.
 
-**Open: what any of the eighteen sections CONTAIN.** The framing is read and the
-decompression is proved; not one section's semantics is established. `0xA0` and
-`0xA2` are the ones worth opening first.
+**Historical unknown, narrowed 2026-10-16:** framing alone did not establish
+section semantics. Actual LGP ordinary writer/reader calls now bind selected
+object (`0xA0`), inventory (`0x8D`) and script (`0xA1`) sections. This is not a
+complete per-family object-body decoder; the independent sentinel-scanning
+object walker is known to desynchronize and is not used as such proof.
+
+### Selected LGP normal-Load transformations — 2026-10-16
+
+A completed owned Save/fresh-process Load shows why copying the serialized
+allocator reference is not sufficient to describe default appearance.
+Creature loading clears worn slots; original `0x081AB664` subsequently
+selects the default definition and calls `0x081129EA`. Its returned EAX is
+preserved through the EDX-only instruction and written at `0x081AC6A4`.
+The actual type1/slot0 reset resolves new ref1553/type4007/generation1 through
+the current manager, then returns with that slot committed. Serialized
+ref17/type4007 is separately restored but is no longer the worn body.
+This is a source-proved default-appearance transformation, **not** permission
+to weaken same-instance generated-item/equipment identity.
+
+Original `0x08254A02` compares the existing and saved80-byte definition
+vector counts. A nonempty, unequal current vector takes the name-remap path,
+not an unconditional full-vector replacement. For each current creature
+whose saved definition binding resolves, native code matches a current name,
+updates the creature's binding when necessary, and transfers words at
+definition offsets68,72,0,76. The actual owned fresh trace has2043 saved
+versus1022 current definitions and184 paired creature-bound transfers.
+The copied rows, source-frame locals, original taken branch and unchanged
+actor lifetime are joined. Names remain raw bytes; no ASCII encoding is
+assumed. Unbound duplicate definitions need not survive this branch, so the
+raw all-definition comparison remains false instead of being relabelled PASS.
+
+Private evidence: qualification `reverse/build52-results/result.json` and
+execution `persistence-origins-52-final.json`; ten source-provenance controls
+include wrong copied addresses, instance generation, manager bounds, taken
+branch flags, transfer bytes and duplicate commit. This is a bounded actual
+LGP observation, not complete Gold/campaign/world-save interchange proof.
+
 
 ## The `0xC7` character stream (Underworld offsets)
 
@@ -210,10 +244,25 @@ STK and REMAG exactly 0, the Battle Mage the highest REMAG, the Wood Elf the
 highest GES *and* the Agility skill, the Dwarf the lowest CHARISMA. Each is
 asserted in the gate.
 
+## Restored source cut is not a later image — 2026-10-16
+
+The owned build53 normal-Load trace first restores cache/max/live69/119/69
+at its current manager-qualified hero tick824. Ordinary native damage at
+frames926/986 precedes the first loaded image1025/live46. That raw comparison
+remains false; it is not evidence that serialized69 failed to restore.
+The host consumer previously read unrelated buffered future source after
+already proving its original reader return. Its repaired first-ready cutoff
+is verified offline against the actual source/input prefix; final full-log
+validation is unchanged. No postrepair native capture timing, generated-item
+continuity, all-definition equality or C5 admission is inferred.
+
 ## Open
 
 
-Nothing open.
+Complete independent AMS per-family object-body decoding remains open.
+The selected normal-Load source joins above do not close every section or
+ordinary generated-equipment persistence; `0xA2` contents are not established
+by those joins.
 
 ---
 Provenance: findings log rows tagged `pax-hero`; `tools/parity/pax_diff.py`;

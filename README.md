@@ -9,11 +9,12 @@ tables, no memory dumps. Those stay in a private workspace by design, and the
 `.gitignore` is an allowlist so they cannot arrive by accident.
 
 Public development research, not a claim of a finished game. Current engine
-behavior and the approved 0.0.1 boundary are recorded in the
-[engine status](https://github.com/openheilig/engine) and
-[playable Seraphim milestone](https://github.com/openheilig/engine/blob/main/docs/milestone-0.0.1.md).
-The September29 audit is historical evidence; later implementation does not
-turn its open contracts into completed features.
+behavior is recorded in the
+[engine development status](https://github.com/openheilig/engine/blob/main/docs/development-status.md).
+The September29 audit and older milestone documents are historical evidence;
+later implementation does not turn native-parity gaps into completed gates.
+Private workflow proposals, capture payloads and operational ledgers are not
+part of the source update.
 
 ## Start here — and what state each answer is in
 
@@ -29,7 +30,7 @@ turn its open contracts into completed features.
 | the rules and tunables | [formats/balance-bin.md](formats/balance-bin.md) | Read |
 | to draw the interface | [formats/ui-taskbar.md](formats/ui-taskbar.md) | Partial |
 | how combat resolves | [engine/combat-formulas.md](engine/combat-formulas.md) | Partial |
-| the native 0.0.1 Seraphim quest/encounter/item/save route | [engine/seraphim-native-route.md](engine/seraphim-native-route.md) | Native C0–C5 reference observed; engine parity open |
+| the Seraphim quest/encounter/item/save source findings | [engine/seraphim-native-route.md](engine/seraphim-native-route.md) | Native/engine parity remains unqualified |
 | what the Linux port is built on | [engine/tech-stack.md](engine/tech-stack.md) | Solved |
 | whether RAD's own runtime can check our `.GRN` decode | [engine/granny-runtime-oracle.md](engine/granny-runtime-oracle.md) | Blocked |
 | which binary to open | [builds/build-survey.md](builds/build-survey.md) | Solved |

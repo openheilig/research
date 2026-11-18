@@ -8,12 +8,12 @@ survive before it counts.
 Measured against `install/sacred`, the LGP Linux binary the port is verified
 against. Numbers are from 2026-08-15; the method is repeatable and stated so
 the numbers can be re-derived rather than believed.
-> **2026-08-29:** every retail build is now fully decompiled —
-> [decompilation-corpus.md](decompilation-corpus.md) holds the per-function
-> pseudocode, manifests and identity joins. The coverage *numbers* below
-> stand under their own definitions; the corpus does not name functions the
-> oracles here cannot reach, it makes reading what is already identified
-> cheap.
+> **Historical2026-08-29 claim:** ~~every retail build is fully decompiled~~.
+> The corrected [corpus audit](decompilation-corpus.md) records74,592 original
+> owners,73,548 nonempty bodies (38 warned) and1,044 nulls. Exported/header-ok
+> is not usable pseudocode or semantic recovery. The identity measurements below
+> retain their own dated definitions; the current private reference index adds
+> deterministic build/address/source lookup without changing qualification.
 
 ## Coverage
 

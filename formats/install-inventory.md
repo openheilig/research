@@ -28,7 +28,7 @@ size}`, then payloads. Details and the exceptions: [pak-containers.md](pak-conta
 | File | Bytes | Magic | What it holds | Reader | State |
 |---|---|---|---|---|---|
 | `texture.pak` | 860 648 179 | `TEX` v3 | 25 535 index slots; the entire texture corpus | `engine/formats/texture.gd` | Solved |
-| `sound.pak` | 455 621 361 | `SND` v1 | 50 000 slots, **6 598** payloads: 3 194 RIFF/WAVE + 3 404 Ogg Vorbis | `tools/formats/pak.py` (container only) | Solved, unread by the engine |
+| `sound.pak` | 455 621 361 | `SND` v1 | 50 000 slots, **6 598** payloads: 3 194 RIFF/WAVE + 3 404 Ogg Vorbis | `engine/formats/pak.gd` plus Main script-speech consumer | Container/codecs read; selected dialogue speech decoded, full audio-event/output parity unqualified |
 | `models.pak` | 434 340 164 | `MDL` v3 | 4 993 entries: 1 572 meshes + 3 421 motions, Granny 1.x chunks | `engine/formats/models.gd` | Read |
 | `world/floor.pak` | 187 968 064 | `OBJ` v1 | 6 713 136 fixed 16-byte terrain cells | `engine/formats/world.gd` | Solved |
 | `world/static.pak` | 78 889 320 | `OBJ` v1 | 1 038 014 uniform 64-byte object placements | `engine/formats/statics.gd` | Solved |
@@ -282,6 +282,17 @@ of the Gods". Meaningful names at 65/65 are not a coincidence a wrong reading
 produces. Members are coherent suites: record 6 is the seven Seraphim pieces,
 records 33–38 the Christmas set.
 
+**Membership precedence, qualified 2026-11-05:** LGP `0x0813CA48` applies
+the post-load member overlay in file order, writing record byte35 from set
+record byte45. A duplicate therefore belongs to the later set, not the first.
+The original346-byte loop produces writes `[1234,1]` then `[1234,2]` on the
+authored duplicate; the existing reader regression failed before its narrow
+mapping correction. All378 shipped memberships are distinct and remain
+unchanged. Evidence:
+`tmp/workflow-reference-20261016/w1-set-membership-precedence/overlay-proof.json`.
+This qualifies membership lookup, not set-family effects or current item/R0
+ownership.
+
 ### `treppe.bin` — staircase footprints
 
 Each record is a `(key, value)` pair of `u32`, 2 494 of them in ascending key
@@ -303,10 +314,13 @@ of 661 are full rectangles.
 > 13, i.e. a stride of 8192. With the correct shift the same test returns
 > 100.0000%. A refuted decode is not the same as a refuted hypothesis.
 
-Caveat worth keeping: no site in `install/sacred` was found that ever *queries*
-this map — it is loaded, constructed and destructed, and `sacredserver` has no
-`treppe` string at all. Stated as "no lookup site found", not as proof of
-absence, so the port impact is unknown.
+~~No query site for this map was found.~~ **Located 2026-10-06:**
+LGP`0x080C6172`, ENG`0x00617030` and RUS`0x006173B0` perform the exact
+packed coordinate/support lookup while converting movement/action commands.
+A hit changes the command to the authored mapped cell centre/layer; a miss
+retains the selected surface coordinate. It is not nearest-floor actor
+teleportation. The source map query is located; no specific frozen-C1 table
+hit or dynamic loader-object/map-base join is claimed.
 
 ### `world2.bin` — the sector-presence grid
 

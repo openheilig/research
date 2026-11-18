@@ -540,8 +540,24 @@ below. Record sizes remain `12+68*N` and `52+16*nt+20*nq+40*nu`.
 > in the unpublished workspace, is never committed, and is read only by
 > observing the OUTPUTS of its exported API — the same terms
 > `tools/granny_oracle/README.md` already sets, which is why no third-party
-> binary lives in that directory. Nothing here has been run yet; this records
-> that the oracle is available, not that it has spoken.
+> binary lives in that directory. **Updated2026-10-12:** native1 exported API
+> observation now succeeds for the identity-checked Seraphim body/idle fixtures.
+> Control creation, numeric timing and error-output preservation are bounded
+> witnesses. Subsequent zero-time refresh observes changing bone output at an
+> unchanged clock and an incoming-envelope endpoint. The bounded paired walk/idle
+> API observation also matches its incoming reference at the transition deadline;
+> early promotion is not full incoming pose. A real getter-instrumented Seraphim
+> witness now binds talk177→idle2 and fresh-control idle2→idle2 presented-frame
+> promotions, rate1.25 and native fade duration. Initial motion0/no-control samples,
+> complete pose/internal timing and GPU equality remain unqualified. A raw-only
+> control reproduces startup7/2/motion0 without SDK getters. A later complete
+> passive capture binds one reproduced path to retail float32 pause-baseline
+> loss pushing its actor timer deadline ahead, not an SDK animation wait.
+> No forced animation or engine/oracle fix follows from that observation.
+> A subsequent explicitly corrected private oracle fixes game-owned pause
+> precision in process memory and removes the selected startup stall without
+> SDK/animation changes. Its witness is labelled corrected, not unmodified retail.
+> See [the native-runtime evidence](../engine/granny-runtime-oracle.md).
 
 ## Why the clip-to-mesh match is believed
 
@@ -1031,19 +1047,34 @@ on a body that still draws `shoes` puts **two boots in the same place**, which i
 exactly the stack the port renders. It generalises: `Gladiator_boots.tga`,
 `magician_boots.tga`; Dwarf and Wood Elf use one whole-body texture instead.
 
-Retail must therefore **hide the base sub-mesh an armour piece covers**, and how
-it chooses is documented nowhere — the viewer does not implement hiding at all,
-it stacks and offers manual toggles. The likely vocabulary is the 18-slot
-equipment array at `cCreature + 0x1A4` (main hand `0x0D`, off hand `0x0C`, mount
-`0x12`, slots `0x00`–`0x06` helmet/body/belt/arms/legs/**shoes**/gauntlets),
-whose slot names line up one-to-one with the base-body sub-mesh names.
+~~Retail must therefore hide the base sub-mesh an armour piece covers; slot
+tokens were inferred from the body material names.~~ **Withdrawn 2026-10-09.**
+The native `GrannyWearSequence` path remaps garment bone names onto the body
+sequence without that geometric admission or material-token suppression.
+LGP `0x080FC268` submits its source renderstates; body+92 selects vertex-color
+behavior, not which base material to hide. The engine's inferred hiding
+constant/APIs are removed rather than special-casing default hair.
 
-**Open:** there is no starting-equipment table in any Sacred 1 data file, and
-none is documented anywhere — not the manual, not `balance.bin`, whose decoded
-fields are skill unlocks, experience values and spawn counts only. The
-`EquipNPC` opcode is real and used, but the Vampiress's 76 records all equip
-**horses**, none the hero. Where retail's two Seraphim blades come from is
-unanswered.
+Native slot0 default Seraphim headwear is definition4007: genuinely skinned
+to Neck/Head, not a rigid socket. Its authored rest rotations differ from the
+body, so the old rest-fit threshold incorrectly refused it. Body eligibility
+comes from `cArmor3D::canUse` restriction bits and exact numeric `rust.bin`
+records; name unions can conflate different armours and texture overrides.
+The native mapper retains garment inverse bind poses and bind order while
+substituting the corresponding body bones. Missing mapped bones still refuse.
+
+Object definition and stat identity are not interchangeable. Constructor
+LGP `0x0834F94E`, ENG `0x005BE130`, RUS `0x005BE5A0` stores the requested
+object type separately and copies the resolved130-byte descriptor unchanged.
+Installed definition4000 resolves stat type2157;4007 resolves4007. The engine
+validates against the mounted descriptor, not equality with the object ID.
+No copied payload is compiled into the implementation.
+
+~~Starting equipment is unlocated.~~ **Closed for the bounded fresh Seraphim
+inputs, 2026-10-09:** actual template instance framing, native default-wear
+initialization and worn/carried role witnesses are described in
+[the native route](../engine/seraphim-native-route.md). This is not universal
+item-generation, all-equipment or complete starting-appearance parity.
 
 ### A weapon is a rigid prop, not a second garment
 
@@ -1198,10 +1229,26 @@ was removed instead of repinned to a new corpus count; the checks exercise
 the discriminating layouts. Evidence:
 `donotpublish/tmp/shadow-contract-20260907/motion-format-census.json`.
 
-**169 of the 971 weight-declaring meshes — 17.40% — still have no
-unambiguous FormMeshBone pairing**, down from 240 (24.72%). See "The pairing
-rule" above for what changed and why the residue is refused rather than
-guessed.
+~~169 of971 weight-declaring meshes have no unambiguous pairing.~~
+**Historical correction, 2026-10-09:**971 declared weights,955 decoded, and16
+explicitly refused wider influences because the renderer supported at most four.
+This limit was not a pairing failure or
+permission to silently discard influences; it does not affect the exercised
+Seraphim/default-headwear/novice bodies.
+
+**2026-11-04 decoder/render cutover:** all971 declared entries now decode.
+An independent raw-stream audit found valid5–7-influence records in those16
+entries, exact span consumption and maximum weight-sum error1.64e-7.
+Ordinary mesh blocks retain four slots; wider blocks retain eight, without
+dropping or renormalising stored weights. ModelView propagates the actual
+stride through mesh-local mapping, both surface paths and CPU corpse geometry.
+An authored Forward+/Vulkan eight-influence triangle matched its independent
+geometric reference exactly and differed from the dropped-lane control.
+All16 wider owned models plus an ordinary four-slot model built real Vulkan
+surfaces; five/six/seven-influence images were inspected. Evidence:
+`tmp/workflow-reference-20261016/w1-owned-mesh-influences/`.
+This qualifies the format/platform path, not native pose parity, new actor-class
+admission, source/R0 promotion or complete worn/corpse-state ownership.
 
 ~~Two of the seven class body meshes do not build at all: `DUNKELELVE.GRN` and
 `MAGICIAN.GRN`.~~ **STRUCK 2026-08-26. Both build fully**, and textured on
@@ -1227,3 +1274,156 @@ Provenance: `tools/formats/grn_tagwalk.py`, `grn_motion.py`, `grn_bonenames.py` 
 docstrings, which carry the measurement detail; findings log rows tagged
 `granny-grn`.
 
+
+## Required-body normal investigation, 2026-11-05
+
+Generic Forward+/Vulkan construction succeeds for 213 required bodies retaining
+438 definition origins; 14 representative untextured silhouettes were inspected.
+This is not clean-render or native-pose qualification: construction emits
+non-finite-normal warnings. The actual reader exposes non-finite normals in
+entries 1189–1192 (22 expanded vertices each) and 1296 (48 vertices).
+
+Independent Python unpacking finds 108 non-finite float triples in the declared
+owned normal spans. Raw triangle normal indices reference bad triples in every
+affected entry. Source-record counts and expanded render-vertex counts differ;
+neither count is substituted for the other.
+
+Complete original application owners 8624508/8053772 bind and forward
+`glNormalPointer`; selected caller 810B62E passes normal-enabled flags 594.
+That does not prove the affected bodies select this caller. Original application
+leaves 806FF58 (192 bytes) and 807084E (289 bytes) were exercised without callee
+stubs on authored identity transforms: ordinary `(3,4,0)` produces `(0.6,0.8,0)`,
+while zero and NaN inputs produce NaNs under masked x87 control 0x37f.
+The indexed leaf's empty-influence control also produces NaNs. These are emulator
+controls, not physical-x87, affected-body branch or native GPU observations.
+
+No fabricated normal replacement, diagnostic suppression, class admission or R0
+promotion follows. Exact raw spans, source owners, machine controls and limits:
+`tmp/workflow-reference-20261016/w1-required-body-renderability/`.
+
+### Generic material coverage continuation
+
+The same 213 required bodies construct 680 generic material surfaces on
+Forward+/Vulkan; 634 surfaces resolve model textures. All 14 representative
+ambient-filled fixture images were inspected. The first directional-only
+fixture was too dark for reliable texture inspection and is retained separately,
+not reported as retail lighting behavior.
+
+The remaining 46 untextured surfaces belong to 29 bodies and 101 required
+definition origins. Actual `Items.texture_of` returns definition-owned skin
+metadata for all 101 origins. A generic body-only gap is therefore not evidence
+of a missing retail texture: the next consumer check must supply the existing
+`ModelView.item_texture` override before setup, preserving per-definition skin
+precedence. No source-normal repair or class/R0 admission was applied.
+Evidence: `tmp/workflow-reference-20261016/w1-required-body-material-surfaces/`.
+
+### Definition-owned skin consumer result
+
+All 438 required definitions join 430 distinct body/skin pairs across the same
+213 bodies. Assigning the existing `ModelView.item_texture` before `setup`
+constructs 1,032/1,032 textured surfaces on Forward+/Vulkan; no pair retains an
+untextured surface. Fourteen class representative images were inspected under
+the authored ambient/directional fixture. This is a different workload from
+the generic body-only 634/680 count, not a performance or parity improvement.
+Source-normal warnings remain; no native pose, lighting, current actor,
+class or R0 qualification is inferred.
+Evidence: `tmp/workflow-reference-20261016/w1-required-definition-skin-surfaces/`.
+
+### Canonical clip consumer census
+
+The 941 static creation contexts select 960 nonempty body/mode/locomotion rows,
+deduplicated to 511 body/clip pairs; three absent horn rows remain absent.
+This source-context workload has 175 bodies, including body 519 outside the
+older 438-definition roster; those workloads are not interchangeable.
+
+Actual generic Forward+/Vulkan `play_clip` plus `freeze_anim` at 37% clip phase
+plays 509 pairs. Two exact refusals are body 1228 `GIGANT_SPIDER.GRN` with clips
+3751/3752: construction treats it as a rigid prop with no animation skeleton.
+No sampled bone pose was non-finite in the 509 played cases. However, 433 pairs
+retain unbound track names; these include footsteps/camera targets and bone
+names, and are not blanket-classified harmless. Eight selected outputs were
+inspected; body 1 lies outside the rest-framed camera after sampling, so its
+capture is not a complete-frame pose observation. The spider image is static,
+not falsely reported as animated. No native timing/pose/class/R0 admission.
+Evidence: `tmp/workflow-reference-20261016/w1-canonical-body-clip-consumer/`.
+
+### Mixed weighted/orphan mesh correction
+
+The giant-spider refusal above was traced to whole-entry classification, not
+absent source bones: body 1228 has 54 bones and 54 bind poses. Its first mesh
+declares 1,454 weighted positions; the second contains only a zeroed 12-byte
+weight header, nine positions and 14 triangles. All four authored material
+groups reference the first mesh and cover its 2,222 triangles; the second
+mesh is unclaimed and is not emitted.
+
+`has_mesh_weights` now retains a body when it contains real weights.
+`mesh_weights` preserves the explicit empty block alongside the weighted block
+without inventing influences or changing mesh-index provenance. ModelView
+retains the real rig, but rejects emitted indices into an empty-weight mesh and
+rejects merged fallback emission for mixed bodies. Pure empty-header props
+remain unskinned. The obsolete census-total assertion was removed rather than
+re-pinned; decoded-stream and bone-index invariants remain.
+
+The regression failed before the repair. Five focused skin/pairing/corpse checks
+pass afterward. Actual Forward+/Vulkan spider clips 3751/3752 now play with
+46 real binds, four textured surfaces and finite sampled bone poses. Both
+same-clip GPU outputs change between 37% and 63% phases. This establishes the
+generic consumer repair, not native pose/clock or class/R0 admission.
+The complete headless profile remains **108 PASS / 6 FAIL**: `anim_freeze_check`,
+`save_state_check`, `opening_journey_check`, `save_restore_check`,
+`script_ambient_check`, `session_attack_check`. Their diagnostics/refusals remain
+raw, not suppressed or reclassified as a full-suite pass.
+Evidence: `tmp/workflow-reference-20261016/w1-giant-spider-animation-source/`.
+
+The complete post-repair skin workload exposed four single-group mixed bodies
+(snake, dummy, medium spider and scorpion) still reaching merged fallback.
+Their exact authored group mappings point to weighted meshes 10/10/21/6;
+empty helper meshes remain unclaimed. A second causal regression failed on all
+four. Mixed bodies now honor explicit group mapping even for one group, while
+unweighted emitted vertices and merged mixed fallback still refuse.
+
+Final actual Vulkan workloads cover 511/511 canonical body/clip pairs and
+430/430 definition-skin pairs, retaining all 438 definition origins and
+1,032/1,032 textured surfaces. Five focused checks pass; the final full headless
+profile remains 108 PASS / the same six named failures above. No source-normal
+warning is suppressed. Executable smoke scaffolds are archived as
+`*.source.gd.txt` alongside their raw results.
+
+Host limit: the final skin probe produced its complete zero-refusal result and
+inspected images, but `/usr/bin/xvfb-run` then exited 1 when its cleanup `kill`
+at line 185 found the X server already gone. Its `set -e` aborts before returning
+the saved child status. This wrapper failure is retained separately; no clean
+host-command exit or separately captured child exit is claimed.
+
+### Unbound-track weighted ancestry qualification
+
+After the mixed-weight repair, 435 of the 511 canonical pairs retain 4,044
+unbound track-name occurrences; the increase from the initial 433-pair census
+is the two newly playable spider clips, not a retag of the earlier result.
+Actual model weights, model parents and clip parents classify 4,011 occurrences
+outside the declared weighted-bone ancestry and 33 as potential ancestors of
+weighted descendants. No name-based exemption was used. This graph result is
+not blanket native scene/event harmlessness.
+
+All 33 potential ancestors are nonroot clip bones and carry nonidentity rest
+or control data. Existing generic animation-builder samples on the exact source
+clip graphs at phases 0, 0.37 and 0.63 are finite. For example,
+`Dummy_hold_wings` in body 1221 clips 3685/3686 reaches about 15.53 source units
+of local translation; pirate `Bip01 Neck1` controls also remain nonidentity.
+Names such as `Dummy15` and `Root` therefore cannot justify ignoring these
+tracks. Missing-ancestor composition and model/clip parent-frame reconciliation
+remain source-contract prerequisites, not an admitted native binding fix.
+Evidence: `tmp/workflow-reference-20261016/w1-canonical-unbound-track-source/`.
+
+### Sampled fixture framing
+
+The cropped body 1 / clip 1578 image above was a fixture-camera defect:
+the camera used rest bounds after sampling an airborne pose. The installed
+Godot 4.7.2 `MeshInstance3D.bake_mesh_from_current_skeleton_pose` API supplies
+actual sampled geometry bounds. Reframing only that private fixture camera
+produces a complete inspected bat image with 7,996 visible pixels and zero
+border pixels. Every sampled bone transform remains exactly unchanged across
+the camera adjustment. The original cropped image is retained; neither clip
+selection nor root translation was altered. This is not gameplay/native camera
+or pose parity. Evidence:
+`tmp/workflow-reference-20261016/w1-canonical-animated-framing/`.

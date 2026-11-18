@@ -212,7 +212,7 @@ Prior measured evidence, explicitly not this revision's A/B:
 -1274 measured cold-view sector/canvas builds in hundreds of milliseconds and a474ms scripted-model construction group.
 -1275 introduced cooperative3ms sector/canvas/model work and atomic publication, with loading max≈211ms at1024×768 and≈356ms maximized. Separate budgets and atomic calls are not a3ms total-frame guarantee.
 
-Current architecture: `SectorView` stages decoded sectors; `FloorView` retains static command generations and256pixel pan padding; models render into cropped private3D viewports inserted in native2D order; liquids remain separate. Affine skinning and encoded-color rules must survive optimization. Do not replace this with generic material sorting or ordinary3D depth ordering without proof.
+September architecture: `SectorView` stages decoded sectors; `FloorView` retains static command generations and256pixel pan padding; models render into cropped private3D viewports inserted in native2D order; liquids remained separate. **Superseded2026-10-10:** reflections/water are now retained in the same encoded FIFO between all terrain and all objects/models/shadows. Coverage urgency survives streaming epochs and stopped movement; an exhausted border requires completing the current hidden generation before drawing, so this emergency path is unbounded rather than a3ms frame guarantee. Cropped cameras submit their transforms before their first render. Affine skinning and encoded-color rules must survive optimization; generic material sorting or ordinary3D depth ordering is not an equivalent replacement. See the dated corrections in `formats/world-sectors.md`.
 
 Prioritized **candidates**, not measured speedup promises:
 

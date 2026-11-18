@@ -26,11 +26,27 @@ ids 1…1886 (id 1 is `"INVALID"`). Element *N* is at `0x880DC68 + 84*(N-1)`:
 
 The loader is `sub_8501A40`. **Every sheet is 256×256.**
 
-### Size is `u1 − u0`
+**2026-10-10 namespace correction:** the layout above describes the existing
+sheet-relative, one-based inspection catalog, not native gfx indices.
+Native records begin at `0x880DC60`; sheet names are at record+8 and native
+gfx indices start at0. Catalog*N* addresses the sheet at native index*N−1*.
+The catalog's `+0x4C/+0x50` words are the next native record's header, not the
+current sheet's native identity/type. The loader and tooltip painter index the
+native record directly. Consequently native novice gfx835 selects catalog836
+(`GUI_portraitX02`, origin95×127 stored rectangle), not the bearded catalog835.
+New native-index consumers translate at this boundary; the legacy catalog API
+and calibrated HUD callers remain unchanged. Unreviewed portrait-name band
+alignment is not a portrait selector proof.
 
-Not `u1 − u0 + 1`, and this is checkable rather than a preference: retail
-places the console at `x = 512 − W/2` and its transcribed position is 397,
-which needs `W = 230` — the console's rect is `(0,169)–(230,255)`.
+
+### Stored catalog size is not native runtime extent
+
+~~Native size is always `u1 − u0`, never `u1 − u0 + 1`.~~ **Withdrawn2026-10-10:**
+the recovered loader increments the inclusive upper texels before computing
+native width/height and normalized UVs. The existing port catalog returns the
+stored-coordinate difference. Its console-center check cannot distinguish230
+from231 under integer half-width division; it was not proof of a universal
+native size law. Complete runtime extent/UV and full-HUD parity remain unqualified.
 
 Writing every rect one texel larger put the middle combat-art slot one pixel
 off centre and pushed the collect toggle one row off the bottom of the canvas.

@@ -358,10 +358,52 @@ index remap produced `mapped=5` on the default run, making ProzHP[5]=1.0
 inert there. **ProzHP recovered from balance.bin offset 1836:**
 `[1.10, 1.25, 1.40, 1.50, 1.28, 1.00]` — confirming the parse target
 `0x8B89B48 = flt_8B89420 + 0x728` is exactly the table multiplied at
-`0x81F54D6`. Open for C1: the pre-tail base's origin per type, the curve's
+`0x81F54D6`. ~~Open for C1: the pre-tail base's origin per type, the curve's
 interpolation source, and reconciliation with the base formula that matched
 the hero (119) but not creatures. Implement the hero branch and ProzHP table
-with witnesses; do NOT implement the creature branch until observed.
+with witnesses; do NOT implement the creature branch until observed.~~
+
+**Selected ordinary wildlife closure, 2026-10-10:** LGP `81F4118`/
+`81F4FFA` and Gold ENG/RUS `5658F0`/`565BA0` independently establish
+the genuine base/live-attribute recomposition, source skill-rank gates and
+the nonstandard owned level curve. The creature tail is still a multiplication,
+but its earlier input is recomposed, not an unexplained carried maximum.
+The curve omits lower-breakpoint subtraction and retains its fourth-interval
+fallback; LGP float32 spill/multiplication/truncation order is preserved.
+Actual selected Fill51 finishes with the `a3=1,a4=0` initializer, skipping
+the transient factory difficulty adjustment but applying owned LevelKap
+plus the containing sector's environment213 cap before narrowing to u16.
+No invented post-cap minimum1 is applied.
+
+The selected516/592/593 ordinary source definitions have real Armour/Agility
+skills and a resistance-only bonus, not an empty skill profile or fixed40HP.
+Observed engine births are level1 with maximum/current22 on this owned input;
+the hero remains119. Exit retention consumes actual live/max life fields,
+and fresh continuation retains their source identity/state. This closes the
+implemented bounded wildlife branch, not every boss/champion/linked/equipment
+modifier, constructor random stream or live native numerical campaign path.
+
+**Ordinary deer admission correction, 2026-10-10:** actual later travel into
+sector54,40 refused type530 before inspecting its model because the port's
+context/stat/source-state consumers enumerated only516/592/593.
+LGP `81F4118`/`81F4FFA` and independently Gold ENG/RUS `564D60`/`565010`,
+`5796A0`/`579950`, `5658F0`/`565BA0` establish shared non-hero base/skill/
+ordinary-life branches, not a rabbit-only equation. The actual530/531/532
+definitions are class6, have no HP-skill10, carry only the supported
+resistance bonus, and have all seven model equipment-helper slots absent.
+Source-type admission now derives every weighted type and possible native
+variant; ordinary relation, equipment/pool, override and modifier guards
+remain. No new HP formula or universal u16/x87 numerical parity is claimed.
+
+Species behavior is still distinct: the owned deer CIF speeds are positive,
+so existing CIF-first movement applies without borrowing rabbit fallback.
+The native constructor's `500|0x01000000` species/CIF condition is separate
+from the creator's nonhostile `500|0x40`/`500|0x10` and `512|0x20` conditions.
+The port no longer copies rabbit constructor flags onto deer or creator0x40
+onto every rabbit variant. Actual sector entry and JSON continuation checks
+cover source skill ownership, initialized life, authored rates, species flags
+and unique retained sector identity. These are guarded ordinary birth
+consumers, not boss/champion/mount/network/equipment or complete campaign proof.
 
 **The fraction exists, at `0x8188FB3`** — and it is a level-up routine, not a
 gauge:
@@ -448,6 +490,52 @@ are static-only, arithmetic from binary constants, never observed live.
 Callers: `sub_821369A` (single-player addExperience path) and `0x82C72BA`.
 A live witness at level ≥100 is the residual before this ladder is
 "behaviourally verified" in the plan's four-state ledger.
+
+### Ordinary XP bonus difficulty width (2026-11-06)
+
+`821369A` loads its signed-byte bonus difficulty factors as float32, including
+`1.340000033378601` and `1.6699999570846558`. The XP consumer now narrows the
+shared difficulty helper's result at this boundary; the separate loot caller
+and the helper itself are unchanged.
+
+Complete original producer/query/multiplier execution on declared valid CIF
+fields gives XP `80262` for Silver/base55029 and `42574` for Gold/base21863
+(step0, hero/victim level1, signed1258=-128). Both results agree under the
+three explicit software precision controls. The actual reader/API regression
+failed both before the one-line correction and passes afterward.
+
+Evidence: `tmp/workflow-reference-20261016/w1-reward-difficulty-f32-boundary/`.
+The finite oracle covers189 complete original cases; actual API comparison
+covers63 named53-bit boundaries plus23184 retained signed/effect cases,
+with0 mismatches. These are authored arithmetic inputs, not current actor,
+physical-mode, class or source/R0 admission. Full headless110PASS/6FAIL retains
+the six existing failures, not a whole-game pass.
+
+The separate context tier uses a vector header at beneficiary+1260/+1264;
+it tests byte19 of the vector's data only when count>19, not actor byte19.
+`8213CAC` multiplies by float32 `0.10000000149011612`. The consumer now
+preserves that operand instead of host-scalar0.1. Original count0/19/20
+and byte4/5/255 controls cover45 executions; actual API matches all15 named53
+cases plus23184 retained bonus cases. Two additional permanent XP boundaries
+(Silver/base7233→11073; Gold/base26193→54104) fail before and pass after.
+Difficulty4/base5977 remains precision-sensitive (24-bit20872 versus53/64-bit
+20873), not a physical-mode inference. Evidence:
+`tmp/workflow-reference-20261016/w1-reward-context-tier-width/`.
+
+The party term's scalar is likewise float32 (`86E787C`,
+`0.07000000029802322`), not host-scalar0.07. Real application
+`839DAAA`/`839DB4A`/`839DC34` execution reads a declared existing singleton,
+selects raw keys1..16, masks the selected group to31 bits and counts matching
+groups across16 entries. No getter result is supplied; first-use null state
+stops at the unqualified8051A64 allocator.
+
+Gold/base35307 with a real table-produced count16 yields132486 under all
+three software precision controls; the old consumer gives132485.
+The regression fails before and passes after preserving the source operand.
+Evidence: `tmp/workflow-reference-20261016/w1-reward-party-f32-boundary/`:
+750 complete original cases and23434 actual API comparisons with0 mismatches.
+This does not qualify current party/lifetime, allocation or physical FPU mode.
+
 
 ## Where AT and PA come from — skills, not attributes
 

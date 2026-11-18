@@ -28,7 +28,12 @@ wrong.
 ## Reading it
 
 Every row is now the four fields above, and `tools/parity/log_check.py`
-enforces it from the first row. It was not always so: the file grew through
+enforces the contract from the first row, with one named exception list:
+19 older rows that were appended with a defect and cannot be rewritten
+(two decimal-point slugs, fourteen with uppercase slug letters, two empty
+paragraphs, one id out of order). Findings 1682 and 1683 trace each of them;
+the gate pins each raw record to its SHA-256 fingerprint as well as its defect,
+and gives every row from 1682 on the full contract. It was not always so: the file grew through
 five schemas — an `iteration, binary, metric, runs, status, description`
 table, then several shapes of three, five and six fields where field 2 held a
 status word rather than a date — and three rows where raw tab-separated tool
