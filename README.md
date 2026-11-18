@@ -16,6 +16,32 @@ later implementation does not turn native-parity gaps into completed gates.
 Private workflow proposals, capture payloads and operational ledgers are not
 part of the source update.
 
+## Project status and evidence coverage
+
+The engine is a **playable early alpha**, not a complete Sacred replacement.
+Its strongest end-to-end evidence is a bounded Seraphim opening through
+dialogue/quests, combat, generated loot, equipment and Save/Load/Continue.
+Broader classes, campaigns and full retail parity remain open.
+
+This repository records why a claim is trusted, not just whether code exists:
+
+| Evidence | What it establishes | What it does not establish |
+|---|---|---|
+| Format decoding and independent comparisons | Named readers agree on the specified owned input/data shape | Complete campaign coverage or runtime behavior |
+| Recovered source contracts | Specific field widths, branches, ownership and rules, with stated limits | A complete native implementation or matched runtime observation |
+| Played routes and rendered checks | The stated interaction/state or framebuffer result in its recorded scope | Whole-game gameplay, timing, audio or pixel parity |
+
+Priority gaps include creature/class and campaign-script breadth; remaining art,
+item, trade and mount rules; and matched-state presentation/audio comparisons.
+The [engine priorities](https://github.com/openheilig/engine#next-priorities)
+own product build order. The engine README separately labels
+[unpublished local work](https://github.com/openheilig/engine#unpublished-local-development);
+do not assume it is already present in the public source snapshot.
+
+Consult [open questions](open-questions.md) and the
+[findings ledger](log/autoresearch-results.tsv) for specific unresolved claims.
+Research and test totals are not completion percentages.
+
 ## Start here — and what state each answer is in
 
 | I want… | Read | Status |
